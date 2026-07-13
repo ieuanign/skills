@@ -1,0 +1,24 @@
+{
+  "name": "ieuanign-skills",
+  "version": "0.1.0",
+  "description": "Ieuan's add-on agent skills — a dev-loop issue-to-PR pipeline over a custom agent roster, plus coding-standards setup. Layers on mattpocock/skills.",
+  "author": {
+    "name": "Ieuan Ignatius",
+    "url": "https://github.com/ieuanign"
+  },
+  "homepage": "https://github.com/ieuanign/skills",
+  "repository": "https://github.com/ieuanign/skills",
+  "license": "MIT",
+  "keywords": [
+    "engineering",
+    "skills",
+    "dev-loop",
+    "code-review",
+    "agents",
+    "orchestration"
+  ],
+  "skills": [
+    "./skills/dev-loop",
+    "./skills/setup-ieuanign-skills"
+  ]
+}

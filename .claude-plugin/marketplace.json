@@ -1,0 +1,23 @@
+{
+  "name": "ieuanign",
+  "owner": {
+    "name": "Ieuan Ignatius",
+    "url": "https://github.com/ieuanign"
+  },
+  "description": "Ieuan's add-on engineering skills for Claude Code, as an installable plugin.",
+  "plugins": [
+    {
+      "name": "ieuanign-skills",
+      "source": "./",
+      "description": "A dev-loop issue-to-PR pipeline over a custom agent roster, plus coding-standards setup. An add-on layer for mattpocock/skills.",
+      "category": "engineering",
+      "keywords": [
+        "engineering",
+        "skills",
+        "dev-loop",
+        "code-review",
+        "agents"
+      ]
+    }
+  ]
+}
