@@ -4,6 +4,7 @@
 
 ### Minor Changes
 
-- Initial release. Two add-on skills for [mattpocock/skills](https://github.com/mattpocock/skills):
+- Initial release. Three add-on skills for [mattpocock/skills](https://github.com/mattpocock/skills):
   - **`dev-loop`** — an issue-to-PR pipeline that plans, implements, reviews, and signs off GitHub issues over a bundled custom agent roster (architecture-engineer, code-writer, reviewer, debugger + lite variants), each issue in its own git worktree.
+  - **`code-review-mp`** — a two-axis (Standards + Spec) diff review in parallel sub-agents; the Standards-aware variant of Matt's `/code-review` that reads `docs/agents/coding-standards.md`. Coexists with Matt's `/code-review`.
   - **`setup-ieuanign-skills`** — scaffolds `docs/agents/coding-standards.md`, the repo-tailored review rubric the reviewer agent and code-review Standards axis read.

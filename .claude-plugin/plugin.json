@@ -19,6 +19,7 @@
   ],
   "skills": [
     "./skills/dev-loop",
+    "./skills/code-review-mp",
     "./skills/setup-ieuanign-skills"
   ]
 }

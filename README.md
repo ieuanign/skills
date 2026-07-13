@@ -69,6 +69,17 @@ copies any missing roster members into that repo's `.claude/agents/` — no sepa
 The skill is repo- and machine-agnostic; per-repo settings live in `docs/agents/dev-loop.md`
 (ask-then-persist on first run).
 
+### [`/code-review-mp`](./skills/code-review-mp/SKILL.md) — two-axis diff review
+
+Reviews the diff since a fixed point along two independent axes reported side by side:
+**Standards** (does the code follow this repo's documented coding standards + a Fowler smell baseline?)
+and **Spec** (does it match the originating issue/PRD?). Each axis runs in its own parallel sub-agent so
+they don't pollute each other's context.
+
+Coexists with Matt's `/code-review` — this is the Standards-aware variant that reads
+`docs/agents/coding-standards.md` (produced by `/setup-ieuanign-skills`). Run `/setup-matt-pocock-skills`
+and `/setup-ieuanign-skills` first so it has the issue tracker and coding-standards rubric to draw on.
+
 ### [`/setup-ieuanign-skills`](./skills/setup-ieuanign-skills/SKILL.md) — coding-standards rubric
 
 Distills your repo's `CLAUDE.md` files into `docs/agents/coding-standards.md`, the review rubric the
