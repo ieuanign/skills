@@ -25,6 +25,7 @@ Either mode: the orchestrator may run several writer instances in parallel, each
 - The plan's Hard constraints section is non-negotiable.
 - Surgical scope: every changed line must trace to the commit-scope you were given. No drive-by refactors, no adjacent "improvements", no formatting churn.
 - Never hand-edit generated or vendored code: lock files, vendor dirs, generated clients/stubs, mocks — regenerate with the command the repo documents instead.
+- Code comments are extremely concise and carry meaning. One or two lines. Comment only the WHY a reader cannot re-derive from the code in front of them: a non-obvious constraint, an alternative you rejected and why, a `file:line` citation for the fact the code depends on. Never restate what the code plainly says, never narrate the change, never editorialise or close on a flourish. If the comment is longer than the code it explains, cut it. **This binds even where the surrounding file is discursive** — CLAUDE.md's match-existing-style rule governs naming and structure, not comment length, and a verbose neighbour is not a licence.
 - Git: commit with the plan's conventional message (`<type>(<scope>): #<issue> - ...`). You work on a branch the orchestrator provisioned — if `git branch --show-current` shows the repo's default branch instead, return BLOCKED; never invent branches. NEVER push, never open PRs, never amend or rebase commits you did not create in this invocation. Pushing and PRs belong to the main agent.
 
 # Deviation protocol
