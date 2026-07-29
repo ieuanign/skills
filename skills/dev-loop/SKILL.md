@@ -23,7 +23,7 @@ This skill is repo- and machine-agnostic: it hardcodes no repository name, path,
 - **MAIN** — the main worktree: first entry of `git worktree list`. Never modify or remove it.
 - **REPO** — `basename` of MAIN.
 - **DEFAULT** — the default branch: `git symbolic-ref --short refs/remotes/origin/HEAD` minus the `origin/` prefix, falling back to `main`.
-- **WORKTREES** — `<parent of MAIN>/worktree/<REPO>/`. Every lane worktree lives here; the directory slug is the branch name after its first `/` (`feat/208` → `<WORKTREES>/208`).
+- **WORKTREES** — `<MAIN>/.scratch/worktrees/`. Every lane worktree lives here; the directory slug is the branch name after its first `/` (`feat/208` → `<WORKTREES>/208`).
 - **GitHub repo** — never pass `--repo`: every `gh` command runs inside a checkout of this repo (worktrees included), and gh infers the repository from the remote.
 - **Fast copy** — macOS: `/bin/cp -Rc` (APFS clonefile, instant; MUST be `/bin/cp` — a GNU cp on PATH rejects `-c`); Linux: `cp -R --reflink=auto`; anywhere else: plain `cp -R`.
 
@@ -36,7 +36,6 @@ Profile keys:
 - **Branch template** — default offered: `feat/{issue}`, sub-lanes `feat/{issue}-{area}`. Asked on the first run in a repo.
 - **PR title format** — default: `<type>(<scope>): #<issue> - <title>`.
 - **PR body template** — asked at the first Gate 2; whatever its shape, the core elements in Gate 2 below must survive.
-- **Provisioning copy rules** — per package directory: which untracked files (env files, local config) to copy into its worktrees. Asked the first time a lane touches a package dir with no recorded rule.
 - **Constraints** — free-form repo cautions (e.g. "backend tests share one database — never run two backend lanes concurrently"). Honor them when deciding lanes vs waves (Gate 1) and when provisioning (Act 2).
 
 ## Execution modes (detect at Act 0)
@@ -48,11 +47,15 @@ Profile keys:
 ## Act 0 — Intake (before any agent runs)
 
 1. Compute the Derived facts, read the repo profile (first run in a repo: ask-then-persist the branch template), detect the execution mode.
-2. Roster check: architecture-engineer(-lite), code-writer(-lite), reviewer, and debugger must exist in `MAIN/.claude/agents/`. Copy any that are missing from `<this-skill-dir>/agents/` and tell the user.
-3. `git fetch origin <DEFAULT>` once.
-4. Per issue: `gh issue view <n> --json number,title,body,state,labels`. CLOSED → drop the lane, tell the user.
-5. Parse each body's "Blocked by" section: a blocker that is still open and NOT in this batch → refuse that lane (report why); a blocker inside the batch → record the ordering (it becomes a stacked lane at Gate 1).
-6. Stateless resume check per issue — derive the stage from artifacts, never from memory:
+2. Worktree preconditions:
+   - `.scratch` not gitignored (`git check-ignore -q .scratch` fails) → append `.scratch/` to `.gitignore` and tell the user; worktrees inside an unignored `.scratch/` pollute every `git status`.
+   - `.worktreeinclude` missing — the repo-root file naming which gitignored files worktrees need (gitignore syntax; the same file Claude Code's own worktrees read) → ask-then-persist, the file itself being the persistence: offer candidates from `git ls-files -oi --exclude-standard --directory` (env files, local config, `node_modules/` — leave out caches and OS noise), write the selection as a tracked file. "None" writes a comment-only file, which counts as answered.
+   - `.worktreeinclude`'s LAST line must be `!.scratch/**` — append or move it there (gitignore matching is last-match-wins, so only the final position shields reliably). It keeps every copy mechanism — Act 2 and Claude Code's native worktrees alike — from cloning `.scratch` contents (the worktrees themselves included) into new worktrees.
+3. Roster check: architecture-engineer(-lite), code-writer(-lite), reviewer, and debugger must exist in `MAIN/.claude/agents/`. Copy any that are missing from `<this-skill-dir>/agents/` and tell the user.
+4. `git fetch origin <DEFAULT>` once.
+5. Per issue: `gh issue view <n> --json number,title,body,state,labels`. CLOSED → drop the lane, tell the user.
+6. Parse each body's "Blocked by" section: a blocker that is still open and NOT in this batch → refuse that lane (report why); a blocker inside the batch → record the ordering (it becomes a stacked lane at Gate 1).
+7. Stateless resume check per issue — derive the stage from artifacts, never from memory:
    - Plan file exists with `Status: READY` → skip Phase A for that lane (offer replan if the user asks).
    - Plan commit messages already in `git log` of the lane's branch → those commits are done.
    - Plan file has a `## Conformance sign-off` section naming a sub-lane's ref → THAT sub-lane jumps to Gate 2; other sub-lanes resume at their own derived stage (sign-offs are per sub-lane, appended to the same plan file).
@@ -79,8 +82,7 @@ Wave logic: **anything based on origin/<DEFAULT> runs in wave 1; anything based 
 
 1. `git worktree add <WORKTREES>/<slug> -b <branch> <base>`. Base is `origin/<DEFAULT>` or the stack/sub-lane base branch. On resume: an existing worktree is reused as-is; an existing branch WITHOUT a worktree reattaches with `git worktree add <WORKTREES>/<slug> <branch>` (no `-b` — the `-b` form errors on an existing branch).
 2. `cp -R <MAIN>/.claude <wt>/` (the CLAUDE.md layer must exist in the worktree).
-3. Dependencies, automatic: for each plan-touched directory that has a `package.json`, fast-copy its `node_modules` from MAIN when present there. Then apply the profile's copy rules for the touched dirs; a touched package dir with no recorded rule triggers the ask-then-persist question. Skip both for lanes that touch no package dir.
-4. More than 4 lanes needing `node_modules` copies → warn about disk before proceeding.
+3. `.worktreeinclude` copies: `git -C <MAIN> ls-files -oi --exclude-from=.worktreeinclude --directory` lists the matches (files, plus fully-ignored dirs like `node_modules/` collapsed to one entry); fast-copy each from MAIN into the worktree at the same relative path, creating parent directories. Worktree contents never appear in the list — the `!.scratch/**` line Act 0 guarantees excludes them.
 
 ## Act 3 — Phase B: execute
 
