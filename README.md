@@ -42,11 +42,35 @@ once per repo:
 /setup-ieuanign-skills
 ```
 
-Prefer a read-only, always-current managed bundle instead? Use the plugin path:
+### Or install as a plugin (stays up to date)
+
+`npx skills add` copies the skill files into place and never touches them again. The plugin path
+installs a managed bundle instead — install once, and new releases of this repo reach you as updates:
 
 ```bash
+# In your agent, one-time:
+/plugin marketplace add ieuanign/skills
 /plugin install ieuanign-skills@ieuanign
 ```
+
+To pick up new releases, either run `/plugin marketplace update ieuanign` when you want them, or turn
+on auto-update for the `ieuanign` marketplace in the `/plugin` menu (third-party marketplaces have it
+off by default) — then updates land on their own shortly after each session starts.
+
+For teams: commit this to your repo's `.claude/settings.json` and teammates get prompted to install
+automatically when they trust the repo:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "ieuanign": {
+      "source": { "source": "github", "repo": "ieuanign/skills" }
+    }
+  }
+}
+```
+
+Either way, still run `/setup-ieuanign-skills` once per repo afterwards.
 
 ## The skills
 
