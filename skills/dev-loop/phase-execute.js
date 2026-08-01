@@ -1,27 +1,28 @@
 export const meta = {
   name: 'dev-loop-execute',
-  description: 'Phase B of /dev-loop — per-lane implement, review, fix cycles, and conformance sign-off',
+  description: 'Phase B of /dev-loop — per-lane implement, review, and fix cycles',
   whenToUse: 'Invoked by the /dev-loop skill per wave; not standalone.',
   phases: [
     { title: 'Implement', detail: 'code-writer per plan commit, sequential within a lane' },
     { title: 'Review', detail: 'reviewer + fix cycles (capped)' },
-    { title: 'Sign-off', detail: 'architect Mode 2 conformance' },
   ],
 }
 
 // args: {
 //   lanes: [{ issue, planPath, subLanes: [{ branch, worktree, base, area?, commits: [{ordinal, message}] }] }],
-//   lite: boolean, maxFixCycles: number
+//   maxFixCycles: number
 // }
 // subLanes contains only the CURRENT wave's sub-lanes; worktree is absolute.
 // Returns per-lane:
-// { issue, halted: string|null, subResults: [{branch, area, commits, deviations, disputed, reviewNotes, signoff}] }
+// { issue, ending: {category: 'HALT'|'UNRESOLVED', reason: string}|null, subResults: [...] }
+// ending null = the lane completed clean. HALT = nothing reviewable exists, no PR.
+// UNRESOLVED = the code exists and is not clean; the lane's conclusion decides what that means.
+// subResults: [{branch, area, commits, plannedCommits, madeCommits, deviations, disputed, reviewNotes}]
 
 // The harness may deliver args as a JSON string; normalize to an object.
 const input = typeof args === 'string' ? JSON.parse(args) : args
 
-const writerType = input.lite ? 'code-writer-lite' : 'code-writer'
-const architectType = input.lite ? 'architecture-engineer-lite' : 'architecture-engineer'
+const writerType = 'code-writer'
 const MAX_FIX = input.maxFixCycles || 2
 
 const WRITER_SCHEMA = {
@@ -50,14 +51,6 @@ const REVIEW_SCHEMA = {
   },
   required: ['verdict', 'findings'],
 }
-const SIGNOFF_SCHEMA = {
-  type: 'object',
-  properties: {
-    verdict: { type: 'string', enum: ['PASS', 'PASS-WITH-NOTES', 'FAIL', 'ERROR'] },
-    violations: { type: 'array', items: { type: 'string' } },
-  },
-  required: ['verdict'],
-}
 const DEBUG_SCHEMA = {
   type: 'object',
   properties: {
@@ -76,18 +69,24 @@ function writerPrompt(lane, sub, instruction) {
 
 function absorb(rec, writerResult) {
   rec.commits.push(...(writerResult.commits || []))
+  rec.madeCommits = rec.commits.length // kept live so a sub-lane that ends early still reports its counts
   rec.deviations += writerResult.deviations || 0
   rec.disputed += writerResult.disputed || 0
 }
 
 const laneResults = await parallel(input.lanes.map(lane => async () => {
   const subResults = []
-  const halt = reason => ({ issue: lane.issue, halted: reason, subResults })
+  const end = (category, reason) => ({ issue: lane.issue, ending: { category, reason }, subResults })
+  const halt = reason => end('HALT', reason)
+  const unresolved = reason => end('UNRESOLVED', reason)
 
   for (const sub of lane.subLanes) {
     const rec = {
       branch: sub.branch, area: sub.area || null,
-      commits: [], deviations: 0, disputed: 0, reviewNotes: '', signoff: null,
+      // Both counts are scoped to THIS run: on resume sub.commits is the remainder, so the
+      // pair still detects a split or an append, it just isn't the plan's grand total.
+      commits: [], plannedCommits: sub.commits.length, madeCommits: 0,
+      deviations: 0, disputed: 0, reviewNotes: '',
       fixedFindings: [], wontFix: [],
     }
     subResults.push(rec)
@@ -123,19 +122,19 @@ const laneResults = await parallel(input.lanes.map(lane => async () => {
         }
       }
       if (!res) return halt(`writer died on commit ${c.ordinal}`)
-      if (res.result === 'FAILED') return halt(`commit ${c.ordinal} still FAILED after 2 debug+fix attempts — human decision needed`)
+      if (res.result === 'FAILED') return halt(`commit ${c.ordinal} still FAILED after 2 debug+fix attempts — the commit was never produced`)
       if (res.result === 'BLOCKED') return halt(`writer BLOCKED on commit ${c.ordinal}: ${res.notes || ''}`)
       if (res.result !== 'COMMITTED') return halt(`commit ${c.ordinal} still ${res.result} after debug routing`)
       absorb(rec, res)
       log(`#${lane.issue}: commit ${c.ordinal}/${sub.commits.length} of ${sub.branch} done`)
     }
 
-    // 2. Review → fix cycles (writer may dispute; contested disputes halt for human arbitration)
+    // 2. Review → fix cycles (writer may dispute; contested disputes end the lane UNRESOLVED)
     let cycles = 0
     let disputes = []
     while (true) {
       const disputeClause = disputes.length
-        ? `\nThe code-writer DISPUTED these findings with the evidence below — re-verify each against that evidence. Retract any where the evidence holds (record retractions in notes); list any you STILL confirm in contestedFindings — those halt the lane for human arbitration, so contest only what you can re-confirm with a concrete failure scenario:\n${disputes.join('\n')}`
+        ? `\nThe code-writer DISPUTED these findings with the evidence below — re-verify each against that evidence. Retract any where the evidence holds (record retractions in notes); list any you STILL confirm in contestedFindings — those end the lane UNRESOLVED with the stalemate unbroken, so contest only what you can re-confirm with a concrete failure scenario:\n${disputes.join('\n')}`
         : ''
       const review = await agent(
         `Review branch ${sub.branch} against the plan at ${lane.planPath} (absolute path; read it with the Read tool).\nDiff exactly the range ${sub.base}..${sub.branch} — the base may itself be a stacked feature branch; never review the base's own commits.${disputeClause}`,
@@ -145,18 +144,18 @@ const laneResults = await parallel(input.lanes.map(lane => async () => {
       if (review.verdict === 'ERROR') return halt(`reviewer ERROR: ${review.notes || ''}`)
       rec.reviewNotes = review.notes || ''
       if (review.contestedFindings && review.contestedFindings.length) {
-        const h = halt(`NEEDS ARBITRATION — reviewer still confirms ${review.contestedFindings.length} finding(s) the writer disputed`)
-        h.contested = review.contestedFindings
-        h.disputes = disputes
-        return h
+        const u = unresolved(`contested findings — reviewer still confirms ${review.contestedFindings.length} finding(s) the writer disputed`)
+        u.contested = review.contestedFindings
+        u.disputes = disputes
+        return u
       }
       if (disputes.length) rec.wontFix.push(...disputes) // reviewer retracted them — documented won't-fix
       disputes = []
       if (review.verdict === 'APPROVED') break
       if (cycles >= MAX_FIX) {
-        const h = halt(`still CHANGES_REQUESTED after ${MAX_FIX} fix cycles — human decision needed`)
-        h.review = review
-        return h
+        const u = unresolved(`still CHANGES_REQUESTED after ${MAX_FIX} fix cycles — the code exists, its findings are open`)
+        u.review = review
+        return u
       }
       cycles++
       const fix = await agent(
@@ -175,23 +174,13 @@ const laneResults = await parallel(input.lanes.map(lane => async () => {
       log(`#${lane.issue}: fix cycle ${cycles} committed${disputes.length ? ` (${disputes.length} disputed)` : ''}, re-reviewing`)
     }
 
-    // 3. Conformance sign-off
-    const sign = await agent(
-      `Mode 2 — conformance sign-off.\nPlan: ${lane.planPath} (absolute path).\nImplementation ref: ${sub.branch}, base ${sub.base} — judge only this issue's commits in ${sub.base}..${sub.branch}.`,
-      { agentType: architectType, label: `signoff:#${lane.issue}${sub.area ? ':' + sub.area : ''}`, phase: 'Sign-off', schema: SIGNOFF_SCHEMA }
-    )
-    if (!sign) return halt('sign-off agent died')
-    if (sign.verdict === 'FAIL' || sign.verdict === 'ERROR') {
-      const h = halt(`sign-off ${sign.verdict}`)
-      h.sign = sign
-      return h
-    }
-    rec.signoff = sign
-    log(`#${lane.issue}: ${sub.branch} signed off (${sign.verdict})`)
+    // 3. Commit-breakdown check — plain list diff, reported and never blocking
+    log(`#${lane.issue}: ${sub.branch} done (${rec.plannedCommits} planned, ${rec.madeCommits} made)`)
   }
-  return { issue: lane.issue, halted: null, subResults }
+  return { issue: lane.issue, ending: null, subResults }
 }))
 
 const done = laneResults.filter(Boolean)
-log(`${done.filter(l => !l.halted).length} lane(s) completed, ${done.filter(l => l.halted).length} halted`)
+const count = c => done.filter(l => l.ending && l.ending.category === c).length
+log(`${done.filter(l => !l.ending).length} lane(s) completed, ${count('UNRESOLVED')} UNRESOLVED, ${count('HALT')} HALT`)
 return done

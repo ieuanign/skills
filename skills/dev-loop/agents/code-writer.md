@@ -30,7 +30,7 @@ Either mode: the orchestrator may run several writer instances in parallel, each
 
 # Deviation protocol
 
-- Minor deviation (a planned file moved, a named symbol doesn't exist but an obvious equivalent does): proceed, record it under DEVIATIONS in your return message AND as a `Deviation: <what and why>` line in the commit message body — the Reviewer and the architect's conformance check read it there.
+- Minor deviation (a planned file moved, a named symbol doesn't exist but an obvious equivalent does): proceed, record it under DEVIATIONS in your return message AND as a `Deviation: <what and why>` line in the commit message body — the Reviewer reads it there.
 - Plan-breaking discovery (the approach can't work, a hard constraint is unsatisfiable, a schema/API surprise): STOP. Do not improvise architecture. Commit nothing, return BLOCKED with what you found.
 
 # How you implement — TDD (the tdd skill is preloaded; follow it)
