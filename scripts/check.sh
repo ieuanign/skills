@@ -30,6 +30,7 @@ fi
 # globals parses them. Same mechanism as the gitignored
 # .scratch/dev-loop-checks/harness.mjs — the two must stay in step. Compile only:
 # the function is never called, because running a phase script dispatches agents.
+# Non-global by design: the host assumes one export, so /g would pass scripts it rejects.
 compile='
 const fs = require("node:fs")
 const src = fs.readFileSync(process.argv[1], "utf8").replace(/^export const meta/m, "const meta")
