@@ -72,6 +72,7 @@ Every other section of this contract is single-version: both modes implement it 
 - A clean lane reaches Gate 2 for push/PR approval. Nothing is pushed without it.
 - An `UNRESOLVED` lane reaches Gate 2 too, carrying what is still open. On contested findings the human arbitrates: uphold → targeted writer fix and resume the lane; accept → documented won't-fix. Either ruling lands in the ledger's **arbitrated** category. On an exhausted fix-cycle bound the human reads the open findings and decides whether to push anyway.
 - A `HALT` lane is reported with its stage, the verbatim contract lines, and its resume command. No PR.
+- Gate 2 for a wave fires before the next wave is provisioned, so a dependent wave is never built on a base the human has not vetted.
 
 **unattended** — there is no human to conclude the lane, so the terminal-state table governs what each ending produces, and notifications fire. Both are specified separately; this is the section they fill.
 
@@ -86,7 +87,7 @@ Every other section of this contract is single-version: both modes implement it 
 
 ## Sequencing
 
-Lanes run in parallel. Within a lane: sub-lanes sequential, and within a sub-lane: plan commits sequential → review loop → commit-breakdown check. Waves: a sub-lane based on a branch that receives its commits in wave N runs in wave N+1; Gate 2 for a wave fires before the next wave is provisioned.
+Lanes run in parallel. Within a lane: sub-lanes sequential, and within a sub-lane: plan commits sequential → review loop → commit-breakdown check. Waves: a sub-lane based on a branch that receives its commits in wave N runs in wave N+1.
 
 ## Mode implementations
 
