@@ -5,7 +5,7 @@ export const meta = {
   phases: [{ title: 'Plan', detail: 'one architecture-engineer per issue, parallel' }],
 }
 
-// args: { issues: [{ number, title, project?, answers? }], lite: boolean }
+// args: { issues: [{ number, title, project?, answers? }] }
 // The harness may deliver args as a JSON string; normalize to an object.
 const input = typeof args === 'string' ? JSON.parse(args) : args
 
@@ -20,7 +20,7 @@ const PLAN_SCHEMA = {
   required: ['status', 'planPath', 'summary', 'openQuestions'],
 }
 
-const agentType = input.lite ? 'architecture-engineer-lite' : 'architecture-engineer'
+const agentType = 'architecture-engineer'
 
 const results = await parallel(input.issues.map(iss => () =>
   agent(

@@ -76,15 +76,15 @@ Either way, still run `/setup-ieuanign-skills` once per repo afterwards.
 
 ### [`/dev-loop`](./skills/dev-loop/SKILL.md) — issue-to-PR pipeline
 
-`/dev-loop <issues>` drives one or more GitHub issues end-to-end — plan → implement → review → sign-off —
+`/dev-loop <issues>` drives one or more GitHub issues end-to-end — plan → implement → review —
 each in its own git worktree, with parallel lanes and human gates only at plan approval and push/PR.
 
 You are the orchestrator; a bundled agent roster does the work:
 
 | Agent | Role |
 |---|---|
-| `architecture-engineer` (+ `-lite`) | Turns an issue into a binding implementation plan |
-| `code-writer` (+ `-lite`) | Implements one commit-scope at a time, commits locally |
+| `architecture-engineer` | Turns an issue into a binding implementation plan |
+| `code-writer` | Implements one commit-scope at a time, commits locally |
 | `reviewer` | Report-only, severity-ranked findings against the plan + your standards |
 | `debugger` | Report-only root-cause investigator for red tests/builds |
 

@@ -16,7 +16,7 @@ The issue-to-PR pipeline. An **orchestrator** skill that stays in the main workt
 
 ## Agent roster
 
-The six subagents bundled inside `dev-loop/agents/`: `architecture-engineer`, `code-writer`, `reviewer`, `debugger`, and the `-lite` (lower-bandwidth) variants of the first two. On its first run in a repo, `dev-loop` copies any missing roster members into that repo's `.claude/agents/`.
+The four subagents bundled inside `dev-loop/agents/`: `architecture-engineer`, `code-writer`, `reviewer`, and `debugger`. On its first run in a repo, `dev-loop` copies any missing roster members into that repo's `.claude/agents/`.
 
 ## Coding standards
 

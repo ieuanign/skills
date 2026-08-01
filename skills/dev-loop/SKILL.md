@@ -1,20 +1,19 @@
 ---
 name: dev-loop
-description: Issue-to-PR pipeline over the custom agent roster — plans, implements, reviews, and signs off one or more GitHub issues, each in its own git worktree, with parallel lanes and human gates at plan approval and push/PR. Use when the user invokes /dev-loop with issue numbers, wants an issue worked end-to-end, or says "/dev-loop cleanup".
+description: Issue-to-PR pipeline over the custom agent roster — plans, implements, and reviews one or more GitHub issues, each in its own git worktree, with parallel lanes and human gates at plan approval and push/PR. Use when the user invokes /dev-loop with issue numbers, wants an issue worked end-to-end, or says "/dev-loop cleanup".
 ---
 
 # /dev-loop — issue-to-PR pipeline
 
-You are the orchestrator. You stay in the MAIN worktree and never write code, plan, review, or debug yourself — the agents do (architecture-engineer, code-writer, reviewer, debugger, and their -lite variants). You do: intake, gates, worktree provisioning, push, PRs, cleanup. All agent returns are machine-readable — trust the contract keys (`STATUS/RESULT/VERDICT/OWNER`), not vibes. The pipeline's state machine (role contracts, cycle caps, halt conditions) is specified in `<this-skill-dir>/contracts.md` — normative for BOTH execution modes; read it before Phase B.
+You are the orchestrator. You stay in the MAIN worktree and never write code, plan, review, or debug yourself — the agents do (architecture-engineer, code-writer, reviewer, debugger). You do: intake, gates, worktree provisioning, push, PRs, cleanup. All agent returns are machine-readable — trust the contract keys (`STATUS/RESULT/VERDICT/OWNER`), not vibes. The pipeline's state machine (role contracts, cycle caps, terminal categories) is specified in `<this-skill-dir>/contracts.md` — normative for BOTH execution modes; read it before Phase B.
 
 This skill is repo- and machine-agnostic: it hardcodes no repository name, path, or project fact. Everything it needs is derived below or read from the repo profile.
 
 ## Arguments
 
-`/dev-loop <issues> [lite] [project:<slug>]`
+`/dev-loop <issues> [project:<slug>]`
 
 - `<issues>` — one or more GitHub issue numbers, comma or space separated. One issue = one lane; several = parallel lanes.
-- `lite` — swaps architecture-engineer→architecture-engineer-lite and code-writer→code-writer-lite for the whole run. Only when the user says it (bandwidth ≤25%); NEVER infer it.
 - `project:<slug>` — optional project slug passed to the architect for the plan path.
 - `/dev-loop cleanup` — run Cleanup mode (bottom) instead of the pipeline.
 
@@ -41,8 +40,9 @@ Profile keys:
 ## Execution modes (detect at Act 0)
 
 - **Mode W** — the Workflow tool is in your toolset: run the phase scripts exactly as Act 1 / Act 3 describe.
-- **Mode A** — no Workflow tool: you drive the same state machine yourself with the Agent tool, per contracts.md. Phase A: one background architecture-engineer per issue, in parallel; collect their returns. Phase B: lanes in parallel, each lane's steps sequential (writer per commit → debugger routing on FAILED → reviewer cycles → architect sign-off), enforcing every cap and halt from contracts.md yourself. The agents already end with machine-readable leading lines — parse those as the contract keys.
+- **Mode A** — no Workflow tool: you drive the same state machine yourself with the Agent tool, per contracts.md. Tier-locked: the direct Agent tool has no effort parameter, so this mode cannot vary effort and any future cost dial is Mode W-only. Phase A: one background architecture-engineer per issue, in parallel; collect their returns. Phase B: lanes in parallel, each lane's steps sequential (writer per commit → debugger routing on FAILED → reviewer cycles), enforcing every cap, route, and terminal category from contracts.md yourself. The agents already end with machine-readable leading lines — parse those as the contract keys.
 - Behavior changes edit contracts.md FIRST, then both implementations (the phase scripts and Mode A) in the same change.
+- Every mode difference lives in one place: contracts.md's **Lane conclusion** section. Both modes here implement its **gated** half — Gate 1, Gate 2, human arbitration. Mode A never implements the unattended half.
 
 ## Act 0 — Intake (before any agent runs)
 
@@ -51,19 +51,18 @@ Profile keys:
    - `.scratch` not gitignored (`git check-ignore -q .scratch` fails) → append `.scratch/` to `.gitignore` and tell the user; worktrees inside an unignored `.scratch/` pollute every `git status`.
    - `.worktreeinclude` missing — the repo-root file naming which gitignored files worktrees need (gitignore syntax; the same file Claude Code's own worktrees read) → ask-then-persist, the file itself being the persistence: offer candidates from `git ls-files -oi --exclude-standard --directory` (env files, local config, `node_modules/` — leave out caches and OS noise), write the selection as a tracked file. "None" writes a comment-only file, which counts as answered.
    - `.worktreeinclude`'s LAST line must be `!.scratch/**` — append or move it there (gitignore matching is last-match-wins, so only the final position shields reliably). It keeps every copy mechanism — Act 2 and Claude Code's native worktrees alike — from cloning `.scratch` contents (the worktrees themselves included) into new worktrees.
-3. Roster check: architecture-engineer(-lite), code-writer(-lite), reviewer, and debugger must exist in `MAIN/.claude/agents/`. Copy any that are missing from `<this-skill-dir>/agents/` and tell the user.
+3. Roster check: architecture-engineer, code-writer, reviewer, and debugger must exist in `MAIN/.claude/agents/`. Copy any that are missing from `<this-skill-dir>/agents/` and tell the user.
 4. `git fetch origin <DEFAULT>` once.
 5. Per issue: `gh issue view <n> --json number,title,body,state,labels`. CLOSED → drop the lane, tell the user.
 6. Parse each body's "Blocked by" section: a blocker that is still open and NOT in this batch → refuse that lane (report why); a blocker inside the batch → record the ordering (it becomes a stacked lane at Gate 1).
 7. Stateless resume check per issue — derive the stage from artifacts, never from memory:
    - Plan file exists with `Status: READY` → skip Phase A for that lane (offer replan if the user asks).
-   - Plan commit messages already in `git log` of the lane's branch → those commits are done.
-   - Plan file has a `## Conformance sign-off` section naming a sub-lane's ref → THAT sub-lane jumps to Gate 2; other sub-lanes resume at their own derived stage (sign-offs are per sub-lane, appended to the same plan file).
+   - Plan commit messages already in `git log` of the lane's branch → those commits are done. A sub-lane whose commits are all present resumes by re-running the review — safe and idempotent, since nothing records that a review already passed.
    - A worktree already exists for the branch → reuse it as-is.
 
 ## Act 1 — Phase A: plans
 
-Mode W: run the Workflow tool with `scriptPath: <this-skill-dir>/phase-plan.js` and `args: { issues: [{number, title, project, answers?}], lite }`. Mode A: the equivalent parallel architect runs per contracts.md. One architect per issue, parallel. Each returns `{status, planPath, summary, openQuestions}`. A lane returning `status: DIED` means its architect crashed — report it at Gate 1 and offer a re-run; never silently drop a requested issue.
+Mode W: run the Workflow tool with `scriptPath: <this-skill-dir>/phase-plan.js` and `args: { issues: [{number, title, project, answers?}] }`. Mode A: the equivalent parallel architect runs per contracts.md. One architect per issue, parallel. Each returns `{status, planPath, summary, openQuestions}`. A lane returning `status: DIED` means its architect crashed — report it at Gate 1 and offer a re-run; never silently drop a requested issue.
 
 ## Gate 1 — plan approval (ONE batch interruption; PushNotification first)
 
@@ -86,28 +85,30 @@ Wave logic: **anything based on origin/<DEFAULT> runs in wave 1; anything based 
 
 ## Act 3 — Phase B: execute
 
-Per wave, Mode W: run the Workflow tool with `scriptPath: <this-skill-dir>/phase-execute.js` and `args: { lanes, lite, maxFixCycles: 2 }` where each lane is `{ issue, planPath (ABSOLUTE — .scratch exists only in the main tree), subLanes: [{ branch, worktree (absolute), base, area, commits: [{ordinal, message}] }] }`. Mode A: the same lanes through the same state machine per contracts.md. A lane's subLanes array contains only THIS wave's sub-lanes — later-wave sub-lanes of the same issue go into the next wave's args.
+Per wave, Mode W: run the Workflow tool with `scriptPath: <this-skill-dir>/phase-execute.js` and `args: { lanes, maxFixCycles: 2 }` where each lane is `{ issue, planPath (ABSOLUTE — .scratch exists only in the main tree), subLanes: [{ branch, worktree (absolute), base, area, commits: [{ordinal, message}] }] }`. Mode A: the same lanes through the same state machine per contracts.md. A lane's subLanes array contains only THIS wave's sub-lanes — later-wave sub-lanes of the same issue go into the next wave's args.
 
 Build each sub-lane's `commits` from the plan's `## Commit / PR breakdown`: the entries belonging to that sub-lane's PR, in plan order; `ordinal` = 1-based position within the whole breakdown; `message` verbatim from the plan. Omit commits Act 0 already found in the branch's git log (resume).
 
-Per lane (lanes parallel; sub-lanes and commits sequential): writer Mode 1 per commit → on FAILED the debugger diagnoses and routes → reviewer on the sub-lane's range → fix cycles with dispute/arbitration handling → architect Mode 2 conformance sign-off. Every loop is bounded and every bound, route, and halt condition is in contracts.md — enforce them exactly. A halted lane never kills the batch — it reports its stage and the batch continues.
+Per lane (lanes parallel; sub-lanes and commits sequential): writer Mode 1 per commit → on FAILED the debugger diagnoses and routes → reviewer on the sub-lane's range → fix cycles with dispute/arbitration handling → commit-breakdown check. Every loop is bounded and every bound, route, and ending is in contracts.md — enforce them exactly. Each lane ends in exactly one of contracts.md's two terminal categories, or clean: **HALT** (nothing reviewable exists — no PR) or **UNRESOLVED** (the code exists and is simply not clean). Report the ending in those words. Neither kills the batch — the lane reports its stage and the batch continues.
 
-Between waves: run Gate 2 for the wave's completed lanes FIRST (push/PR offers — see below), then ask authorization to proceed: "the next wave builds on <branches> — proceed, or hold while you review them yourself?" The user may inspect the finished worktrees at leisure — the loop waits, and findings they raise go to the writer's Mode 2 before any dependent wave starts. Only after authorization, provision the next wave's worktrees (Act 2) from the completed bases. A dependent lane whose base halted (or was held by the user) is halted too, with that reason.
+The commit-breakdown check is YOUR work, not an agent's: at the end of each sub-lane compare the plan's commit ordinals you passed in against the commits the writers reported making, and carry the result as `<n> planned, <m> made`. Mode W gets it back on each sub-lane result; Mode A does the same list diff in plain reading. A mismatch never halts the lane and never triggers a fix cycle — fix cycles legitimately append commits and a writer may legitimately split one.
+
+Between waves: run Gate 2 for the wave's completed lanes FIRST (push/PR offers — see below), then ask authorization to proceed: "the next wave builds on <branches> — proceed, or hold while you review them yourself?" The user may inspect the finished worktrees at leisure — the loop waits, and findings they raise go to the writer's Mode 2 before any dependent wave starts. Only after authorization, provision the next wave's worktrees (Act 2) from the completed bases. A dependent lane whose base ended HALT or UNRESOLVED — or was held by the user — never runs, so it ends HALT with that reason.
 
 ## Gate 2 — push & PR (per wave; PushNotification first)
 
-Gate 2 fires at the end of EVERY wave, for that wave's completed lanes — never hold a finished lane until the whole batch ends: its PR should start CI and human review immediately, and the user must get a vet point before dependent waves build on it. A batch with no stacking has one wave, and therefore exactly one Gate 2. Per completed lane, show: sign-off verdict, commit list, deviation counts, and the **findings ledger** — fixed findings / won't-fix (disputed by the writer, retracted by the reviewer, with the writer's reason) / reviewer NOTES. For lanes halted NEEDS ARBITRATION, present both sides of each contested finding and ask the user to arbitrate: uphold the finding (send it back through the writer as a targeted fix and resume the lane) or accept the dispute (record it as won't-fix, documented). AskUserQuestion: approve / hold. On approve, per sub-lane in order:
+Gate 2 fires at the end of EVERY wave, for that wave's completed lanes — never hold a finished lane until the whole batch ends: its PR should start CI and human review immediately, and the user must get a vet point before dependent waves build on it. A batch with no stacking has one wave, and therefore exactly one Gate 2. Per completed lane, show: commit list, the planned-versus-made commit counts (`<n> planned, <m> made` — informational, never a blocker), deviation counts, and the **findings ledger** — fixed findings / won't-fix (disputed by the writer, retracted by the reviewer, with the writer's reason) / reviewer NOTES. For lanes that ended UNRESOLVED on contested findings, present both sides of each contested finding and ask the user to arbitrate: uphold the finding (send it back through the writer as a targeted fix and resume the lane) or accept the dispute (record it as won't-fix, documented). AskUserQuestion: approve / hold. On approve, per sub-lane in order:
 
 1. `git -C <worktree> push -u origin <branch>`.
-2. `gh pr create --head <branch> --base <base-branch> --title "<per the profile's title format>" --body ...` — `<base-branch>` is `<DEFAULT>` for default-based lanes (NEVER `origin/<DEFAULT>` — gh rejects remote-tracking refs) or the stack base's branch name. Body: the profile's body template, which must carry these core elements — `Closes #<n>` (first sub-lane only; later sub-lanes reference the issue without closing it), the plan's summary bullets, the sign-off verdict, a **Review findings** section (count of fixed findings, each won't-fix finding with the writer's reason, and the reviewer's NOTES verbatim, so everything deliberately left untouched is visible to human PR reviewers) — then the footer:
+2. `gh pr create --head <branch> --base <base-branch> --title "<per the profile's title format>" --body ...` — `<base-branch>` is `<DEFAULT>` for default-based lanes (NEVER `origin/<DEFAULT>` — gh rejects remote-tracking refs) or the stack base's branch name. Body: the profile's body template, which must carry these core elements — `Closes #<n>` (first sub-lane only; later sub-lanes reference the issue without closing it), the plan's summary bullets, a **Context** section carrying the planned-versus-made commit counts (`<n> planned, <m> made`), a **Review findings** section (count of fixed findings, each won't-fix finding with the writer's reason, and the reviewer's NOTES verbatim, so everything deliberately left untouched is visible to human PR reviewers) — then the footer:
 
    🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
-3. After the lane's push + PR succeed, remove its worktrees immediately: `git worktree remove <WORKTREES>/<slug>` per sub-lane — never `--force`; if it refuses over stray non-ignored files, report them and keep the worktree. NEVER target MAIN: before any removal, confirm the path is NOT the first entry of `git worktree list`. The local branch and the plan file stay (`/dev-loop cleanup` reaps those once the PR merges). Held and halted lanes KEEP their worktrees for review/resume. A fully approved run ends with ONLY the main worktree remaining.
+3. After the lane's push + PR succeed, remove its worktrees immediately: `git worktree remove <WORKTREES>/<slug>` per sub-lane — never `--force`; if it refuses over stray non-ignored files, report them and keep the worktree. NEVER target MAIN: before any removal, confirm the path is NOT the first entry of `git worktree list`. The local branch and the plan file stay (`/dev-loop cleanup` reaps those once the PR merges). Held lanes and lanes that ended HALT or UNRESOLVED KEEP their worktrees for review/resume. A fully approved run ends with ONLY the main worktree remaining.
 
 Stacked lanes: PR base is the base lane's branch; note the stack in the body ("Stacked on #<A>'s PR — rebase onto <DEFAULT> after it merges"). Removing the base lane's worktree does not affect a stacked lane — it branches from the base's _branch_, which survives worktree removal.
 
-Halted lanes: report the stage, the reason (verbatim contract lines), and the exact resume command — `/dev-loop <n>` re-derives everything.
+Ended lanes: report the category (**HALT** — the lane died, nothing to review; **UNRESOLVED** — the lane finished with findings still open), the stage, the reason (verbatim contract lines), and the exact resume command — `/dev-loop <n>` re-derives everything. Show the two as visibly different outcomes; a reader must never have to infer from the reason text whether reviewable code exists.
 
 ## Cleanup mode (`/dev-loop cleanup`)
 
@@ -123,7 +124,6 @@ Halted lanes: report the stage, the reason (verbatim contract lines), and the ex
 - Never proceed past a gate without explicit user approval.
 - NEVER remove, force-modify, or `rm -rf` the main worktree (first entry of `git worktree list`). Worktree removal applies only to worktrees under `<WORKTREES>`, and only via `git worktree remove` without `--force`.
 - Never run agents for work you can do with one Bash command (provisioning, pushing), and never do agent work (planning, coding, reviewing) yourself.
-- `lite` only on explicit request — never infer bandwidth.
 - Plan paths passed to agents are always ABSOLUTE.
 - If the session dies mid-run, `/dev-loop <same issues>` resumes from artifacts — do not keep separate state files.
 - Never write a repository name, absolute path, or project-specific fact into this skill or its bundled agents — repo facts belong to the repo profile and the repo's own docs. The skill folder must stay copyable to any machine as-is.
