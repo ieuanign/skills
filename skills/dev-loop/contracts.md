@@ -96,14 +96,14 @@ Every loop above is bounded — nothing retries indefinitely. Neither category k
 
 Every other section of this contract is single-version: both modes implement it identically. This section is the one place the two are described separately, and a behaviour change that differs by mode belongs here or nowhere.
 
-**gated** — a human concludes the lane.
+**gated** — the default: a human concludes the lane.
 
 - A clean lane reaches Gate 2 for push/PR approval. Nothing is pushed without it.
 - An `UNRESOLVED` lane reaches Gate 2 too, carrying what is still open. On contested findings the human arbitrates: uphold → targeted writer fix and resume the lane; accept → documented won't-fix. Either ruling lands in the ledger's **arbitrated** category. On an exhausted fix-cycle bound the human reads the open findings and decides whether to push anyway.
 - A `HALT` lane is reported with its stage, the verbatim contract lines, and its resume command. No PR.
 - Gate 2 for a wave fires before the next wave is provisioned, so a dependent wave is never built on a base the human has not vetted.
 
-**unattended** — there is no human to conclude the lane, so the terminal-state table governs what each ending produces, and notifications fire. Both are specified separately; this is the section they fill. Read `notifications.md` before emitting any notification: it governs every one of them, and nothing here restates it. The terminal-state table is still specified separately from both.
+**unattended** — the mode a developer asks for by typing `auto`. There is no human to conclude the lane: the gates ask nothing, so the terminal-state table governs what each ending produces, and notifications fire. Both are specified separately; this is the section they fill. Read `notifications.md` before emitting any notification: it governs every one of them, and nothing here restates it. The terminal-state table is still specified separately from both. Which questions stop and which gate work continues is SKILL.md's gate-suppression constant, stated in one place there and not restated here.
 
 **Mode A implements the gated half only, and never the unattended half.** The unattended half therefore has exactly one implementation, which is what keeps this file's rule — a behaviour change edits the contract first, then both implementations in the same change — cheap to honour.
 

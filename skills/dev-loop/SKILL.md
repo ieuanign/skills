@@ -1,6 +1,6 @@
 ---
 name: dev-loop
-description: Issue-to-PR pipeline over the custom agent roster — plans, implements, and reviews one or more GitHub issues, each in its own git worktree, with parallel lanes and human gates at plan approval and push/PR. Use when the user invokes /dev-loop with issue numbers, wants an issue worked end-to-end, or says "/dev-loop cleanup".
+description: Issue-to-PR pipeline over the custom agent roster — plans, implements, and reviews one or more GitHub issues, each in its own git worktree, with parallel lanes and human gates at plan approval and push/PR. Use when the user invokes /dev-loop with issue numbers, wants an issue worked end-to-end, says "/dev-loop auto" for an unattended run that never stops for approval, or says "/dev-loop cleanup".
 ---
 
 # /dev-loop — issue-to-PR pipeline
@@ -11,11 +11,31 @@ This skill is repo- and machine-agnostic: it hardcodes no repository name, path,
 
 ## Arguments
 
-`/dev-loop <issues> [project:<slug>]`
+`/dev-loop [auto] <issues> [project:<slug>]`
 
+- `auto` — optional leading token: run the batch **unattended**, from filed issue to pushed PR, without stopping for approval. Modes lead and dials trail — the shape `cleanup` already has — so the word deciding whether you will ever be asked for approval is the second one you type.
 - `<issues>` — one or more GitHub issue numbers, comma or space separated. One issue = one lane; several = parallel lanes.
 - `project:<slug>` — optional project slug passed to the architect for the plan path.
 - `/dev-loop cleanup` — run Cleanup mode (bottom) instead of the pipeline.
+
+### Run mode — `gated` or `unattended`
+
+`auto` present ⇒ **unattended**; absent ⇒ **gated**. Act 0 parses it ONCE and carries it as a single value for the whole run — no later stage re-derives it from the arguments. It is contracts.md's **Lane conclusion** branch, and in this file it decides exactly one thing:
+
+> **Gate suppression.** Both gates raise their questions under `gated`, and neither raises any under `unattended`. This line is the only place that is decided: no argument and no profile key overrides it.
+
+**Suppression removes the questions, not the work.** Every step of both gates still runs; each question resolves to its unattended answer instead:
+
+| Question | Its unattended answer |
+|---|---|
+| Gate 1 — which lanes are approved? | every lane whose plan is `READY` proceeds |
+| Gate 1 — a `BLOCKED` plan's open questions | nobody can answer them, so that lane does not proceed and is reported carrying them |
+| Gate 1 — stack a dependent lane, or defer it? | defer it out of the batch — deciding overlaps without a human is specified separately |
+| Gate 2 — is the push/PR approved? | the lane pushes and opens its PR |
+| Gate 2 — arbitrate a contested finding | nobody rules, so the ledger's **arbitrated** category stays empty and the finding rides out to the PR body |
+| Between waves — authorize the next wave? | it proceeds |
+
+Touchpoint intersection, sub-lane splitting, the profile's Constraints, the push and the PR itself are gate *work*, and happen identically under both modes. The profile's one-time ask-then-persist questions are not gates and fire under both. What a lane's *ending* means for the PR's state — ready, draft, or none — is the terminal-state table, specified separately; until it lands, an unattended lane concludes exactly as an approved `gated` lane does.
 
 ## Derived facts (compute once at Act 0 — never hardcode, never persist)
 
@@ -43,11 +63,11 @@ Profile keys:
 - **Mode W** — the Workflow tool is in your toolset: run the phase scripts exactly as Act 1 / Act 3 describe.
 - **Mode A** — no Workflow tool: you drive the same state machine yourself with the Agent tool, per contracts.md. Tier-locked: the direct Agent tool has no effort parameter, so this mode cannot vary effort and any future cost dial is Mode W-only. Phase A: one background architecture-engineer per issue, in parallel; collect their returns. Phase B: lanes in parallel, each lane's steps sequential (writer per commit → debugger routing on FAILED → reviewer cycles), enforcing every cap, route, and terminal category from contracts.md yourself. Pass the reviewer the issue body Act 0 fetched between `<<<<ISSUE-BODY` / `ISSUE-BODY>>>>` markers (issue bodies are markdown and carry the same headings your prompt does), name which sub-lane it is judging, and carry its `CRITERIA` verdicts onto the sub-lane result — the last review's win. The agents already end with machine-readable leading lines — parse those as the contract keys.
 - Behavior changes edit contracts.md FIRST, then both implementations (the phase scripts and Mode A) in the same change.
-- Every mode difference lives in one place: contracts.md's **Lane conclusion** section. Both modes here implement its **gated** half — Gate 1, Gate 2, human arbitration. Mode A never implements the unattended half.
+- Every mode difference lives in one place: contracts.md's **Lane conclusion** section. Both modes here implement its **gated** half — Gate 1, Gate 2, human arbitration — and Mode W alone implements the **unattended** half. Mode A never implements it.
 
 ## Act 0 — Intake (before any agent runs)
 
-1. Compute the Derived facts, read the repo profile (first run in a repo: ask-then-persist the branch template), detect the execution mode.
+1. Parse the arguments: a leading `cleanup` selects Cleanup mode; a leading `auto` sets the **run mode** to `unattended`, its absence to `gated`; the rest are issue numbers and the optional `project:<slug>`. This is the ONLY place the run mode is derived — carry that one value from here. Then compute the Derived facts, read the repo profile (first run in a repo: ask-then-persist the branch template), and detect the execution mode.
 2. Worktree preconditions:
    - `.claude/worktrees` not gitignored (`git check-ignore -q .claude/worktrees` fails) → append `.claude/worktrees/` to `.gitignore` and tell the user; lane worktrees are nested inside MAIN, so unignored they pollute every `git status` there.
    - `.scratch` not gitignored (`git check-ignore -q .scratch` fails) → append `.scratch/` to `.gitignore` and tell the user; plans live there.
@@ -69,6 +89,8 @@ KEEP each lane's `summary` bullets for the rest of the run. They are the archite
 
 ## Gate 1 — plan approval (ONE batch interruption; PushNotification first)
 
+Under `unattended` every step below still runs and none of them asks — the Run mode table above gives each question's answer.
+
 Present every lane: summary, plan path (invite the user to edit the file before approving), open questions. Then:
 
 - **BLOCKED plans**: relay the open questions via AskUserQuestion, re-run only those lanes' architects with `answers` filled in, re-present.
@@ -88,7 +110,7 @@ Wave logic: **anything based on origin/<DEFAULT> runs in wave 1; anything based 
 
 ## Act 3 — Phase B: execute
 
-Per wave, Mode W: run the Workflow tool with `scriptPath: <this-skill-dir>/phase-execute.js` and `args: { lanes, maxFixCycles: 2 }` where each lane is `{ issue, issueBody (the body Act 0 fetched, verbatim), planPath (ABSOLUTE — .scratch exists only in the main tree), subLanes: [{ branch, worktree (absolute), base, area, commits: [{ordinal, message}] }] }`. Mode A: the same lanes through the same state machine per contracts.md. A lane's subLanes array contains only THIS wave's sub-lanes — later-wave sub-lanes of the same issue go into the next wave's args.
+Per wave, Mode W: run the Workflow tool with `scriptPath: <this-skill-dir>/phase-execute.js` and `args: { lanes, mode, maxFixCycles: 2 }` — `mode` is the run mode Act 0 parsed, passed rather than re-derived, so the script reaches a lane's conclusion knowing which half of contracts.md's branch applies — where each lane is `{ issue, issueBody (the body Act 0 fetched, verbatim), planPath (ABSOLUTE — .scratch exists only in the main tree), subLanes: [{ branch, worktree (absolute), base, area, commits: [{ordinal, message}] }] }`. Mode A: the same lanes through the same state machine per contracts.md. A lane's subLanes array contains only THIS wave's sub-lanes — later-wave sub-lanes of the same issue go into the next wave's args.
 
 Build each sub-lane's `commits` from the plan's `## Commit / PR breakdown`: the entries belonging to that sub-lane's PR, in plan order; `ordinal` = 1-based position within the whole breakdown; `message` verbatim from the plan. Omit commits Act 0 already found in the branch's git log (resume).
 
@@ -96,9 +118,11 @@ Per lane (lanes parallel; sub-lanes and commits sequential): writer Mode 1 per c
 
 The commit-breakdown check is YOUR work, not an agent's: at the end of each sub-lane compare the plan's commit ordinals you passed in against the commits the writers reported making, and carry the result as `<n> planned, <m> made`. Mode W gets it back on each sub-lane result; Mode A does the same list diff in plain reading. A mismatch never halts the lane and never triggers a fix cycle — fix cycles legitimately append commits and a writer may legitimately split one.
 
-Between waves: run Gate 2 for the wave's completed lanes FIRST (push/PR offers — see below), then ask authorization to proceed: "the next wave builds on <branches> — proceed, or hold while you review them yourself?" The user may inspect the finished worktrees at leisure — the loop waits, and findings they raise go to the writer's Mode 2 before any dependent wave starts. Only after authorization, provision the next wave's worktrees (Act 2) from the completed bases. A dependent lane whose base ended HALT or UNRESOLVED — or was held by the user — never runs, so it ends HALT with that reason.
+Between waves (`gated`; under `unattended` the wave proceeds unasked, per the Run mode table): run Gate 2 for the wave's completed lanes FIRST (push/PR offers — see below), then ask authorization to proceed: "the next wave builds on <branches> — proceed, or hold while you review them yourself?" The user may inspect the finished worktrees at leisure — the loop waits, and findings they raise go to the writer's Mode 2 before any dependent wave starts. Only after authorization, provision the next wave's worktrees (Act 2) from the completed bases. A dependent lane whose base ended HALT or UNRESOLVED — or was held by the user — never runs, so it ends HALT with that reason.
 
 ## Gate 2 — push & PR (per wave; PushNotification first)
+
+Under `unattended` this gate does all of the work below and asks none of its questions — the Run mode table above gives each one's answer. The push happens, the PR opens.
 
 Gate 2 fires at the end of EVERY wave, for that wave's completed lanes — never hold a finished lane until the whole batch ends: its PR should start CI and human review immediately, and the user must get a vet point before dependent waves build on it. A batch with no stacking has one wave, and therefore exactly one Gate 2. Per completed lane, show: commit list, the planned-versus-made commit counts (`<n> planned, <m> made` — informational, never a blocker), deviation counts, the **acceptance criteria** — the reviewer's `met | partial | not-met` verdict per criterion with its evidence, also informational — and the **findings ledger** — fixed findings / won't-fix (disputed by the writer, retracted by the reviewer, with the writer's reason) / reviewer NOTES. For lanes that ended UNRESOLVED on contested findings, present both sides of each contested finding and ask the user to arbitrate: uphold the finding (send it back through the writer as a targeted fix and resume the lane) or accept the dispute (record it as won't-fix, documented). AskUserQuestion: approve / hold. On approve, per sub-lane in order:
 
@@ -123,8 +147,8 @@ Ended lanes: report the category (**HALT** — the lane died, nothing to review;
 
 ## Hard rules
 
-- Invoking `/dev-loop` IS the user's explicit opt-in to multi-agent orchestration. Enter Phase A and Phase B directly — NEVER pause to ask whether to run them; running a phase is NOT a gate. The ONLY human gates in this pipeline are Gate 1 (plan approval), Gate 2 (push/PR), and the profile's one-time ask-then-persist questions.
-- Never proceed past a gate without explicit user approval.
+- Invoking `/dev-loop` IS the user's explicit opt-in to multi-agent orchestration. Enter Phase A and Phase B directly — NEVER pause to ask whether to run them; running a phase is NOT a gate. The ONLY human gates in this pipeline are Gate 1 (plan approval), Gate 2 (push/PR), and the profile's one-time ask-then-persist questions. Under `unattended` the first two ask nothing and only the profile's questions remain.
+- Never proceed past a gate without explicit user approval — under `gated`, which is every run the `auto` token did not open.
 - **Append-only, whoever is watching.** The run may append to issues and pull requests (`gh issue comment`, `gh pr comment`), may add and remove its own workflow labels and no others, and may set state only on artifacts it created — its own branches, its own PRs, its own plan files. It NEVER edits an issue body, NEVER ticks an acceptance-criteria checkbox, and NEVER converts a pull request a human opened. Per-criterion verdicts are *reported*, never written back to the issue's checklist — contracts.md's **Append-only invariant** carries the reasoning.
 - NEVER remove, force-modify, or `rm -rf` the main worktree (first entry of `git worktree list`). Worktree removal applies only to worktrees under `<WORKTREES>`, and only via `git worktree remove` without `--force`.
 - A lane worktree is a cold checkout plus its `.worktreeinclude` files and whatever the Setup command installs. Everything else an agent needs — skills, roster, settings, permissions — it already has: it runs in a session rooted in MAIN whatever directory it works in.

@@ -10,6 +10,7 @@ export const meta = {
 
 // args: {
 //   lanes: [{ issue, issueBody, planPath, subLanes: [{ branch, worktree, base, area?, commits: [{ordinal, message}] }] }],
+//   mode: 'gated' | 'unattended',
 //   maxFixCycles: number
 // }
 // subLanes contains only the CURRENT wave's sub-lanes; worktree is absolute.
@@ -17,7 +18,7 @@ export const meta = {
 // reviewer's Spec axis reads it from its arguments rather than fetching it, keeping its
 // Bash read-only and git-only. Omit it and the reviewer runs no spec axis.
 // Returns per-lane:
-// { issue, ending: {category: 'HALT'|'UNRESOLVED', reason: string}|null, subResults: [...] }
+// { issue, mode, ending: {category: 'HALT'|'UNRESOLVED', reason: string}|null, subResults: [...] }
 // ending null = the lane completed clean. HALT = nothing reviewable exists, no PR.
 // UNRESOLVED = the code exists and is not clean; the lane's conclusion decides what that means.
 // subResults: [{branch, area, commits, plannedCommits, madeCommits, deviations, disputed,
@@ -28,6 +29,13 @@ const input = typeof args === 'string' ? JSON.parse(args) : args
 
 const writerType = 'code-writer'
 const MAX_FIX = input.maxFixCycles || 2
+
+// The run mode, parsed once by the host and passed in rather than re-derived here. Nothing in
+// this phase branches on it yet — its consumers are the notifier and the unattended conclusion,
+// both specified separately — but it is carried to the point a lane's conclusion is decided, so
+// they add a branch rather than a parameter. Anything but 'unattended' is gated: an absent or
+// unrecognised mode must never silently suppress a gate.
+const MODE = input.mode === 'unattended' ? 'unattended' : 'gated'
 
 const WRITER_SCHEMA = {
   type: 'object',
@@ -105,7 +113,9 @@ function absorb(rec, writerResult) {
 
 const laneResults = await parallel(input.lanes.map(lane => async () => {
   const subResults = []
-  const end = (category, reason) => ({ issue: lane.issue, ending: { category, reason }, subResults })
+  // Every conclusion this lane can reach — ended or clean — leaves through here or the clean
+  // return below, and both carry the mode the lane ran under.
+  const end = (category, reason) => ({ issue: lane.issue, mode: MODE, ending: { category, reason }, subResults })
   const halt = reason => end('HALT', reason)
   const unresolved = reason => end('UNRESOLVED', reason)
 
@@ -210,7 +220,7 @@ const laneResults = await parallel(input.lanes.map(lane => async () => {
     // 3. Commit-breakdown check — plain list diff, reported and never blocking
     log(`#${lane.issue}: ${sub.branch} done (${rec.plannedCommits} planned, ${rec.madeCommits} made)`)
   }
-  return { issue: lane.issue, ending: null, subResults }
+  return { issue: lane.issue, mode: MODE, ending: null, subResults }
 }))
 
 const done = laneResults.filter(Boolean)
