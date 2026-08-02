@@ -22,7 +22,7 @@ This skill is repo- and machine-agnostic: it hardcodes no repository name, path,
 - **MAIN** — the main worktree: first entry of `git worktree list`. Never modify or remove it.
 - **REPO** — `basename` of MAIN.
 - **DEFAULT** — the default branch: `git symbolic-ref --short refs/remotes/origin/HEAD` minus the `origin/` prefix, falling back to `main`.
-- **WORKTREES** — `<MAIN>/.claude/worktrees/`, the same place Claude Code's own worktrees live. Every lane worktree lives here; the directory slug is the branch name after its first `/` (`feat/208` → `<WORKTREES>/208`).
+- **WORKTREES** — `<MAIN>/.claude/worktrees/`. Every lane worktree lives here; the directory slug is the branch name after its first `/` (`feat/208` → `<WORKTREES>/208`).
 - **GitHub repo** — never pass `--repo`: every `gh` command runs inside a checkout of this repo (worktrees included), and gh infers the repository from the remote.
 - **Fast copy** — macOS: `/bin/cp -Rc` (APFS clonefile, instant; MUST be `/bin/cp` — a GNU cp on PATH rejects `-c`); Linux: `cp -R --reflink=auto`; anywhere else: plain `cp -R`.
 
@@ -35,7 +35,7 @@ Profile keys:
 - **Branch template** — default offered: `feat/{issue}`, sub-lanes `feat/{issue}-{area}`. Asked on the first run in a repo.
 - **PR title format** — default: `<type>(<scope>): #<issue> - <title>`.
 - **PR body template** — asked at the first Gate 2; whatever its shape, the core elements in Gate 2 below must survive.
-- **Setup command** — what a cold checkout runs before its tests pass (e.g. `npm ci`). Asked at the first provisioning; "none" is an answer.
+- **Setup command** — what a cold checkout runs before its tests pass (e.g. `npm ci`). Asked at the first provisioning.
 - **Constraints** — free-form repo cautions (e.g. "backend tests share one database — never run two backend lanes concurrently"). Honor them when deciding lanes vs waves (Gate 1) and when provisioning (Act 2).
 
 ## Execution modes (detect at Act 0)
@@ -49,9 +49,9 @@ Profile keys:
 
 1. Compute the Derived facts, read the repo profile (first run in a repo: ask-then-persist the branch template), detect the execution mode.
 2. Worktree preconditions:
-   - `.claude/worktrees` not gitignored (`git check-ignore -q .claude/worktrees` fails) → append `.claude/worktrees/` to `.gitignore` and tell the user; lane worktrees are checkouts nested inside MAIN, and unignored they pollute every `git status` there.
-   - `.scratch` not gitignored (`git check-ignore -q .scratch` fails) → append `.scratch/` to `.gitignore` and tell the user. Plans live there and are temporary artifacts, never committed.
-   - `.worktreeinclude` missing — the repo-root file naming which gitignored files worktrees need (gitignore syntax; the same file Claude Code's own worktrees read) → ask-then-persist, the file itself being the persistence: offer candidates from `git ls-files -oi --exclude-standard --directory`, write the selection as a tracked file. "None" writes a comment-only file, which counts as answered. Offer only what a cold checkout cannot run without — env files and local config. Dependencies belong to the Setup command: a copied `node_modules/` or virtualenv carries platform-specific native builds and drifts from the lockfile. Leave out caches and OS noise.
+   - `.claude/worktrees` not gitignored (`git check-ignore -q .claude/worktrees` fails) → append `.claude/worktrees/` to `.gitignore` and tell the user; lane worktrees are nested inside MAIN, so unignored they pollute every `git status` there.
+   - `.scratch` not gitignored (`git check-ignore -q .scratch` fails) → append `.scratch/` to `.gitignore` and tell the user; plans live there.
+   - `.worktreeinclude` missing — the repo-root file naming which gitignored files worktrees need (gitignore syntax; the same file Claude Code's own worktrees read) → ask-then-persist, the file itself being the persistence: offer candidates from `git ls-files -oi --exclude-standard --directory`, write the selection as a tracked file. "None" writes a comment-only file, which counts as answered. Offer only what a cold checkout cannot run without — env files and local config. Dependencies belong to the Setup command however cheap the Fast copy looks: a copied tree carries platform-specific native builds and drifts from the lockfile.
    - `.worktreeinclude`'s LAST line must be `!.claude/worktrees/**` — append or move it there (gitignore matching is last-match-wins, so only the final position shields reliably). It keeps every copy mechanism — Act 2 and Claude Code's native worktrees alike — from cloning existing worktrees into a new one.
 3. Roster check: architecture-engineer, code-writer, reviewer, and debugger must exist in `MAIN/.claude/agents/`. Copy any that are missing from `<this-skill-dir>/agents/` and tell the user.
 4. `git fetch origin <DEFAULT>` once.
@@ -83,7 +83,7 @@ Wave logic: **anything based on origin/<DEFAULT> runs in wave 1; anything based 
 
 1. `git worktree add <WORKTREES>/<slug> -b <branch> <base>`. Base is `origin/<DEFAULT>` or the stack/sub-lane base branch. On resume: an existing worktree is reused as-is; an existing branch WITHOUT a worktree reattaches with `git worktree add <WORKTREES>/<slug> <branch>` (no `-b` — the `-b` form errors on an existing branch).
 2. `.worktreeinclude` copies: `git -C <MAIN> ls-files -oi --exclude-from=.worktreeinclude --directory` lists the matches (files, plus fully-ignored dirs collapsed to one entry); fast-copy each from MAIN into the worktree at the same relative path, creating parent directories. Worktree contents never appear in the list — the `!.claude/worktrees/**` line Act 0 guarantees excludes them.
-3. The profile's Setup command, run from inside the worktree — this is what makes a cold checkout's tests runnable, so it happens here, once per worktree, not inside an agent. A profile without one asks now; "none" skips this step forever.
+3. Run the profile's Setup command from inside the worktree.
 
 ## Act 3 — Phase B: execute
 
@@ -106,7 +106,7 @@ Gate 2 fires at the end of EVERY wave, for that wave's completed lanes — never
 
    🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
-3. After the lane's push + PR succeed, remove its worktrees immediately: `git worktree remove <WORKTREES>/<slug>` per sub-lane — never `--force`. A refusal means the LANE left work behind, since everything provisioning put there is ignored: report `git -C <wt> status --porcelain` verbatim and keep that worktree. NEVER target MAIN: before any removal, confirm the path is NOT the first entry of `git worktree list`. The local branch and the plan file stay (`/dev-loop cleanup` reaps those once the PR merges). Held lanes and lanes that ended HALT or UNRESOLVED KEEP their worktrees for review/resume. A fully approved run ends with ONLY the main worktree remaining.
+3. After the lane's push + PR succeed, remove its worktrees immediately: `git worktree remove <WORKTREES>/<slug>` per sub-lane — never `--force`. A refusal means the lane left work behind: report `git -C <wt> status --porcelain` verbatim and keep that worktree. NEVER target MAIN: before any removal, confirm the path is NOT the first entry of `git worktree list`. The local branch and the plan file stay (`/dev-loop cleanup` reaps those once the PR merges). Held lanes and lanes that ended HALT or UNRESOLVED KEEP their worktrees for review/resume. A fully approved run ends with ONLY the main worktree remaining.
 
 Stacked lanes: PR base is the base lane's branch; note the stack in the body ("Stacked on #<A>'s PR — rebase onto <DEFAULT> after it merges"). Removing the base lane's worktree does not affect a stacked lane — it branches from the base's _branch_, which survives worktree removal.
 
@@ -125,7 +125,7 @@ Ended lanes: report the category (**HALT** — the lane died, nothing to review;
 - Invoking `/dev-loop` IS the user's explicit opt-in to multi-agent orchestration. Enter Phase A and Phase B directly — NEVER pause to ask whether to run them; running a phase is NOT a gate. The ONLY human gates in this pipeline are Gate 1 (plan approval), Gate 2 (push/PR), and the profile's one-time ask-then-persist questions.
 - Never proceed past a gate without explicit user approval.
 - NEVER remove, force-modify, or `rm -rf` the main worktree (first entry of `git worktree list`). Worktree removal applies only to worktrees under `<WORKTREES>`, and only via `git worktree remove` without `--force`.
-- A lane worktree holds exactly three things: the checkout, its `.worktreeinclude` files, and whatever the Setup command installs. Everything else an agent needs — skills, roster, settings, permissions — it already has, because it runs in a session rooted in MAIN whatever directory it works in.
+- A lane worktree is a cold checkout plus its `.worktreeinclude` files and whatever the Setup command installs. Everything else an agent needs — skills, roster, settings, permissions — it already has: it runs in a session rooted in MAIN whatever directory it works in.
 - Never run agents for work you can do with one Bash command (provisioning, pushing), and never do agent work (planning, coding, reviewing) yourself.
 - Plan paths passed to agents are always ABSOLUTE.
 - If the session dies mid-run, `/dev-loop <same issues>` resumes from artifacts — do not keep separate state files.
