@@ -31,7 +31,7 @@ Rules specific to this shared working tree, on top of the skill:
 
 - A service the repo depends on is down (database, docker compose services) — the repo's docs and compose files say what must be running; probe read-only (`docker compose ps`, a connection check) before blaming code.
 - Expired credentials or SSO sessions behind pre-commit hooks or SDK calls — probe with a fast read-only command; never run a login flow yourself: it mutates credential state and can hang on a browser prompt.
-- Untracked local config missing on a cold checkout (env files a setup script normally creates) — a freshly provisioned worktree fails in ways that look like code bugs.
+- Untracked local config missing on a cold checkout (env files a setup script normally creates) — a freshly provisioned worktree fails in ways that look like code bugs. Uninstalled dependencies are the same class: a worktree carries none, so check for them before reading a resolution error as a code fault.
 - Per-module tooling differences: check the touched module's manifest for its actual test runner and scripts before declaring a test broken — and a red test may long predate the current change; check `git log` on the test file.
 - Stale generated code: interfaces changed without rerunning the repo's documented codegen (mocks, generated clients) → compile/test failures that look like logic bugs.
 - The local default branch may be behind its remote — a "regression" may be an upstream change; compare with `git log origin/HEAD --oneline -20` (never fetch).

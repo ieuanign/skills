@@ -22,7 +22,7 @@ This skill is repo- and machine-agnostic: it hardcodes no repository name, path,
 - **MAIN** — the main worktree: first entry of `git worktree list`. Never modify or remove it.
 - **REPO** — `basename` of MAIN.
 - **DEFAULT** — the default branch: `git symbolic-ref --short refs/remotes/origin/HEAD` minus the `origin/` prefix, falling back to `main`.
-- **WORKTREES** — `<MAIN>/.scratch/worktrees/`. Every lane worktree lives here; the directory slug is the branch name after its first `/` (`feat/208` → `<WORKTREES>/208`).
+- **WORKTREES** — `<MAIN>/.claude/worktrees/`, the same place Claude Code's own worktrees live. Every lane worktree lives here; the directory slug is the branch name after its first `/` (`feat/208` → `<WORKTREES>/208`).
 - **GitHub repo** — never pass `--repo`: every `gh` command runs inside a checkout of this repo (worktrees included), and gh infers the repository from the remote.
 - **Fast copy** — macOS: `/bin/cp -Rc` (APFS clonefile, instant; MUST be `/bin/cp` — a GNU cp on PATH rejects `-c`); Linux: `cp -R --reflink=auto`; anywhere else: plain `cp -R`.
 
@@ -48,9 +48,10 @@ Profile keys:
 
 1. Compute the Derived facts, read the repo profile (first run in a repo: ask-then-persist the branch template), detect the execution mode.
 2. Worktree preconditions:
-   - `.scratch` not gitignored (`git check-ignore -q .scratch` fails) → append `.scratch/` to `.gitignore` and tell the user; worktrees inside an unignored `.scratch/` pollute every `git status`.
-   - `.worktreeinclude` missing — the repo-root file naming which gitignored files worktrees need (gitignore syntax; the same file Claude Code's own worktrees read) → ask-then-persist, the file itself being the persistence: offer candidates from `git ls-files -oi --exclude-standard --directory` (env files, local config, `node_modules/` — leave out caches and OS noise), write the selection as a tracked file. "None" writes a comment-only file, which counts as answered.
-   - `.worktreeinclude`'s LAST line must be `!.scratch/**` — append or move it there (gitignore matching is last-match-wins, so only the final position shields reliably). It keeps every copy mechanism — Act 2 and Claude Code's native worktrees alike — from cloning `.scratch` contents (the worktrees themselves included) into new worktrees.
+   - `.claude/worktrees` not gitignored (`git check-ignore -q .claude/worktrees` fails) → append `.claude/worktrees/` to `.gitignore` and tell the user; lane worktrees are checkouts nested inside MAIN, and unignored they pollute every `git status` there. This lands immediately — MAIN reads its own working copy of `.gitignore`.
+   - `.scratch` not gitignored (`git check-ignore -q .scratch` fails) → append `.scratch/` to `.gitignore` and tell the user. Plans live there and are temporary artifacts, never committed.
+   - `.worktreeinclude` missing — the repo-root file naming which gitignored files worktrees need (gitignore syntax; the same file Claude Code's own worktrees read) → ask-then-persist, the file itself being the persistence: offer candidates from `git ls-files -oi --exclude-standard --directory`, write the selection as a tracked file. "None" writes a comment-only file, which counts as answered. Offer ONLY what a checkout genuinely cannot run without — env files and local config. NEVER dependencies (`node_modules/`, `vendor/`, virtualenvs): those are installed, not copied, because a copied tree carries platform-specific native builds and drifts from the lockfile. Leave out caches and OS noise.
+   - `.worktreeinclude`'s LAST line must be `!.claude/worktrees/**` — append or move it there (gitignore matching is last-match-wins, so only the final position shields reliably). It keeps every copy mechanism — Act 2 and Claude Code's native worktrees alike — from cloning existing worktrees into a new one.
 3. Roster check: architecture-engineer, code-writer, reviewer, and debugger must exist in `MAIN/.claude/agents/`. Copy any that are missing from `<this-skill-dir>/agents/` and tell the user.
 4. `git fetch origin <DEFAULT>` once.
 5. Per issue: `gh issue view <n> --json number,title,body,state,labels`. CLOSED → drop the lane, tell the user.
@@ -80,8 +81,9 @@ Only lanes the user approves proceed. Drop the rest with a note.
 Wave logic: **anything based on origin/<DEFAULT> runs in wave 1; anything based on a branch that gets its commits in wave N runs in wave N+1** — this applies to stacked _lanes_ AND to dependent _sub-lanes_ within one lane (a frontend sub-lane based on its own backend sub-lane's branch waits for the next wave; provisioning it earlier would capture a base with zero feature commits). Provision a wave only after its bases completed the previous wave. For each sub-lane in the current wave:
 
 1. `git worktree add <WORKTREES>/<slug> -b <branch> <base>`. Base is `origin/<DEFAULT>` or the stack/sub-lane base branch. On resume: an existing worktree is reused as-is; an existing branch WITHOUT a worktree reattaches with `git worktree add <WORKTREES>/<slug> <branch>` (no `-b` — the `-b` form errors on an existing branch).
-2. `cp -R <MAIN>/.claude <wt>/` (the CLAUDE.md layer must exist in the worktree).
-3. `.worktreeinclude` copies: `git -C <MAIN> ls-files -oi --exclude-from=.worktreeinclude --directory` lists the matches (files, plus fully-ignored dirs like `node_modules/` collapsed to one entry); fast-copy each from MAIN into the worktree at the same relative path, creating parent directories. Worktree contents never appear in the list — the `!.scratch/**` line Act 0 guarantees excludes them.
+2. `.worktreeinclude` copies: `git -C <MAIN> ls-files -oi --exclude-from=.worktreeinclude --directory` lists the matches (files, plus fully-ignored dirs collapsed to one entry); fast-copy each from MAIN into the worktree at the same relative path, creating parent directories. Worktree contents never appear in the list — the `!.claude/worktrees/**` line Act 0 guarantees excludes them.
+
+NEVER copy `.claude` into a worktree. Nothing needs it: the agents are Agent-tool subagents of a session rooted in MAIN, so their definitions, skills, settings, and permissions all resolve from MAIN's config no matter which directory they `cd` into — and the worktree is nested under `<MAIN>/.claude/` anyway. Copying it only injects files that are untracked in the worktree, which is exactly what makes Gate 2's removal refuse. A worktree holds the checkout plus declared `.worktreeinclude` files, nothing else.
 
 ## Act 3 — Phase B: execute
 
@@ -104,7 +106,7 @@ Gate 2 fires at the end of EVERY wave, for that wave's completed lanes — never
 
    🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
-3. After the lane's push + PR succeed, remove its worktrees immediately: `git worktree remove <WORKTREES>/<slug>` per sub-lane — never `--force`; if it refuses over stray non-ignored files, report them and keep the worktree. NEVER target MAIN: before any removal, confirm the path is NOT the first entry of `git worktree list`. The local branch and the plan file stay (`/dev-loop cleanup` reaps those once the PR merges). Held lanes and lanes that ended HALT or UNRESOLVED KEEP their worktrees for review/resume. A fully approved run ends with ONLY the main worktree remaining.
+3. After the lane's push + PR succeed, remove its worktrees immediately: `git worktree remove <WORKTREES>/<slug>` per sub-lane — never `--force`. Provisioning injects nothing untracked (Act 2 copies no `.claude`, and `.worktreeinclude` files are ignored by construction), so a refusal means the LANE left something behind: report `git -C <wt> status --porcelain` verbatim and keep that worktree. NEVER target MAIN: before any removal, confirm the path is NOT the first entry of `git worktree list`. The local branch and the plan file stay (`/dev-loop cleanup` reaps those once the PR merges). Held lanes and lanes that ended HALT or UNRESOLVED KEEP their worktrees for review/resume. A fully approved run ends with ONLY the main worktree remaining.
 
 Stacked lanes: PR base is the base lane's branch; note the stack in the body ("Stacked on #<A>'s PR — rebase onto <DEFAULT> after it merges"). Removing the base lane's worktree does not affect a stacked lane — it branches from the base's _branch_, which survives worktree removal.
 

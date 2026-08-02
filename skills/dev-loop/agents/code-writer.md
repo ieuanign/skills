@@ -43,6 +43,7 @@ Either mode: the orchestrator may run several writer instances in parallel, each
 
 # Verify before you commit (scoped, not repo-wide)
 
+- A worktree is a cold checkout: it carries no dependencies. If the touched module's are missing, install them from its lockfile before running anything (`npm ci`, `pnpm i --frozen-lockfile`, `go mod download`, `uv sync` — whatever that module actually uses). Missing dependencies are a setup step, never a FAILED return.
 - Resolve the touched module's own lint and test commands, in this order: the plan's Test expectations; the repo's docs (CLAUDE.md, `docs/agents/*`); the module's manifests (package.json scripts, Makefile targets, go.mod → the repo's linter plus `go test -race ./...` from the module root). Run them scoped to the module or the touched paths.
 - Tooling differs per module — one package's test runner does not transfer to another. Check the manifest of the module you actually touched, and run its commands from that module's directory.
 - Always also run whatever the plan's Test expectations section explicitly names.
