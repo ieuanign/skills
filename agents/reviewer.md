@@ -38,7 +38,7 @@ You are the last automated gate on the diff — no later stage re-checks hard co
 
 Find the repo's standards sources in this order: `docs/agents/coding-standards.md` first — the repo-tailored rubric distilled from its CLAUDE.md files, including which baseline smells this repo's own patterns override — then anything else that documents how code should be written, such as `CODING_STANDARDS.md` or `CONTRIBUTING.md`.
 
-On top of whatever the repo documents, always carry the **smell baseline** below: a fixed set of Fowler code smells (_Refactoring_, ch.3) that applies even when a repo documents nothing. Each reads _what it is_ → _how to fix_; match them against the diff.
+On top of whatever the repo documents, always carry the **smell baseline** below: a fixed set of Fowler code smells (_Refactoring_, ch.3) that applies even when a repo documents nothing. Each reads _what it is_ → _how to fix_; match them against the diff, skipping anything the repo's own tooling already enforces.
 
 - **Mysterious Name** — a function, variable, or type whose name doesn't reveal what it does or holds. → rename it; if no honest name comes, the design's murky.
 - **Duplicated Code** — the same logic shape appears in more than one hunk or file in the change. → extract the shared shape, call it from both.

@@ -5,7 +5,8 @@ Maintainer notes for **this repo** (the skills package), not for repos that inst
 ## What this is
 
 An **add-on** collection of Claude Code skills that are original to Ieuan, layered on top of
-[`mattpocock/skills`](https://github.com/mattpocock/skills). Consumers install Matt's first, then this.
+[`mattpocock/skills`](https://github.com/mattpocock/skills). The plugin declares Matt's as a
+dependency, so installing this one pulls it in — there is no install order for consumers to get right.
 See `README.md` for the consumer story and `CONTEXT.md` for the vocabulary.
 
 ## Layout

@@ -64,7 +64,7 @@ not to.
 `/dev-loop <issues>` drives one or more GitHub issues end-to-end — plan → implement → review —
 each in its own git worktree, with parallel lanes and human gates only at plan approval and push/PR.
 
-You are the orchestrator; a bundled agent roster does the work:
+You are the orchestrator; the agent roster does the work:
 
 | Agent | Role |
 |---|---|

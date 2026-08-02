@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Setup Ieuan's Skills
 
-Scaffold `docs/agents/coding-standards.md` — the repo-tailored review rubric `/code-review`'s Standards axis reads instead of rediscovering conventions from scratch each run, and the `reviewer` agent inside `/dev-loop` reads as its own first standards source.
+Scaffold `docs/agents/coding-standards.md` — the repo-tailored review rubric `/code-review`'s Standards axis reads instead of rediscovering conventions from scratch each run, and the `reviewer` agent `/dev-loop` dispatches reads as its own first standards source.
 
 This is a prompt-driven skill, not a deterministic script. Explore, draft, stress-test with the user, then write.
 
@@ -39,4 +39,4 @@ Write `docs/agents/coding-standards.md`. If the repo already has a `## Agent ski
 
 ### 5. Done
 
-Tell the user setup is complete and which skills/agents now read this file: `/code-review`'s Standards axis, and the `reviewer` agent inside `/dev-loop`. Mention that CLAUDE.md stays the binding source — this doc is a derived rubric that doesn't re-sync automatically; re-run this skill by hand if CLAUDE.md changes materially.
+Tell the user setup is complete and which skills/agents now read this file: `/code-review`'s Standards axis, and the `reviewer` agent `/dev-loop` dispatches. Mention that CLAUDE.md stays the binding source — this doc is a derived rubric that doesn't re-sync automatically; re-run this skill by hand if CLAUDE.md changes materially.

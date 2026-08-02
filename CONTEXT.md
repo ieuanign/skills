@@ -8,7 +8,7 @@ A folder under `skills/` containing a `SKILL.md` (plus optional supporting files
 
 ## Add-on layer
 
-This repo is **not** self-contained. It ships only skills that are original to Ieuan and assumes [`mattpocock/skills`](https://github.com/mattpocock/skills) is already installed and configured. The skills here reference Matt's (`/tdd`, `/code-review`, `/to-spec`, `/to-tickets`, the issue-tracker setup) rather than duplicating them.
+This repo is **not** self-contained. It ships only skills that are original to Ieuan and declares [`mattpocock/skills`](https://github.com/mattpocock/skills) as a plugin dependency, so installing this one pulls Matt's in. The skills here reference Matt's (`/tdd`, `/code-review`, `/to-spec`, `/to-tickets`, the issue-tracker setup) rather than duplicating them.
 
 ## dev-loop
 
