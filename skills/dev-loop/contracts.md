@@ -80,7 +80,7 @@ A review's range is one sub-lane, but the acceptance criteria belong to the whol
 
 The `CRITERIA` verdicts pass straight through this loop untouched — the spec axis is **reported and never blocking**, by the same reasoning as the commit-breakdown check below. A criterion verdict never enters `FINDINGS`, never changes the `VERDICT`, never triggers a fix cycle and never ends the lane: a not-met criterion means the plan lost something the issue asked for, and the only agent that could re-decide the plan is the architect, which does not run again in this lane. A review with zero findings and a not-met criterion is `APPROVED`. The last review's verdicts are the sub-lane's; they land in the findings ledger, which the lane's conclusion surfaces.
 
-## Suite gate — one run per sub-lane
+## Suite gate — bound: 8 rounds, and 2 rounds without a previously unseen failure
 
 The writer runs lint and tests **scoped to the module it touched**, and nothing else in this pipeline runs the repository's own suite. So once a sub-lane's review loop settles, the lane runs that suite once, inside that sub-lane's worktree, before it concludes: a commit that reddened a module it never touched is caught here or nowhere. It runs in **both** modes.
 
@@ -88,13 +88,48 @@ The writer runs lint and tests **scoped to the module it touched**, and nothing 
 
 **The command is configuration, never discovery.** It comes from the repo profile's full-suite key under the profile's ask-then-persist rule, and a persisted `none` is a real answer: a repository whose suite needs infrastructure this pipeline does not stand up would otherwise get a red result that means nothing. With no command the gate reports **not run** and dispatches nothing to say so — `not run` is a state of its own, never reported as passed, per the convention that a check which never ran must say so rather than show an empty result. A gate that finds the command unrunnable returns the same state for itself.
 
-**The agent is a plain subagent with no persona and deliberately no agent type**, at the cheapest model and the lowest effort. Loading a role definition — merge-base rules, blocking bars, dispute handling — to run one command is waste. It is given a label, so it appears by name in the progress display and the logs; its return shape is pinned by the return contract above; and it never fixes, never commits, and never touches a file.
+**The agent is a plain subagent with no persona and deliberately no agent type**, at the cheapest model and the lowest effort. Loading a role definition — merge-base rules, blocking bars, dispute handling — to run one command is waste, and the gate runs up to eight times. It is given a label, so it appears by name in the progress display and the logs; its return shape is pinned by the return contract above; and it never fixes, never commits, and never touches a file.
 
 **Position: after the review loop, before the conclusion.** Findings and the suite both react to the writer's commits, so they are ordered rather than handled together — reviewing a diff a suite fix is about to change wastes the review. A sub-lane whose review loop already ended the lane never reaches the gate: that lane is concluding with its findings open, and a suite result would not change what happens next.
 
-**A red suite ends the lane `UNRESOLVED`**, carrying its failing test identifiers to the human. So does a gate that dies. The categories turn on whether reviewable code exists and the gate runs only after the plan's commits exist and a review approved them — so it does, in both cases. No ending this section produces is `HALT`: the alternative discards a fully implemented, fully reviewed sub-lane, and the human loses the PR that would have carried the failure to them.
-
 The result reaches the human in both places it is due — the lane's conclusion and the PR body — through the findings ledger below.
+
+### A red suite is diagnosed, not handed straight to the writer
+
+A red suite is a **failure**, not a finding: the gate observed only that the suite is red, and the breakage is usually in a module outside the writer's commit scope, so a blind fix would flail. A red result routes to the **debugger** — the failure path that already exists, reused verbatim — and the debugger's own routing decides what happens next, by the same three routes as the per-commit implement loop:
+
+- `retry` → run the gate again; a transient failure has nothing to fix.
+- `code-writer` → writer Mode 2 against the diagnosis, then run the gate again.
+- `replan` or `user` → the lane ends, carrying the diagnosis.
+
+Ordinary review findings still go straight to the writer: they already arrive with a failure scenario and a suggested fix, so a diagnosis adds nothing to those.
+
+Accepted cost, recorded rather than solved: the fix commits a red suite produces land **after** the review loop has closed, so a lane's final commits are never reviewed.
+
+### The bound is progress-sensitive, under a hard ceiling
+
+A round is one gate run. After a red round the counter **advances by one unless a previously unseen failing identifier appeared** — a new identifier resets it to 1, because a shrinking set of the same failures is not progress. At **2** the loop stops.
+
+```
+round 1: {test_a, test_b}                       → count 1
+round 2: {test_b}         subset, nothing new   → count 2 → stop
+
+round 1: {test_a, test_b}                       → count 1
+round 2: {test_b, test_c} test_c is new         → reset to 1
+```
+
+A hard ceiling of **8** rounds applies regardless of progress: a mis-parsed identifier list would look like new failures every round and reset forever, and eight rounds of the expensive debugger is a costly way to discover that. Both bounds are checked before the round's debugger is dispatched, so no agent is spent on a round that cannot run.
+
+### Every ending the gate produces is UNRESOLVED
+
+The categories turn on whether reviewable code exists, and the gate runs only after the plan's commits exist and a review approved them — so it does, in every one of these:
+
+- the suite still red when the counter reaches 2, or at the 8-round ceiling;
+- the debugger routing to `replan` or `user`;
+- a suite-fix writer returning anything other than `COMMITTED`;
+- the gate, the debugger, or the suite-fix writer dying.
+
+The lane finishes with the suite red and says so, carrying the failing test identifiers and any diagnosis. No ending in this section is `HALT`: the alternative discards a fully implemented, fully reviewed sub-lane, and the human loses the PR that would have carried the failure to them.
 
 ## Commit-breakdown check — the host's own work, no agent
 

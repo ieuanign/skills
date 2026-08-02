@@ -37,6 +37,7 @@ const MAX_FIX = input.maxFixCycles || 2
 // does not stand up returns a red result that means nothing. 'none' is a real, persisted answer.
 const suiteCommand = String(input.suiteCommand || '').trim()
 const suiteConfigured = Boolean(suiteCommand) && suiteCommand.toLowerCase() !== 'none'
+const SUITE_CEILING = 8
 
 const WRITER_SCHEMA = {
   type: 'object',
@@ -234,20 +235,56 @@ const laneResults = await parallel(input.lanes.map(lane => async () => {
     // 3. Suite gate — the repo's own full suite, once per sub-lane, after the findings settle.
     // Every ending here is UNRESOLVED and never HALT: the gate runs only once the plan's commits
     // exist and a review approved them, and the categories turn on whether reviewable code does.
-    const suiteLabel = `suite:#${lane.issue}${sub.area ? ':' + sub.area : ''}`
+    const tag = `#${lane.issue}${sub.area ? ':' + sub.area : ''}`
     if (!suiteConfigured) {
       // A declared 'none' is answered, not unanswered — so no agent is spent to run nothing.
       rec.suite = { state: 'not-run', failing: [], output: 'no full-suite command is configured for this repository' }
       log(`#${lane.issue}: ${sub.branch} suite not run — no full-suite command configured`)
     } else {
-      const suite = await agent(suitePrompt(sub), {
-        label: suiteLabel, phase: 'Suite', model: 'haiku', effort: 'low', schema: SUITE_SCHEMA,
-      })
-      if (!suite) return unresolved('suite gate died — the suite never ran')
-      rec.suite = { state: suite.state, failing: suite.failing || [], output: suite.output || '' }
-      log(`#${lane.issue}: ${sub.branch} suite ${rec.suite.state}`)
-      if (rec.suite.state === 'failed') {
-        return unresolved(`suite red on ${sub.branch} — ${rec.suite.failing.length} failing test(s): ${rec.suite.failing.join(', ')}`)
+      const seen = new Set() // every failing identifier this sub-lane has ever shown
+      let stale = 0          // consecutive red rounds that brought nothing previously unseen
+      let round = 0
+      while (true) {
+        round++
+        const suffix = round > 1 ? `:r${round}` : ''
+        const suite = await agent(suitePrompt(sub), {
+          label: `suite:${tag}${suffix}`, phase: 'Suite', model: 'haiku', effort: 'low', schema: SUITE_SCHEMA,
+        })
+        if (!suite) return unresolved(`suite gate died on ${sub.branch} — the suite never ran`)
+        rec.suite = { state: suite.state, failing: suite.failing || [], output: suite.output || '' }
+        log(`#${lane.issue}: ${sub.branch} suite ${rec.suite.state}${round > 1 ? ` (round ${round})` : ''}`)
+        if (rec.suite.state !== 'failed') break
+
+        // Progress-sensitive, not a flat cap: a shrinking set of the same failures is not progress.
+        const fresh = rec.suite.failing.filter(id => !seen.has(id))
+        rec.suite.failing.forEach(id => seen.add(id))
+        stale = fresh.length ? 1 : stale + 1
+        const redReason = `suite red on ${sub.branch} — ${rec.suite.failing.length} failing test(s): ${rec.suite.failing.join(', ')}`
+        if (stale >= 2) return unresolved(`${redReason} — 2 rounds brought no previously unseen failure`)
+        // Checked before the debugger, so no agent is spent on a round that cannot run. A
+        // mis-parsed identifier list looks new every round and would reset the counter forever.
+        if (round >= SUITE_CEILING) return unresolved(`${redReason} — the ${SUITE_CEILING}-round ceiling`)
+
+        // A red suite is a failure, not a finding: the gate observed only that it is red, and the
+        // breakage is usually outside the writer's commit scope. Same routing as a FAILED commit.
+        const diag = await agent(
+          `The repository's full test suite is red on branch ${sub.branch}, after its review loop settled. This is round ${round} of at most ${SUITE_CEILING} for this sub-lane.\nThe suite gate ran \`${suiteCommand}\` inside ${sub.worktree} and returned: ${JSON.stringify(rec.suite)}\nReproduce inside that checkout and diagnose. The breakage is often outside the commit scope of the work on this branch — say so if it is. When owner=code-writer, phrase the handoff as a finding (file:line — defect — failure scenario).`,
+          { agentType: 'debugger', label: `suitedebug:${tag}:r${round}`, phase: 'Suite', schema: DEBUG_SCHEMA }
+        )
+        if (!diag) return unresolved(`debugger died on a red suite on ${sub.branch}: ${redReason}`)
+        if (diag.owner === 'code-writer') {
+          const fix = await agent(
+            writerPrompt(lane, sub, `Mode 2 — the repository's full suite is red and a debugger diagnosed it. Fix it and commit as fix(<scope>): #${lane.issue} - ... . Suite round ${round}.\nDiagnosis: ${diag.rootCause}\nFinding: ${diag.finding || '(see diagnosis)'}\nFailing: ${rec.suite.failing.join(', ')}`),
+            { agentType: writerType, label: `suitefix:${tag}:r${round}`, phase: 'Suite', schema: WRITER_SCHEMA }
+          )
+          if (!fix || fix.result !== 'COMMITTED') {
+            return unresolved(`suite fix round ${round} returned ${fix ? fix.result : 'nothing'} — ${redReason}`)
+          }
+          absorb(rec, fix)
+        } else if (diag.owner !== 'retry') {
+          // replan | user — UNRESOLVED, not HALT: the code exists and has been reviewed.
+          return unresolved(`debugger routed a red suite to ${diag.owner}: ${diag.rootCause} — ${redReason}`)
+        }
       }
     }
 
