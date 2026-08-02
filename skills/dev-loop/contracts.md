@@ -11,6 +11,16 @@ This file is the single source of truth for the pipeline's role contracts, bound
 | reviewer | reviewer | verified findings on a range | never |
 | debugger | debugger | root cause + owner routing | never |
 
+## Append-only invariant
+
+What the pipeline may write outside its own worktrees and `.scratch/`. It binds the host and every agent, identically in both modes — there is no ending, no ceiling and no absent human that relaxes it.
+
+- **Append** to issues and pull requests. Comments only.
+- **Add and remove its own workflow labels**, and no others.
+- **Set state only on artifacts it created** — its own branches, its own pull requests, its own plan files.
+
+It never edits an issue body, never ticks an acceptance-criteria checkbox, and never converts a pull request a human opened. The reviewer's per-criterion verdicts are reported in the PR body and nowhere else: the pull request's own state already carries the aggregate verdict, the closing keyword closes the issue on merge regardless, and an issue body is the one artifact in this pipeline a human wrote by hand.
+
 ## Per-stage context contract
 
 What each stage is handed, what it is permitted to read, and what it hands back. The pipeline passes references rather than content wherever a reference is enough, so the cost lives in the reads — which is why they are part of the contract and not left to each agent's discretion. The Returns column names the keys; the Return contracts below are normative for their exact shape.
