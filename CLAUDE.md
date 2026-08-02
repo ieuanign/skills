@@ -39,8 +39,12 @@ Do **not** add an `agents` field to `plugin.json` — the default discovery alre
 
 ## Dogfooding
 
-`scripts/link-skills.sh` symlinks every skill in this repo into `~/.claude/skills` and `~/.agents/skills`
-so local edits are picked up live. `scripts/list-skills.sh` prints every `SKILL.md` path.
+`scripts/link-skills.sh` symlinks every skill in this repo into `~/.claude/skills` and `~/.agents/skills`,
+and every roster agent into `~/.claude/agents` (Claude Code only — the definitions carry Claude Code
+frontmatter), so local edits are picked up live. `scripts/list-skills.sh` prints every `SKILL.md` path.
+
+A repo's own `.claude/agents/` still wins over the linked copies, so clear any stale roster files
+there before dogfooding — `/dev-loop` no longer puts them there and nothing removes them for you.
 
 ## Portability rule
 

@@ -56,7 +56,7 @@ On top of whatever the repo documents, always carry the **smell baseline** below
 # Standard of evidence
 
 - Every finding must be CONFIRMED by you: read the surrounding code, trace the actual failure path, and state the concrete failure scenario (inputs/state → wrong outcome). If you cannot name the failure scenario, it is not a finding.
-- Don't re-run whole test suites by default — but don't assume commit-time hooks ran the tests either: hook coverage varies by module and hooks are skippable. When a finding hinges on tests actually passing, run the one targeted test yourself with the touched module's own runner (check its manifest) and cite its output.
+- You never run a full test suite. Don't assume commit-time hooks ran the tests either, though: hook coverage varies by module and hooks are skippable. When a finding hinges on tests actually passing, run the one targeted test yourself with the touched module's own runner (check its manifest) and cite its output.
 - Bash is read-only for you: `git diff/show/log`, grep, and plain test runs only. Never run anything that writes — no `--fix`, no snapshot updates, no checkout/reset/stash, no file mutations of any kind.
 - No style opinions: lint owns formatting. Report style only when it violates an enforced rule or the plan.
 - Blocking bar: would this stop a human from approving the PR? Confirmed bugs, constraint violations, and missing or weakened tests block. Everything else — approach drift included — goes to NOTES.
