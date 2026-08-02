@@ -103,9 +103,9 @@ Every other section of this contract is single-version: both modes implement it 
 - A `HALT` lane is reported with its stage, the verbatim contract lines, and its resume command. No PR.
 - Gate 2 for a wave fires before the next wave is provisioned, so a dependent wave is never built on a base the human has not vetted.
 
-**unattended** — the mode a developer asks for by typing `auto`. There is no human to conclude the lane: the gates ask nothing, so the terminal-state table governs what each ending produces, and notifications fire. Both are specified separately; this is the section they fill. Read `notifications.md` before emitting any notification: it governs every one of them, and nothing here restates it. The terminal-state table is still specified separately from both. Which questions stop and which gate work continues is SKILL.md's gate-suppression constant, stated in one place there and not restated here.
+**unattended** — the mode a developer asks for by typing `auto`. There is no human to conclude the lane, so the terminal-state table governs what each ending produces, and notifications fire. Both are specified separately; this is the section they fill. Read `notifications.md` before emitting any notification: it governs every one of them, and nothing here restates it. The terminal-state table is still specified separately from both.
 
-**Mode A implements the gated half only, and never the unattended half** — for the three reasons under **Mode implementations**, which is where that restriction lives because it is a fact about the implementations rather than a second branch in the state machine. The unattended half therefore has exactly one implementation, which is what keeps this file's rule — a behaviour change edits the contract first, then both implementations in the same change — cheap to honour.
+**Mode A implements the gated half only, and never the unattended half.** The unattended half therefore has exactly one implementation, which is what keeps this file's rule — a behaviour change edits the contract first, then both implementations in the same change — cheap to honour.
 
 ## Findings ledger (per lane; surfaced at the lane's conclusion and in the PR body)
 

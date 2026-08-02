@@ -35,11 +35,8 @@ const writerType = 'code-writer'
 // number at all. `|| 2` would be wrong — it turns a deliberate 0 back into two cycles.
 const MAX_FIX = Number.isInteger(input.maxFixCycles) && input.maxFixCycles >= 0 ? input.maxFixCycles : 2
 
-// The run mode, parsed once by the host and passed in rather than re-derived here. Nothing in
-// this phase branches on it yet — its consumers are the notifier and the unattended conclusion,
-// both specified separately — but it is carried to the point a lane's conclusion is decided, so
-// they add a branch rather than a parameter. Anything but 'unattended' is gated: an absent or
-// unrecognised mode must never silently suppress a gate.
+// Passed in, never re-derived. Nothing here branches on it yet — the notifier and the unattended
+// conclusion will. Anything but 'unattended' is gated, so an unknown mode never suppresses a gate.
 const MODE = input.mode === 'unattended' ? 'unattended' : 'gated'
 
 const WRITER_SCHEMA = {
@@ -118,8 +115,6 @@ function absorb(rec, writerResult) {
 
 const laneResults = await parallel(input.lanes.map(lane => async () => {
   const subResults = []
-  // Every conclusion this lane can reach — ended or clean — leaves through here or the clean
-  // return below, and both carry the mode the lane ran under.
   const end = (category, reason) => ({ issue: lane.issue, mode: MODE, ending: { category, reason }, subResults })
   const halt = reason => end('HALT', reason)
   const unresolved = reason => end('UNRESOLVED', reason)
