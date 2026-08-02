@@ -1,6 +1,6 @@
 # /dev-loop contracts — the normative state machine
 
-This file is the single source of truth for the pipeline's role contracts, bounds, and terminal categories. Both execution modes implement it: **Mode W** (Workflow tool running `phase-plan.js` / `phase-execute.js`) and **Mode A** (direct Agent-tool orchestration). Any behavior change edits THIS file first, then both implementations in the same change. If an implementation and this file disagree, this file governs.
+This file is the single source of truth for the pipeline's role contracts, bounds, and endings. Both execution modes implement it: **Mode W** (Workflow tool running `phase-plan.js` / `phase-execute.js`) and **Mode A** (direct Agent-tool orchestration). Any behavior change edits THIS file first, then both implementations in the same change. If an implementation and this file disagree, this file governs.
 
 ## Roles
 
@@ -47,9 +47,9 @@ Agents end with machine-readable leading lines; Mode W enforces the equivalent J
 - **architect**: `STATUS: READY|BLOCKED` + `PLAN: <path>` + summary bullets + open questions (BLOCKED only). The agent definition also carries a Mode 2 conformance sign-off; this pipeline never dispatches it.
 - **writer**: `RESULT: COMMITTED|BLOCKED|FAILED` + `COMMITS` + `VERIFIED` + `DEVIATIONS` + `DISPUTED` (with each disputed finding restated with refuting evidence) + `DIRTY` + `WORKTREE` + `FAILING` (FAILED only).
 - **reviewer**: `VERDICT: APPROVED|CHANGES_REQUESTED|ERROR` + `FINDINGS` (each: `file:line — defect — failure scenario — suggested fix`) + `CONTESTED` (disputed findings it still confirms) + `CRITERIA` (one `met|partial|not-met` verdict per acceptance criterion in the issue body, in the issue's order, each with its evidence; empty when no issue body was passed) + `NOTES`. Zero findings ⇒ APPROVED, whatever the criterion verdicts say.
-- **debugger**: `ROOT-CAUSE` + `OWNER: code-writer|replan|user|retry` + `CONFIDENCE` + `REPRODUCED`; when OWNER=code-writer, a finding in the reviewer's finding shape.
+- **debugger**: `ROOT-CAUSE` + `OWNER: code-writer|replan|user|retry` + `CONFIDENCE` + `REPRODUCED`; when OWNER=code-writer, a finding in the reviewer's finding shape. `OWNER` carries **two routing values** — `code-writer` and `retry`, each naming the stage that runs next — and **two reporting values**, `replan` and `user`, which end the sub-lane identically and differ only in where they send the reader: `replan` back to the plan, `user` to their own machine, credentials or CI. Same pipeline behaviour, opposite next actions, which is why both are kept.
 - **suite gate**: `STATE: passed|failed|not-run` + `FAILING` (the runner's own identifier per failing test — empty unless STATE is `failed`) + `OUTPUT` (the command's output). It is the one role with no agent definition to carry that format, so whichever mode dispatches it states the format itself — Mode W in its schema, Mode A in the prompt.
-- **DIED** (any role): the agent crashed or returned nothing parseable. An architect DIED is reported at Gate 1 with a re-run offer; a suite-gate DIED ends the lane **UNRESOLVED**, per the Suite gate section — by then reviewable code exists; any other DIED ends the lane **HALT**. Never silently drop a requested issue.
+- **DIED** (any role): the agent crashed or returned nothing parseable. Every DIED ends its sub-lane **FAILED** — a death is a break, never a verdict. The architect is the one role that runs before any sub-lane exists: an architect DIED is reported at Gate 1 with a re-run offer instead. Never silently drop a requested issue.
 
 ## Per-commit implement loop — bound: 2 debug+fix attempts
 
@@ -59,21 +59,23 @@ For each plan commit, in order:
 2. `FAILED` → debugger diagnoses (inside the writer's reported worktree). Route by OWNER:
    - `retry` → writer Mode 1 again (transient; cite the debugger's root cause).
    - `code-writer` → writer Mode 2 with the debugger's finding; afterwards the writer completes the original commit under Mode 1 rules if it was never committed.
-   - `replan` or `user` → **HALT** the lane immediately with the diagnosis.
-3. At most **2** debug+fix attempts per commit, then **HALT** — the commit was never produced.
-4. `BLOCKED` → **HALT** with the writer's reason. Anything other than `COMMITTED` after routing → **HALT**.
+   - `replan` or `user` → the sub-lane ends **HALT** immediately, carrying the diagnosis.
+3. At most **2** debug+fix attempts per commit, then the sub-lane ends **HALT** — the commit was never produced.
+4. `BLOCKED` → **HALT** with the writer's reason. Any other non-`COMMITTED` return after routing splits on the value it holds: `BLOCKED` is **HALT**, `FAILED` or a dead writer is **FAILED**.
+
+The writer call of the **final permitted** debug+fix attempt, and no earlier one, carries one extra instruction: if it still cannot get green, commit what exists as `wip(<scope>): #<n> - commit <k> FAILED - <reason>` and return `FAILED` anyway. It is the only call after which the pipeline is certain to give up — on an earlier attempt the sub-lane may still succeed, and a `wip:` commit on a succeeding sub-lane would break what the rest of this file rests on: a `wip:` commit means an ended sub-lane with an incomplete commit list, which is why it is never reviewed and never gated. It is evidence, not work — listed among the sub-lane's commits so the human sees it, excluded from the made count, which would otherwise read `1 planned, 2 made` for a sub-lane that made one. The `replan`/`user` route carries no such instruction: no writer call follows it, and inventing one costs an agent call to produce a commit nobody asked for.
 
 ## Review loop — bound: maxFixCycles = 2
 
 On the sub-lane's exact range `<base>..<branch>` (the base may itself be a stacked feature branch — never review the base's own commits), with the issue body passed in so the reviewer runs its Spec axis:
 
-1. reviewer runs; `ERROR` or DIED → **HALT**.
+1. reviewer runs; `ERROR` or DIED → the sub-lane ends **FAILED** — both are returns the loop cannot use, not verdicts about the code.
 2. `CHANGES_REQUESTED` → writer Mode 2 applies the findings; it may DISPUTE findings it can refute, with evidence.
 3. The re-review receives the disputes and re-verifies each:
    - retracted disputes become documented **won't-fix** entries in the lane's findings ledger;
-   - still-confirmed disputes (`CONTESTED`) end the lane **UNRESOLVED** immediately — no further cycle is spent on an agent stalemate.
-4. At most **2** fix cycles, then **UNRESOLVED** — the code exists and its findings are still open.
-5. A fix-cycle writer return other than `COMMITTED` → **HALT**.
+   - still-confirmed disputes (`CONTESTED`) end the sub-lane **HALT** immediately — no further cycle is spent on an agent stalemate.
+4. At most **2** fix cycles, then **HALT** — the findings are still open.
+5. A fix-cycle writer return other than `COMMITTED` splits like the implement loop's: `BLOCKED` is **HALT**, `FAILED` or a dead writer is **FAILED**.
 6. `APPROVED` → the review loop is done.
 
 A review's range is one sub-lane, but the acceptance criteria belong to the whole issue, so the reviewer is told which sub-lane it is judging. A criterion the plan delivers in a different sub-lane is outside this range and is recorded `partial` with that stated — never `not-met`, which would make every early PR of a multi-PR plan read as a failure of work not yet due.
@@ -90,7 +92,7 @@ The writer runs lint and tests **scoped to the module it touched**, and nothing 
 
 **The agent is a plain subagent with no persona and deliberately no agent type**, at the cheapest model and the lowest effort. Loading a role definition — merge-base rules, blocking bars, dispute handling — to run one command is waste, and the gate runs up to eight times. It is given a label, so it appears by name in the progress display and the logs; its return shape is pinned by the return contract above; and it never fixes, never commits, and never touches a file.
 
-**Position: after the review loop, before the conclusion.** Findings and the suite both react to the writer's commits, so they are ordered rather than handled together — reviewing a diff a suite fix is about to change wastes the review. A sub-lane whose review loop already ended the lane never reaches the gate: that lane is concluding with its findings open, and a suite result would not change what happens next.
+**Position: after the review loop, before the conclusion.** Findings and the suite both react to the writer's commits, so they are ordered rather than handled together — reviewing a diff a suite fix is about to change wastes the review. A sub-lane whose review loop already ended it never reaches the gate, by the no-later-stage rule below: it is concluding with its findings open, and a suite result would not change what happens next.
 
 The result reaches the human in both places it is due — the lane's conclusion and the PR body — through the findings ledger below.
 
@@ -100,7 +102,7 @@ A red suite is a **failure**, not a finding: the gate observed only that the sui
 
 - `retry` → run the gate again; a transient failure has nothing to fix, so there is no writer call to repeat.
 - `code-writer` → writer Mode 2 against the diagnosis, then run the gate again.
-- `replan` or `user` → the lane ends, carrying the diagnosis — `UNRESOLVED` here, where the implement loop's identical route is `HALT`. That is the one deliberate difference between the two, and the reason is below: by this stage reviewable code exists, and it does not in the implement loop.
+- `replan` or `user` → the sub-lane ends **HALT**, carrying the diagnosis. The route reads the same here as in the implement loop, and the ending is labelled the same way — the stage a failure happens at changes what is on the branch, never what the ending is called.
 
 Ordinary review findings still go straight to the writer: they already arrive with a failure scenario and a suggested fix, so a diagnosis adds nothing to those.
 
@@ -120,16 +122,16 @@ round 2: {test_b, test_c} test_c is new         → reset to 1
 
 A hard ceiling of **8** rounds applies regardless of progress: a mis-parsed identifier list would look like new failures every round and reset forever, and eight rounds of the expensive debugger is a costly way to discover that. Both bounds are checked before the round's debugger is dispatched, so no agent is spent on a round that cannot run.
 
-### Every ending the gate produces is UNRESOLVED
+### The gate's endings are labelled by the same question as every other stage's
 
-The categories turn on whether reviewable code exists, and the gate runs only after the plan's commits exist and a review approved them — so it does, in every one of these:
+Nothing about this stage is special — the one question below selects each label, and the sub-lane ends:
 
-- the suite still red when the counter reaches 2, or at the 8-round ceiling;
-- the debugger routing to `replan` or `user`;
-- a suite-fix writer returning anything other than `COMMITTED`;
-- the gate, the debugger, or the suite-fix writer dying.
+- the suite still red when the counter reaches 2, or at the 8-round ceiling — a bound, so **HALT**;
+- the debugger routing to `replan` or `user` — **HALT**;
+- a suite-fix writer returning `BLOCKED` — **HALT**; returning `FAILED`, or dying — **FAILED**;
+- the gate or the debugger dying — **FAILED**.
 
-The lane finishes with the suite red and says so, carrying the failing test identifiers and any diagnosis. No ending in this section is `HALT`: the alternative discards a fully implemented, fully reviewed sub-lane, and the human loses the PR that would have carried the failure to them.
+Every one of them leaves the plan's commits and the review's fixes on the branch, and the sub-lane finishes with the suite red and says so, carrying the failing test identifiers and any diagnosis. What that produces — a push, a draft pull request, a Gate 2 offer — is Lane conclusion's, and the label is no part of it.
 
 ## Commit-breakdown check — the host's own work, no agent
 
@@ -137,29 +139,45 @@ At the end of a sub-lane the host compares two lists it already holds: the plan'
 
 The result is carried as `<n> planned, <m> made`, both scoped to the ordinals this run was asked to make — on a resumed lane that is the remainder, not the plan's grand total, which still detects a split or an append. A mismatch is **reported and never blocks**: it does not halt the lane, does not trigger a fix cycle, and does not change the terminal state. Fix cycles legitimately append commits and a writer may legitimately split one, so the count is information for the human merging the PR, not a halt condition.
 
-## Terminal categories — HALT and UNRESOLVED
+## HALT and FAILED — two labels that decide nothing
 
-Every ending above is exactly one of two categories. The distinction is **does reviewable code exist at the end**, not severity.
+Every ending above carries exactly one of two labels, and one question selects it: **did something deliberately stop, or did something break?**
 
-- **HALT** — the lane is dead. Nothing reviewable exists, so no PR is created. Six endings produce it: the debugger routing to `replan` or `user`; the per-commit debug+fix bound exhausted; the writer returning `BLOCKED`; any writer return other than `COMMITTED` after debug routing; the reviewer returning `ERROR` or dying; a fix-cycle writer returning anything other than `COMMITTED`. Any other agent DIED is the same category, by the DIED rule in Return contracts above — the suite gate excepted, which runs once reviewable code already exists.
-- **UNRESOLVED** — the code exists and is simply not clean. The lane finishes anyway, and its conclusion decides what that means. Two endings in the review loop produce it: contested findings the reviewer still confirms after re-verifying the writer's evidence; the fix-cycle bound exhausted while the reviewer still requests changes. Every ending the **suite gate** can produce is the same category for the same reason, and that section lists them.
+- **HALT** — something deliberately stopped: a bound was reached, a debugger route said stop, or an agent reported it cannot proceed.
+- **FAILED** — something broke: an agent died, or returned a result the loop cannot use.
 
-These are the only two. Every reason the pipeline reports names its category in these words, so a reported reason maps to a line above without translation, and the two are surfaced to the human as visibly different outcomes: HALT says the lane died and there is nothing to review, UNRESOLVED says the lane finished with findings still open.
+**The label decides nothing.** Nothing in this pipeline branches on it — what an ending produces is decided by the conclusion mode alone, in Lane conclusion below. The label is a word in the ending's explanation, so a reported reason maps to a line above without translation, and it is the same distinction `notifications.md` already selects its labels by: failure is always a break and never a verdict.
 
-Every loop above is bounded — nothing retries indefinitely. Neither category kills the batch: report the stage, the verbatim contract lines that produced the ending, and the exact resume command (`/dev-loop <n>` re-derives everything from artifacts). A lane whose base lane ended in either category — or was held by the user — never runs at all, so it **HALT**s with that reason: nothing reviewable exists for it either.
+**An ending ends its sub-lane, not its lane.** Sub-lanes are separate branches, worktrees and pull requests, so a sub-lane already finished keeps its result and its disposition whatever a later one does, and each is disposed of on its own. The lane's own label is a roll-up for reporting only — `FAILED` if any sub-lane ended `FAILED`, else `HALT` if any ended `HALT`, else clean.
+
+**A sub-lane runs no stage after the one that ended it**, with no exceptions to remember: an incomplete commit list means no review loop and no suite gate; a review loop that ended the sub-lane means no suite gate. The stages that certify work exist to certify *complete* work, and the review loop does not merely observe — its fix cycles commit, and those fixes would land on early commits while the work that defines their final shape is missing, leaving a human to finish the plan on top of fixes made in ignorance of it.
+
+Every loop above is bounded — nothing retries indefinitely — and no ending kills the batch. Every ending reports its label, its stage, the verbatim contract lines that produced it, its attempt log, and the exact resume command (`/dev-loop <n>` re-derives everything from artifacts). A lane whose base lane ended — or was held by the user — never runs at all, so it ends **HALT** with that reason.
 
 ## Lane conclusion — the only branch point in this file
 
-Every other section of this contract is single-version: both modes implement it identically. This section is the one place the two are described separately, and a behaviour change that differs by mode belongs here or nowhere.
+Every other section of this contract is single-version: both modes implement it identically. This section is the one place the two are described separately, and a behaviour change that differs by mode belongs here or nowhere. It is also where an ending's label stops mattering: nothing below reads it, and a sub-lane that stopped and one that broke are disposed of identically.
+
+An ended sub-lane's disposition is decided by mode, and decided per sub-lane. The two modes are **gated** and **unattended** — `auto` is the token a developer types for the unattended one.
+
+| | gated | unattended |
+|---|---|---|
+| Push | at Gate 2, on the human's approval | yes |
+| Pull request | none by default — Gate 2 offers "open a draft PR anyway?" | draft |
+| Worktree | kept, for review or resume | removed |
+| Explanation | the CLI response | the pull request body |
+
+The explanation is identical in both: what stopped or what broke, its stage, the diagnosis if a debugger produced one, and the attempt log in order. Mode changes where it is written, never what it says.
+
+**One exception, and only one.** A sub-lane where nothing landed at all — the writer stopped before changing a file, so there is not even a `wip:` commit — has no branch ahead of its base: nothing to push, and no pull request to open. Whether the branch is ahead is read from git, never inferred from a reported commit list. Under unattended its explanation is commented on the issue instead, which the append-only invariant permits. This is the only ending in the pipeline that opens no pull request.
 
 **gated** — a human concludes the lane.
 
-- A clean lane reaches Gate 2 for push/PR approval. Nothing is pushed without it. The suite result is on it, so the human approving a push sees a green suite rather than assuming one.
-- An `UNRESOLVED` lane reaches Gate 2 too, carrying what is still open. On contested findings the human arbitrates: uphold → targeted writer fix and resume the lane; accept → documented won't-fix. Either ruling lands in the ledger's **arbitrated** category. On an exhausted fix-cycle bound the human reads the open findings and decides whether to push anyway.
-- A `HALT` lane is reported with its stage, the verbatim contract lines, and its resume command. No PR.
+- A clean sub-lane reaches Gate 2 for push/PR approval. Nothing is pushed without it, and an ended sub-lane is *offered* there rather than pushed around it. The suite result is on it, so the human approving a push sees a green suite rather than assuming one.
+- An ended sub-lane carries what is still open to that gate. On contested findings the human arbitrates: uphold → targeted writer fix and resume the lane; accept → documented won't-fix. Either ruling lands in the ledger's **arbitrated** category. On an exhausted fix-cycle bound the human reads the open findings and decides whether to push anyway.
 - Gate 2 for a wave fires before the next wave is provisioned, so a dependent wave is never built on a base the human has not vetted.
 
-**unattended** — there is no human to conclude the lane, so the terminal-state table governs what each ending produces, and notifications fire. Both are specified separately; this is the section they fill. Read `notifications.md` before emitting any notification: it governs every one of them, and nothing here restates it. The terminal-state table is still specified separately from both.
+**unattended** — there is no human to conclude the lane, so the table above happens unprompted and notifications fire. Read `notifications.md` before emitting any notification: it governs every one of them, and nothing here restates it. Which endings open a ready pull request rather than a draft one is the terminal-state table's, specified separately.
 
 **Mode A implements the gated half only, and never the unattended half.** The unattended half therefore has exactly one implementation, which is what keeps this file's rule — a behaviour change edits the contract first, then both implementations in the same change — cheap to honour.
 
@@ -171,6 +189,7 @@ Every other section of this contract is single-version: both modes implement it 
 - **acceptance criteria** — the reviewer's `met|partial|not-met` verdict per criterion with its evidence, verbatim. Informational: nothing in the pipeline branches on it.
 - **reviewer NOTES** — non-blocking observations, verbatim.
 - **suite** — the gate's state: `passed`, `failed` with its failing test identifiers, or `not run` with why it did not. Never `passed` for a suite that did not run.
+- **attempt log** — everything the pipeline did *after* something first went wrong, in order: each debug+fix attempt, each retry, each review fix cycle, each suite round, carrying what triggered it, what the debugger said, and how it ended. Stages that worked are already in the commit list and the categories above; repeating them buries the one entry that matters. Recorded on every sub-lane and rendered only on one that ended, so the loops append without branching.
 
 ## Sequencing
 
@@ -179,5 +198,5 @@ Lanes run in parallel. Within a lane: sub-lanes sequential, and within a sub-lan
 ## Mode implementations
 
 - **Mode W**: `phase-plan.js` (Phase A) and `phase-execute.js` (Phase B) run on the Workflow tool with the args documented in SKILL.md; their embedded JSON schemas mirror the return contracts above.
-- **Mode A**: the orchestrator drives the Agent tool directly — one background agent per parallel unit (architects in Phase A, lanes in Phase B), sequential awaits inside a lane. Instruct each agent to end with its machine-readable leading lines exactly as its agent definition specifies, parse those as the contract keys, and enforce every bound, route, and terminal category in this file yourself.
+- **Mode A**: the orchestrator drives the Agent tool directly — one background agent per parallel unit (architects in Phase A, lanes in Phase B), sequential awaits inside a lane. Instruct each agent to end with its machine-readable leading lines exactly as its agent definition specifies, parse those as the contract keys, and enforce every bound, route, and ending in this file yourself.
 - **Mode A is tier-locked, by construction.** Effort is settable only in an agent's frontmatter or in Mode W's per-call options, and the direct Agent tool has no effort parameter — so Mode A has no mechanism for varying effort and any future cost dial is Mode W-only. This is a property of the mode, not an oversight.
