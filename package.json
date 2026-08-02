@@ -11,7 +11,7 @@
   "scripts": {
     "changeset": "changeset",
     "check": "bash scripts/check.sh",
-    "version": "changeset version"
+    "version": "changeset version && bash scripts/sync-plugin-version.sh"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.7.0",
