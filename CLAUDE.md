@@ -53,3 +53,22 @@ destinations are gitignored and every link is relative, so the checkout stays cl
 Every skill here must stay repo- and machine-agnostic — no repository name, absolute path, or
 project-specific fact baked into a `SKILL.md` or a bundled agent. Repo-specific config belongs in the
 consuming repo's `docs/agents/` (via the setup skills), never here.
+
+## Agent skills
+
+Config for this repo's own use of the engineering skills. (Consistent with the portability rule above:
+these are this repo's facts, kept out of `skills/`.)
+
+### Issue tracker
+
+Issues and PRDs live as GitHub issues in `ieuanign/skills`, managed with the `gh` CLI.
+See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical triage roles, each label string equal to its role name.
+See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context — root `CONTEXT.md` plus `docs/adr/`. See `docs/agents/domain.md`.
