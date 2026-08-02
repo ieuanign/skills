@@ -35,7 +35,9 @@ This skill is repo- and machine-agnostic: it hardcodes no repository name, path,
 | Gate 2 — arbitrate a contested finding | nobody rules, so the ledger's **arbitrated** category stays empty and the finding rides out to the PR body |
 | Between waves — authorize the next wave? | it proceeds |
 
-Touchpoint intersection, sub-lane splitting, the profile's Constraints, the push and the PR itself are gate *work*, and happen identically under both modes. The profile's one-time ask-then-persist questions are not gates and fire under both. What a lane's *ending* means for the PR's state — ready, draft, or none — is the terminal-state table, specified separately; until it lands, an unattended lane concludes exactly as an approved `gated` lane does.
+A gate's `PushNotification` goes with its question — it exists to summon someone to a gate, and under `unattended` nobody is being summoned. What an unattended run does emit instead is `notifications.md`'s, governed entirely there.
+
+Touchpoint intersection, sub-lane splitting, the profile's Constraints, the push and the PR itself are gate *work*, and happen identically under both modes. The one-time ask-then-persist preconditions are not gates and fire under both. What a lane's *ending* means for the PR's state — ready, draft, or none — is the terminal-state table, specified separately; until it lands, an unattended lane concludes exactly as an approved `gated` lane does.
 
 ## Derived facts (compute once at Act 0 — never hardcode, never persist)
 
@@ -58,6 +60,8 @@ Adding a value to this pipeline? The rule decides its home, so a new value never
 | **Repository profile** (ask-then-persist, below) | branch template, PR title format, PR body template, setup command, constraints, **fix cycles** |
 | **Phase-script constant** | per-stage effort and model tiers, the per-commit debug-and-fix bound, the stage list each mode runs |
 | **Skill constant** | gate suppression under `unattended` (stated once under Run mode above), the cost reporting target |
+
+These are **homes, not an inventory**. A value this pipeline does not have yet still has its home decided here — which is the point of a rule over a list, and why the refusals below can name things nothing has built.
 
 **What the rule refuses**, so it does not creep back:
 
@@ -89,22 +93,23 @@ Profile keys:
 
 ## Act 0 — Intake (before any agent runs)
 
-1. Parse the arguments: a leading `cleanup` selects Cleanup mode; a leading `auto` sets the **run mode** to `unattended`, its absence to `gated`; the rest are issue numbers and the optional `project:<slug>`. This is the ONLY place the run mode is derived — carry that one value from here. Then compute the Derived facts, read the repo profile (first run in a repo: ask-then-persist the branch template), and detect the execution mode.
-2. **Unattended mode requires Mode W.** Run mode `unattended` with no Workflow tool in your toolset → refuse the run here, before a single agent is dispatched. Mode A is tier-locked, so an unattended run there costs what the supervised run it replaces costs; contracts.md's **Mode implementations** carries all three reasons. The refusal names the setting, `"enableWorkflows": true` in the per-machine settings file (`~/.claude/settings.json`), and says a **restart is required** — tool availability is fixed at session start, so writing the setting cannot rescue this run. Asked once, then never again on this machine, with the settings file itself as the persistence:
+1. Parse the arguments: a leading `cleanup` selects Cleanup mode; a leading `auto` sets the **run mode** to `unattended`, its absence to `gated`; the rest are issue numbers and the optional `project:<slug>`. This is the ONLY place the run mode is derived — carry that one value from here. Then detect the execution mode, which is a toolset check and costs nothing.
+2. **Unattended mode requires Mode W.** Run mode `unattended` with no Workflow tool in your toolset → refuse the run here, before a single agent is dispatched and before this Act asks the user anything else — a developer whose run is about to be refused should not first be asked to fill in a profile it will never use. Mode A is tier-locked, so an unattended run there costs what the supervised run it replaces costs; contracts.md's **Mode implementations** carries all three reasons. The refusal names the setting, `"enableWorkflows": true` in the per-machine settings file (`~/.claude/settings.json`), and says a **restart is required** — tool availability is fixed at session start, so writing the setting cannot rescue this run. Asked once, then never again on this machine, with the settings file itself as the persistence:
 
    - key **absent** → AskUserQuestion once. Yes → write `"enableWorkflows": true` into that file (create it if missing; preserve every other key). No → write `"enableWorkflows": false`, which is a real answer and is why the question does not return.
    - key **present** → do not ask. `true` means the setting is already made and the session predates it: say so and say to restart. `false` means they declined: name the file and the key so they can change their mind.
 
    Either way this run stops — it does not silently continue in Mode A. This is per-machine, so it persists to the per-machine settings and never to the repo profile or a setup skill: the profile is per-repository, and intake is the only place that knows unattended mode was actually requested. A `gated` run with no Workflow tool is untouched and runs Mode A exactly as before.
-3. Worktree preconditions:
+3. Compute the Derived facts and read the repo profile (first run in a repo: ask-then-persist the branch template).
+4. Worktree preconditions:
    - `.claude/worktrees` not gitignored (`git check-ignore -q .claude/worktrees` fails) → append `.claude/worktrees/` to `.gitignore` and tell the user; lane worktrees are nested inside MAIN, so unignored they pollute every `git status` there.
    - `.scratch` not gitignored (`git check-ignore -q .scratch` fails) → append `.scratch/` to `.gitignore` and tell the user; plans live there.
    - `.worktreeinclude` missing — the repo-root file naming which gitignored files worktrees need (gitignore syntax; the same file Claude Code's own worktrees read) → ask-then-persist, the file itself being the persistence: offer candidates from `git ls-files -oi --exclude-standard --directory`, write the selection as a tracked file. "None" writes a comment-only file, which counts as answered. Offer only what a cold checkout cannot run without — env files and local config. Dependencies belong to the Setup command however cheap the Fast copy looks: a copied tree carries platform-specific native builds and drifts from the lockfile.
    - `.worktreeinclude`'s LAST line must be `!.claude/worktrees/**` — append or move it there (gitignore matching is last-match-wins, so only the final position shields reliably). It keeps every copy mechanism — Act 2 and Claude Code's native worktrees alike — from cloning existing worktrees into a new one.
-4. `git fetch origin <DEFAULT>` once.
-5. Per issue: `gh issue view <n> --json number,title,body,state,labels`. CLOSED → drop the lane, tell the user. KEEP the body: Phase B hands it to the reviewer as its Spec axis, and nothing downstream fetches it again — the reviewer's Bash is read-only and git-only.
-6. Parse each body's "Blocked by" section: a blocker that is still open and NOT in this batch → refuse that lane (report why); a blocker inside the batch → record the ordering (it becomes a stacked lane at Gate 1).
-7. Stateless resume check per issue — derive the stage from artifacts, never from memory:
+5. `git fetch origin <DEFAULT>` once.
+6. Per issue: `gh issue view <n> --json number,title,body,state,labels`. CLOSED → drop the lane, tell the user. KEEP the body: Phase B hands it to the reviewer as its Spec axis, and nothing downstream fetches it again — the reviewer's Bash is read-only and git-only.
+7. Parse each body's "Blocked by" section: a blocker that is still open and NOT in this batch → refuse that lane (report why); a blocker inside the batch → record the ordering (it becomes a stacked lane at Gate 1).
+8. Stateless resume check per issue — derive the stage from artifacts, never from memory:
    - Plan file exists with `Status: READY` → skip Phase A for that lane (offer replan if the user asks).
    - Plan commit messages already in `git log` of the lane's branch → those commits are done. A sub-lane whose commits are all present resumes by re-running the review — safe and idempotent, since nothing records that a review already passed.
    - A worktree already exists for the branch → reuse it as-is.
@@ -138,7 +143,7 @@ Wave logic: **anything based on origin/<DEFAULT> runs in wave 1; anything based 
 
 ## Act 3 — Phase B: execute
 
-Per wave, Mode W: run the Workflow tool with `scriptPath: <this-skill-dir>/phase-execute.js` and `args: { lanes, mode, maxFixCycles }` — the lane list, the mode, and the fix-cycle count, and nothing else. `mode` is the run mode Act 0 parsed, passed rather than re-derived, so the script reaches a lane's conclusion knowing which half of contracts.md's branch applies; `maxFixCycles` is the profile's **Fix cycles** key, ask-then-persisted before this first runs and passed verbatim — never a literal here. Each lane is `{ issue, issueBody (the body Act 0 fetched, verbatim), planPath (ABSOLUTE — .scratch exists only in the main tree), subLanes: [{ branch, worktree (absolute), base, area, commits: [{ordinal, message}] }] }`. Mode A: the same lanes through the same state machine per contracts.md. A lane's subLanes array contains only THIS wave's sub-lanes — later-wave sub-lanes of the same issue go into the next wave's args.
+Per wave, Mode W: run the Workflow tool with `scriptPath: <this-skill-dir>/phase-execute.js` and `args: { lanes, mode, maxFixCycles }` — the lane list, the mode, and the fix-cycle count, and nothing else. `mode` is the run mode Act 0 parsed — literally `gated` or `unattended`, never the `auto` token the developer typed — passed rather than re-derived, so the script reaches a lane's conclusion knowing which half of contracts.md's branch applies; `maxFixCycles` is the profile's **Fix cycles** key, ask-then-persisted before this first runs and passed verbatim — never a literal here. Each lane is `{ issue, issueBody (the body Act 0 fetched, verbatim), planPath (ABSOLUTE — .scratch exists only in the main tree), subLanes: [{ branch, worktree (absolute), base, area, commits: [{ordinal, message}] }] }`. Mode A: the same lanes through the same state machine per contracts.md. A lane's subLanes array contains only THIS wave's sub-lanes — later-wave sub-lanes of the same issue go into the next wave's args.
 
 Build each sub-lane's `commits` from the plan's `## Commit / PR breakdown`: the entries belonging to that sub-lane's PR, in plan order; `ordinal` = 1-based position within the whole breakdown; `message` verbatim from the plan. Omit commits Act 0 already found in the branch's git log (resume).
 
@@ -150,7 +155,7 @@ Between waves (`gated`; under `unattended` the wave proceeds unasked, per the Ru
 
 ## Gate 2 — push & PR (per wave; PushNotification first)
 
-Under `unattended` this gate does all of the work below and asks none of its questions — the Run mode table above gives each one's answer. The push happens, the PR opens.
+Under `unattended` this gate does all of the work below and asks none of its questions — the Run mode table above gives each one's answer.
 
 Gate 2 fires at the end of EVERY wave, for that wave's completed lanes — never hold a finished lane until the whole batch ends: its PR should start CI and human review immediately, and the user must get a vet point before dependent waves build on it. A batch with no stacking has one wave, and therefore exactly one Gate 2. Per completed lane, show: commit list, the planned-versus-made commit counts (`<n> planned, <m> made` — informational, never a blocker), deviation counts, the **acceptance criteria** — the reviewer's `met | partial | not-met` verdict per criterion with its evidence, also informational — and the **findings ledger** — fixed findings / won't-fix (disputed by the writer, retracted by the reviewer, with the writer's reason) / reviewer NOTES. For lanes that ended UNRESOLVED on contested findings, present both sides of each contested finding and ask the user to arbitrate: uphold the finding (send it back through the writer as a targeted fix and resume the lane) or accept the dispute (record it as won't-fix, documented). AskUserQuestion: approve / hold. On approve, per sub-lane in order:
 
@@ -175,7 +180,7 @@ Ended lanes: report the category (**HALT** — the lane died, nothing to review;
 
 ## Hard rules
 
-- Invoking `/dev-loop` IS the user's explicit opt-in to multi-agent orchestration. Enter Phase A and Phase B directly — NEVER pause to ask whether to run them; running a phase is NOT a gate. The ONLY human gates in this pipeline are Gate 1 (plan approval), Gate 2 (push/PR), and the profile's one-time ask-then-persist questions. Under `unattended` the first two ask nothing and only the profile's questions remain.
+- Invoking `/dev-loop` IS the user's explicit opt-in to multi-agent orchestration. Enter Phase A and Phase B directly — NEVER pause to ask whether to run them; running a phase is NOT a gate. The ONLY human gates in this pipeline are Gate 1 (plan approval) and Gate 2 (push/PR), and under `unattended` neither asks anything. The one-time ask-then-persist preconditions are not gates and survive both modes: the profile's keys, `.worktreeinclude`, and the runner setting Act 0 asks about — each asked once ever, and each with somewhere durable to record the answer.
 - Never proceed past a gate without explicit user approval — under `gated`, which is every run the `auto` token did not open.
 - **Append-only, whoever is watching.** The run may append to issues and pull requests (`gh issue comment`, `gh pr comment`), may add and remove its own workflow labels and no others, and may set state only on artifacts it created — its own branches, its own PRs, its own plan files. It NEVER edits an issue body, NEVER ticks an acceptance-criteria checkbox, and NEVER converts a pull request a human opened. Per-criterion verdicts are *reported*, never written back to the issue's checklist — contracts.md's **Append-only invariant** carries the reasoning.
 - NEVER remove, force-modify, or `rm -rf` the main worktree (first entry of `git worktree list`). Worktree removal applies only to worktrees under `<WORKTREES>`, and only via `git worktree remove` without `--force`.

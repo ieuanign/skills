@@ -64,6 +64,9 @@ not to.
 `/dev-loop <issues>` drives one or more GitHub issues end-to-end — plan → implement → review —
 each in its own git worktree, with parallel lanes and human gates only at plan approval and push/PR.
 
+`/dev-loop auto <issues>` runs the same pipeline **unattended**: neither gate asks, so an issue goes
+from filed to pushed PR without supervision. Suppression removes the questions, not the work.
+
 You are the orchestrator; the agent roster does the work:
 
 | Agent | Role |
