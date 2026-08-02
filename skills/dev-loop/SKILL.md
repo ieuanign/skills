@@ -46,6 +46,27 @@ Touchpoint intersection, sub-lane splitting, the profile's Constraints, the push
 - **GitHub repo** — never pass `--repo`: every `gh` command runs inside a checkout of this repo (worktrees included), and gh infers the repository from the remote.
 - **Fast copy** — macOS: `/bin/cp -Rc` (APFS clonefile, instant; MUST be `/bin/cp` — a GNU cp on PATH rejects `-c`); Linux: `cp -R --reflink=auto`; anywhere else: plain `cp -R`.
 
+## Where configuration lives — a rule, not a list
+
+Adding a value to this pipeline? The rule decides its home, so a new value never needs a debate:
+
+> **Varies per run → argument. Varies per repository → profile. Does not vary → constant.**
+
+| Home | Values |
+|---|---|
+| **Argument** | the run mode, the issue list, the optional `project:<slug>` |
+| **Repository profile** (ask-then-persist, below) | branch template, PR title format, PR body template, setup command, constraints, **fix cycles** |
+| **Phase-script constant** | per-stage effort and model tiers, the per-commit debug-and-fix bound, the stage list each mode runs |
+| **Skill constant** | gate suppression under `unattended` (stated once under Run mode above), the cost reporting target |
+
+**What the rule refuses**, so it does not creep back:
+
+- **No per-repository effort tiers.** Cost behaviour stays predictable across repositories; a tier is a phase-script constant or it is nothing.
+- **No per-run overrides of gates, stages, or cost behaviour.** The run mode is the only argument that changes pipeline behaviour, and all it selects is the Lane conclusion branch.
+- **The cost reporting target stays a constant** — it was measured as a single median across repositories, with no evidence it varies by one. Promote it if one repository's lanes prove consistently larger.
+
+Each refusal is a cheap promotion from constant to profile key if a repository ever actually needs one. That cheapness is the reason to refuse now rather than pre-empt.
+
 ## Repo profile — `docs/agents/dev-loop.md` (ask-then-persist)
 
 The per-repo config, read at Act 0. Optional: a repo without one runs on pure defaults. The rule for every non-derivable value: when a run first NEEDS it and the profile lacks it, AskUserQuestion ONCE, persist the answer into the profile (create the file if needed), and never ask again — a persisted "none" counts as an answer. Never store derivable facts there.
@@ -56,6 +77,7 @@ Profile keys:
 - **PR title format** — default: `<type>(<scope>): #<issue> - <title>`.
 - **PR body template** — asked at the first Gate 2; whatever its shape, the core elements in Gate 2 below must survive.
 - **Setup command** — what a cold checkout runs before its tests pass (e.g. `npm ci`). Asked at the first provisioning.
+- **Fix cycles** — how many review fix cycles a sub-lane may spend before it ends UNRESOLVED with its findings open. Default offered: `2`. Asked before the first Phase B run in a repo, because that is where the bound first bites. A repository fact, not a constant: a repository with a flaky suite genuinely wants more cycles, and one that would rather read every finding itself can answer `0`.
 - **Constraints** — free-form repo cautions (e.g. "backend tests share one database — never run two backend lanes concurrently"). Honor them when deciding lanes vs waves (Gate 1) and when provisioning (Act 2).
 
 ## Execution modes (detect at Act 0)
@@ -116,7 +138,7 @@ Wave logic: **anything based on origin/<DEFAULT> runs in wave 1; anything based 
 
 ## Act 3 — Phase B: execute
 
-Per wave, Mode W: run the Workflow tool with `scriptPath: <this-skill-dir>/phase-execute.js` and `args: { lanes, mode, maxFixCycles: 2 }` — `mode` is the run mode Act 0 parsed, passed rather than re-derived, so the script reaches a lane's conclusion knowing which half of contracts.md's branch applies — where each lane is `{ issue, issueBody (the body Act 0 fetched, verbatim), planPath (ABSOLUTE — .scratch exists only in the main tree), subLanes: [{ branch, worktree (absolute), base, area, commits: [{ordinal, message}] }] }`. Mode A: the same lanes through the same state machine per contracts.md. A lane's subLanes array contains only THIS wave's sub-lanes — later-wave sub-lanes of the same issue go into the next wave's args.
+Per wave, Mode W: run the Workflow tool with `scriptPath: <this-skill-dir>/phase-execute.js` and `args: { lanes, mode, maxFixCycles }` — the lane list, the mode, and the fix-cycle count, and nothing else. `mode` is the run mode Act 0 parsed, passed rather than re-derived, so the script reaches a lane's conclusion knowing which half of contracts.md's branch applies; `maxFixCycles` is the profile's **Fix cycles** key, ask-then-persisted before this first runs and passed verbatim — never a literal here. Each lane is `{ issue, issueBody (the body Act 0 fetched, verbatim), planPath (ABSOLUTE — .scratch exists only in the main tree), subLanes: [{ branch, worktree (absolute), base, area, commits: [{ordinal, message}] }] }`. Mode A: the same lanes through the same state machine per contracts.md. A lane's subLanes array contains only THIS wave's sub-lanes — later-wave sub-lanes of the same issue go into the next wave's args.
 
 Build each sub-lane's `commits` from the plan's `## Commit / PR breakdown`: the entries belonging to that sub-lane's PR, in plan order; `ordinal` = 1-based position within the whole breakdown; `message` verbatim from the plan. Omit commits Act 0 already found in the branch's git log (resume).
 

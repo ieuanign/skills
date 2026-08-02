@@ -11,7 +11,7 @@ export const meta = {
 // args: {
 //   lanes: [{ issue, issueBody, planPath, subLanes: [{ branch, worktree, base, area?, commits: [{ordinal, message}] }] }],
 //   mode: 'gated' | 'unattended',
-//   maxFixCycles: number
+//   maxFixCycles: number   // the profile's Fix cycles key; absent ⇒ the profile's default of 2
 // }
 // subLanes contains only the CURRENT wave's sub-lanes; worktree is absolute.
 // issueBody is the issue's body verbatim, which the host already fetched at intake — the
@@ -28,7 +28,12 @@ export const meta = {
 const input = typeof args === 'string' ? JSON.parse(args) : args
 
 const writerType = 'code-writer'
-const MAX_FIX = input.maxFixCycles || 2
+
+// The fix-cycle bound is a repository fact, not a constant: a repository with a flaky suite wants
+// more cycles, and one that would rather read every finding itself answers 0. The host passes the
+// profile's value; the 2 below is the profile's own default, reached only when a host passed no
+// number at all. `|| 2` would be wrong — it turns a deliberate 0 back into two cycles.
+const MAX_FIX = Number.isInteger(input.maxFixCycles) && input.maxFixCycles >= 0 ? input.maxFixCycles : 2
 
 // The run mode, parsed once by the host and passed in rather than re-derived here. Nothing in
 // this phase branches on it yet — its consumers are the notifier and the unattended conclusion,

@@ -58,7 +58,7 @@ For each plan commit, in order:
 3. At most **2** debug+fix attempts per commit, then **HALT** — the commit was never produced.
 4. `BLOCKED` → **HALT** with the writer's reason. Anything other than `COMMITTED` after routing → **HALT**.
 
-## Review loop — bound: maxFixCycles = 2
+## Review loop — bound: the repo profile's fix-cycle count (default 2)
 
 On the sub-lane's exact range `<base>..<branch>` (the base may itself be a stacked feature branch — never review the base's own commits), with the issue body passed in so the reviewer runs its Spec axis:
 
@@ -67,7 +67,7 @@ On the sub-lane's exact range `<base>..<branch>` (the base may itself be a stack
 3. The re-review receives the disputes and re-verifies each:
    - retracted disputes become documented **won't-fix** entries in the lane's findings ledger;
    - still-confirmed disputes (`CONTESTED`) end the lane **UNRESOLVED** immediately — no further cycle is spent on an agent stalemate.
-4. At most **2** fix cycles, then **UNRESOLVED** — the code exists and its findings are still open.
+4. At most the profile's **fix-cycle count** cycles, then **UNRESOLVED** — the code exists and its findings are still open. The count is a repository fact and reaches both implementations as a value, never as a literal: a repository with a flaky suite raises it, and one that answers `0` spends no fix cycle at all — its first `CHANGES_REQUESTED` ends the lane with the findings open.
 5. A fix-cycle writer return other than `COMMITTED` → **HALT**.
 6. `APPROVED` → the review loop is done.
 
