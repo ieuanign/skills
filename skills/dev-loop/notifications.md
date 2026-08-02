@@ -2,7 +2,7 @@
 
 This file is the single source of truth for what an unattended run writes to the outside world as it goes: its workflow labels, its issue comments, and its messages. Two writers emit them — the **host**, at its own boundaries, and the **notifier** subagent, from inside a running phase script — and each implements this file rather than restating it. It is normative for its subject the way `contracts.md` is normative for the state machine: the role contracts, terminal categories, findings ledger and append-only invariant are `contracts.md`'s, and this file names them without redefining them. If an implementation and this file disagree, this file governs.
 
-**Nothing here fires in gated mode** (the supervised run, where a human concludes the lane). Stated once; no section below repeats it.
+**Nothing here fires in gated mode** (the supervised run, where a human concludes the lane).
 
 ## Event table
 
@@ -23,21 +23,21 @@ Routing every event through the notifier was rejected: it spends an agent to run
 
 ## Label roles and the rule that selects one
 
-Three roles — **in-progress**, **awaiting-human**, **failed**. Roles, never strings: each resolves through the consuming repository's triage-label documentation (`docs/agents/triage-labels.md`), so a repository keeps its own vocabulary. Giving a role a label where the repository has none is that repository's setup work, not this pipeline's.
+Three roles — **in-progress**, **awaiting-human**, **crashed**. Roles, never strings: each resolves through the consuming repository's triage-label documentation (`docs/agents/triage-labels.md`), so a repository keeps its own vocabulary. Giving a role a label where the repository has none is that repository's setup work, not this pipeline's.
 
 One question selects the role: **did the run reach a reasoned conclusion, or did a stage break?**
 
 | Outcome | Role applied |
 |---|---|
 | a conclusion needing a human — a halt carrying its diagnosis, and every draft PR | awaiting-human |
-| a break — any dead agent, any unrunnable stage | failed |
+| a break — any dead agent, any unrunnable stage | crashed |
 | a ready PR | none |
 
 The in-progress role is removed in every one of the three, including the one that applies nothing. Which endings open a draft PR rather than a ready one is the terminal-state table's, specified separately over `contracts.md`'s terminal categories.
 
 Two properties fall out of that question rather than being designed in:
 
-- **failed is always a crash and never a verdict.** A lane that reasoned its way to an ending takes awaiting-human however bad the ending was, so failed answers exactly one question: *is this worth retrying?*
+- **crashed is never a verdict.** A lane that reasoned its way to an ending takes awaiting-human however bad that ending was, so crashed answers exactly one question: *is this worth retrying?*
 - **Every draft-PR case is host-applied and every halt case is notifier-applied** — straight out of the scoping rule, since a PR is opened at a host boundary and a halt happens mid-script.
 
 ## Messages and comments
@@ -55,7 +55,7 @@ The payload arrives on standard input and never enters a shell string: it is age
 - Labels are written before a single token is spent, so a crash still leaves the marker behind.
 - Labels are crash-safe; messaging is best-effort. Neither costs tokens.
 - Exactly one closing message per lane, so a start with no close plus a stale in-progress label reads as a dead run by inspection.
-- A developer with no channel configured gets silence, not an error.
+- An unconfigured channel is silent, per the channel contract above — opting out is a supported state, not a fault.
 
 ## Recorded hazards
 
