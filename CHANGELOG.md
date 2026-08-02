@@ -1,5 +1,33 @@
 # ieuanign-skills
 
+## 0.3.0
+
+### Minor Changes
+
+- [#40](https://github.com/ieuanign/skills/pull/40) [`37fa2e0`](https://github.com/ieuanign/skills/commit/37fa2e0e095ed243c820f27b40b73e35d7a44392) Thanks [@ieuanign](https://github.com/ieuanign)! - The `dev-loop` roster ships as plugin agents, and its skill preloads now resolve.
+
+  `skills:` in a subagent's frontmatter is a **preload** — it injects the skill body at agent startup, and a name that doesn't resolve is skipped with only a debug-log warning. All three roster preloads were silently dead: `code-writer`'s `tdd` and `debugger`'s `diagnosing-bugs` exist bare only on the npx path, and `reviewer`'s `code-review` pointed at the bundled skill, which sets `disable-model-invocation` and is unpreloadable by rule. None of the three has the `Skill` tool, so preload was their only channel.
+
+  What changed:
+
+  - The roster moved from `skills/dev-loop/agents/` to `agents/` at the plugin root, where it installs with the plugin. `/dev-loop`'s Act 0 no longer checks for or copies roster members into your repo.
+  - `code-writer` and `debugger` preload `mattpocock-skills:tdd` and `mattpocock-skills:diagnosing-bugs` — namespaced, so they resolve on the plugin path.
+  - `reviewer` carries no preload at all. Its Standards axis is now self-contained (standards-source discovery plus the twelve-smell baseline), and it runs on a more capable model at high reasoning effort.
+  - The marketplace declares `mattpocock-skills` as a cross-marketplace dependency, so installing this plugin pulls Matt's in automatically. The prerequisite is enforced rather than documented.
+  - `npx skills add` is now best-effort: it installs the skills but not the roster agents, and the namespaced preloads don't resolve on that path. Use the plugin install.
+
+  **Migration.** If you ran `/dev-loop` before this release, it copied the roster into your repo. Those copies are now stale and shadow nothing useful — delete them:
+
+  ```bash
+  rm .claude/agents/{architecture-engineer,code-writer,debugger,reviewer}.md
+  ```
+
+### Patch Changes
+
+- [#40](https://github.com/ieuanign/skills/pull/40) [`37fa2e0`](https://github.com/ieuanign/skills/commit/37fa2e0e095ed243c820f27b40b73e35d7a44392) Thanks [@ieuanign](https://github.com/ieuanign)! - `dev-loop`: Act 2's `.worktreeinclude` copy step now says to strip the trailing slash off directory entries before copying.
+
+  `git ls-files --directory` collapses a fully-ignored directory to a single entry ending in `/`, and `cp -R dir/ dest/` copies that directory's _contents_ rather than the directory itself — so anything provisioned this way landed one level too high, scattered directly into the worktree's `.claude/` instead of `.claude/agents/` and `.claude/skills/`. Silent: the copy reports success and the files exist, just at the wrong path.
+
 ## 0.2.2
 
 ### Patch Changes
