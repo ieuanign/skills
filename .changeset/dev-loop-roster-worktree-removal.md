@@ -1,0 +1,11 @@
+---
+"ieuanign-skills": patch
+---
+
+`/dev-loop`: lane worktrees can now actually be removed at Gate 2. Act 0 copies the agent roster into `MAIN/.claude/agents/` and Act 2 copies `<MAIN>/.claude` into every lane worktree, so in a repo that neither tracks nor gitignores that path the copies land untracked and unignored — and Gate 2's `git worktree remove`, which is forbidden from using `--force`, refused on every lane. The documented fallback ("report the stray files and keep the worktree") fired as the rule rather than the exception, worktrees accumulated under `.scratch/worktrees/`, and the skill's closing guarantee that a fully approved run leaves only the main worktree was false.
+
+The fix is a new Act 0 worktree precondition: `/.claude/` goes into `<git-common-dir>/info/exclude`. Editing `.gitignore` or `git add`-ing in MAIN cannot fix this, because a linked worktree resolves ignore rules from its own checkout — the base branch's committed `.gitignore`, never MAIN's working copy or index — so a `.gitignore` line only takes effect on lanes branched after it reaches the default branch. `info/exclude` is the one file every linked worktree reads, and it stays repo-local and uncommitted. Separately, the roster check now settles repo hygiene once via the profile's new **Roster hygiene** key — track it or ignore it — rather than leaving a directory it created with no decision about how the repo manages it.
+
+Gate 2's fallback narrows to match: the no-`--force` rule is unchanged, but a refusal now means the lane itself left something behind, and the report names the paths. Cleanup mode re-applies the precondition so worktrees provisioned before it existed can also be reaped.
+
+Two things worth recording, both found by verifying rather than reasoning. A repo that *tracks* `.claude/agents/` is affected as well, not just the "neither" class — `cp -R` copies all of `.claude`, and untracked local settings inside it block removal identically; that class only appears safe on a machine whose personal global ignore happens to cover them. And the "track it" answer needs `git add -f`, because the precondition runs first and git refuses to add an explicitly named ignored path, exiting non-zero having staged nothing.

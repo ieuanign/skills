@@ -36,6 +36,7 @@ Profile keys:
 - **PR title format** — default: `<type>(<scope>): #<issue> - <title>`.
 - **PR body template** — asked at the first Gate 2; whatever its shape, the core elements in Gate 2 below must survive.
 - **Constraints** — free-form repo cautions (e.g. "backend tests share one database — never run two backend lanes concurrently"). Honor them when deciding lanes vs waves (Gate 1) and when provisioning (Act 2).
+- **Roster hygiene** — how the repo manages the `.claude/agents/` roster Act 0 writes: `tracked` or `ignored`. Asked at the first run that finds it neither; a repo that already tracks or already ignores the path has answered it itself.
 
 ## Execution modes (detect at Act 0)
 
@@ -51,7 +52,8 @@ Profile keys:
    - `.scratch` not gitignored (`git check-ignore -q .scratch` fails) → append `.scratch/` to `.gitignore` and tell the user; worktrees inside an unignored `.scratch/` pollute every `git status`.
    - `.worktreeinclude` missing — the repo-root file naming which gitignored files worktrees need (gitignore syntax; the same file Claude Code's own worktrees read) → ask-then-persist, the file itself being the persistence: offer candidates from `git ls-files -oi --exclude-standard --directory` (env files, local config, `node_modules/` — leave out caches and OS noise), write the selection as a tracked file. "None" writes a comment-only file, which counts as answered.
    - `.worktreeinclude`'s LAST line must be `!.scratch/**` — append or move it there (gitignore matching is last-match-wins, so only the final position shields reliably). It keeps every copy mechanism — Act 2 and Claude Code's native worktrees alike — from cloning `.scratch` contents (the worktrees themselves included) into new worktrees.
-3. Roster check: architecture-engineer, code-writer, reviewer, and debugger must exist in `MAIN/.claude/agents/`. Copy any that are missing from `<this-skill-dir>/agents/` and tell the user.
+   - `<git-common-dir>/info/exclude` must carry a `/.claude/` line — resolve the dir with `git rev-parse --path-format=absolute --git-common-dir` (the bare form prints a RELATIVE `.git`, which appends to the wrong file from any other cwd), `mkdir -p` its `info/`, append only if `grep -qxF` misses. Here and not `.gitignore`, because a linked worktree resolves ignores from its OWN checkout — the base branch's committed `.gitignore`, never MAIN's working copy or index — so nothing edited or `git add`ed in MAIN reaches it, whereas this file every linked worktree reads and it stays repo-local and uncommitted. Needed in EVERY repo class: Act 2's `cp -R` takes ALL of `.claude`, and local settings inside it are untracked even where the roster is tracked (tracked files are never hidden). Without it, Gate 2's `git worktree remove` refuses on EVERY lane.
+3. Roster check: architecture-engineer, code-writer, reviewer, and debugger must exist in `MAIN/.claude/agents/`. Copy any that are missing from `<this-skill-dir>/agents/` and tell the user. Then settle how the repo manages them — ask-then-persist, profile key **Roster hygiene**: already tracked (`git ls-files --error-unmatch`) or already ignored (`git check-ignore -q`) answers itself — record which, never ask. Otherwise AskUserQuestion ONCE: **track it** (`git add -f .claude/agents/`, then say it is staged, not committed — the `-f` is REQUIRED, since the precondition above excludes `.claude/` and git refuses an explicitly named ignored path, exiting 1 having staged nothing) or **keep it local** (append `.claude/agents/` to `.gitignore`). Repo hygiene only — the `info/exclude` precondition, not this answer, is what makes lane worktrees removable.
 4. `git fetch origin <DEFAULT>` once.
 5. Per issue: `gh issue view <n> --json number,title,body,state,labels`. CLOSED → drop the lane, tell the user.
 6. Parse each body's "Blocked by" section: a blocker that is still open and NOT in this batch → refuse that lane (report why); a blocker inside the batch → record the ordering (it becomes a stacked lane at Gate 1).
@@ -80,7 +82,7 @@ Only lanes the user approves proceed. Drop the rest with a note.
 Wave logic: **anything based on origin/<DEFAULT> runs in wave 1; anything based on a branch that gets its commits in wave N runs in wave N+1** — this applies to stacked _lanes_ AND to dependent _sub-lanes_ within one lane (a frontend sub-lane based on its own backend sub-lane's branch waits for the next wave; provisioning it earlier would capture a base with zero feature commits). Provision a wave only after its bases completed the previous wave. For each sub-lane in the current wave:
 
 1. `git worktree add <WORKTREES>/<slug> -b <branch> <base>`. Base is `origin/<DEFAULT>` or the stack/sub-lane base branch. On resume: an existing worktree is reused as-is; an existing branch WITHOUT a worktree reattaches with `git worktree add <WORKTREES>/<slug> <branch>` (no `-b` — the `-b` form errors on an existing branch).
-2. `cp -R <MAIN>/.claude <wt>/` (the CLAUDE.md layer must exist in the worktree).
+2. `cp -R <MAIN>/.claude <wt>/` (the CLAUDE.md layer must exist in the worktree). These copies are untracked in the worktree by construction — Act 0's `info/exclude` precondition is the only thing keeping them from blocking removal at Gate 2.
 3. `.worktreeinclude` copies: `git -C <MAIN> ls-files -oi --exclude-from=.worktreeinclude --directory` lists the matches (files, plus fully-ignored dirs like `node_modules/` collapsed to one entry); fast-copy each from MAIN into the worktree at the same relative path, creating parent directories. Worktree contents never appear in the list — the `!.scratch/**` line Act 0 guarantees excludes them.
 
 ## Act 3 — Phase B: execute
@@ -104,7 +106,7 @@ Gate 2 fires at the end of EVERY wave, for that wave's completed lanes — never
 
    🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
-3. After the lane's push + PR succeed, remove its worktrees immediately: `git worktree remove <WORKTREES>/<slug>` per sub-lane — never `--force`; if it refuses over stray non-ignored files, report them and keep the worktree. NEVER target MAIN: before any removal, confirm the path is NOT the first entry of `git worktree list`. The local branch and the plan file stay (`/dev-loop cleanup` reaps those once the PR merges). Held lanes and lanes that ended HALT or UNRESOLVED KEEP their worktrees for review/resume. A fully approved run ends with ONLY the main worktree remaining.
+3. After the lane's push + PR succeed, remove its worktrees immediately: `git worktree remove <WORKTREES>/<slug>` per sub-lane — never `--force`. Provisioning's own copies can no longer cause a refusal (Act 0's `info/exclude` precondition covers them), so a refusal now means the LANE left something behind: report `git -C <wt> status --porcelain` verbatim and keep that worktree. NEVER target MAIN: before any removal, confirm the path is NOT the first entry of `git worktree list`. The local branch and the plan file stay (`/dev-loop cleanup` reaps those once the PR merges). Held lanes and lanes that ended HALT or UNRESOLVED KEEP their worktrees for review/resume. A fully approved run ends with ONLY the main worktree remaining — the one exception is a lane that left uncommitted work of its own, and that lane is named in the report.
 
 Stacked lanes: PR base is the base lane's branch; note the stack in the body ("Stacked on #<A>'s PR — rebase onto <DEFAULT> after it merges"). Removing the base lane's worktree does not affect a stacked lane — it branches from the base's _branch_, which survives worktree removal.
 
@@ -112,7 +114,7 @@ Ended lanes: report the category (**HALT** — the lane died, nothing to review;
 
 ## Cleanup mode (`/dev-loop cleanup`)
 
-1. `git fetch origin <DEFAULT>`.
+1. `git fetch origin <DEFAULT>`, and re-apply Act 0's `<git-common-dir>/info/exclude` precondition — worktrees provisioned before it existed still carry unignored copies of `.claude` and would refuse removal here too.
 2. For every worktree under `<WORKTREES>`: if its branch's PR is merged (`gh pr view <branch> --json state,mergedAt`) or the branch is fully merged into origin/<DEFAULT>: `git worktree remove <path>`, delete the local branch, and delete the lane's plan file `.scratch/*/plans/<n>-*.md` (plans are temporary artifacts).
 3. NEVER remove a worktree with uncommitted changes — list it instead.
 4. NEVER touch MAIN (the first entry of `git worktree list`) — it is not a candidate under any condition; only worktrees under `<WORKTREES>` are.

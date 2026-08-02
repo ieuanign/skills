@@ -89,7 +89,8 @@ You are the orchestrator; a bundled agent roster does the work:
 | `debugger` | Report-only root-cause investigator for red tests/builds |
 
 The roster ships **inside** the skill (`skills/dev-loop/agents/`). On its first run in a repo, `dev-loop`
-copies any missing roster members into that repo's `.claude/agents/` — no separate install step.
+copies any missing roster members into that repo's `.claude/agents/` — no separate install step — and asks
+once whether the repo should track or ignore them.
 The skill is repo- and machine-agnostic; per-repo settings live in `docs/agents/dev-loop.md`
 (ask-then-persist on first run).
 
