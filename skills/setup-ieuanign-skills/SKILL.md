@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Setup Ieuan's Skills
 
-Scaffold `docs/agents/coding-standards.md` — the repo-tailored review rubric `/code-review`'s Standards axis reads instead of rediscovering conventions from scratch each run, and the `reviewer` agent inside `/dev-loop` reads via the same skill.
+Scaffold `docs/agents/coding-standards.md` — the repo-tailored review rubric `/code-review`'s Standards axis reads instead of rediscovering conventions from scratch each run, and the `reviewer` agent inside `/dev-loop` reads as its own first standards source.
 
 This is a prompt-driven skill, not a deterministic script. Explore, draft, stress-test with the user, then write.
 
@@ -17,6 +17,8 @@ This is a prompt-driven skill, not a deterministic script. Explore, draft, stres
 Find every `CLAUDE.md` in the repo — the root, and any nested ones a multi-context repo splits by area (`backend/CLAUDE.md`, `frontend/CLAUDE.md`, etc.). Read all of them. Also check for `CODING_STANDARDS.md` / `CONTRIBUTING.md`.
 
 Check whether `docs/agents/coding-standards.md` already exists. If it does, tell the user and ask whether to regenerate (CLAUDE.md may have changed since) or leave it alone — don't overwrite silently.
+
+If `docs/agents/issue-tracker.md` is absent, mention once that `/mattpocock-skills:setup-matt-pocock-skills` sets up the rest of the `docs/agents` layout, then carry on. This skill doesn't depend on it and runs correctly either way.
 
 ### 2. Draft
 
@@ -37,4 +39,4 @@ Write `docs/agents/coding-standards.md`. If the repo already has a `## Agent ski
 
 ### 5. Done
 
-Tell the user setup is complete and which skills/agents now read this file: `/code-review`'s Standards axis, and the `reviewer` agent inside `/dev-loop` (via its `code-review` skill link). Mention that CLAUDE.md stays the binding source — this doc is a derived rubric that doesn't re-sync automatically; re-run this skill by hand if CLAUDE.md changes materially.
+Tell the user setup is complete and which skills/agents now read this file: `/code-review`'s Standards axis, and the `reviewer` agent inside `/dev-loop`. Mention that CLAUDE.md stays the binding source — this doc is a derived rubric that doesn't re-sync automatically; re-run this skill by hand if CLAUDE.md changes materially.

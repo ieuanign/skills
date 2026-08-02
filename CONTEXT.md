@@ -12,11 +12,11 @@ This repo is **not** self-contained. It ships only skills that are original to I
 
 ## dev-loop
 
-The issue-to-PR pipeline. An **orchestrator** skill that stays in the main worktree and delegates all planning, coding, reviewing, and debugging to a bundled **agent roster**; it owns intake, human gates, worktree provisioning, push, and PRs. Repo- and machine-agnostic: it hardcodes no repository fact and self-installs its roster on first run.
+The issue-to-PR pipeline. An **orchestrator** skill that stays in the main worktree and delegates all planning, coding, reviewing, and debugging to the **agent roster**; it owns intake, human gates, worktree provisioning, push, and PRs. Repo- and machine-agnostic: it hardcodes no repository fact.
 
 ## Agent roster
 
-The four subagents bundled inside `dev-loop/agents/`: `architecture-engineer`, `code-writer`, `reviewer`, and `debugger`. On its first run in a repo, `dev-loop` copies any missing roster members into that repo's `.claude/agents/`.
+The four subagents this plugin ships from `agents/` at its root: `architecture-engineer`, `code-writer`, `reviewer`, and `debugger`. They install with the plugin and are dispatched by name; nothing is copied into the consuming repo.
 
 ## Coding standards
 

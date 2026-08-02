@@ -13,16 +13,23 @@ See `README.md` for the consumer story and `CONTEXT.md` for the vocabulary.
 ```
 skills/<skill-name>/SKILL.md        # flat — one folder per skill, auto-discovered by `npx skills add`
 skills/<skill-name>/...             # optional supporting files travel with the skill
+agents/<agent-name>.md              # the dev-loop roster, as plugin agents
 .claude-plugin/plugin.json          # enumerates skill paths + version (for the /plugin install path)
-.claude-plugin/marketplace.json     # marketplace metadata
+.claude-plugin/marketplace.json     # marketplace metadata + the mattpocock-skills dependency
 ```
 
-Both distribution paths are supported: `npx skills add ieuanign/skills` (auto-discovers `SKILL.md`
-folders) and `/plugin install ieuanign-skills@ieuanign` (reads `.claude-plugin/`).
+`/plugin install ieuanign-skills@ieuanign` (reads `.claude-plugin/`) is the supported path; it is the
+only one that installs the roster and the only one where the agents' namespaced skill preloads
+resolve. `npx skills add ieuanign/skills` still works for the skills alone — it auto-discovers
+`SKILL.md` folders and nothing else.
+
+The repo root is the plugin root (`"source": "./"`), so `agents/` is the default agent location.
+Do **not** add an `agents` field to `plugin.json` — the default discovery already covers it.
 
 ## Adding or changing a skill
 
-1. Create / edit `skills/<name>/SKILL.md` (+ any supporting files in the same folder).
+1. Create / edit `skills/<name>/SKILL.md` (+ any supporting files in the same folder). A roster agent
+   is `agents/<name>.md` instead, and needs no manifest entry.
 2. If adding a skill, add its path to the `skills` array in `.claude-plugin/plugin.json`.
 3. Link it from `README.md`.
 4. Add a changeset: `npm run changeset` (describe the change; pick the bump).
