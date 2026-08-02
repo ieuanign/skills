@@ -51,11 +51,10 @@ Profile keys:
    - `.scratch` not gitignored (`git check-ignore -q .scratch` fails) → append `.scratch/` to `.gitignore` and tell the user; worktrees inside an unignored `.scratch/` pollute every `git status`.
    - `.worktreeinclude` missing — the repo-root file naming which gitignored files worktrees need (gitignore syntax; the same file Claude Code's own worktrees read) → ask-then-persist, the file itself being the persistence: offer candidates from `git ls-files -oi --exclude-standard --directory` (env files, local config, `node_modules/` — leave out caches and OS noise), write the selection as a tracked file. "None" writes a comment-only file, which counts as answered.
    - `.worktreeinclude`'s LAST line must be `!.scratch/**` — append or move it there (gitignore matching is last-match-wins, so only the final position shields reliably). It keeps every copy mechanism — Act 2 and Claude Code's native worktrees alike — from cloning `.scratch` contents (the worktrees themselves included) into new worktrees.
-3. Roster check: architecture-engineer, code-writer, reviewer, and debugger must exist in `MAIN/.claude/agents/`. Copy any that are missing from `<this-skill-dir>/agents/` and tell the user.
-4. `git fetch origin <DEFAULT>` once.
-5. Per issue: `gh issue view <n> --json number,title,body,state,labels`. CLOSED → drop the lane, tell the user.
-6. Parse each body's "Blocked by" section: a blocker that is still open and NOT in this batch → refuse that lane (report why); a blocker inside the batch → record the ordering (it becomes a stacked lane at Gate 1).
-7. Stateless resume check per issue — derive the stage from artifacts, never from memory:
+3. `git fetch origin <DEFAULT>` once.
+4. Per issue: `gh issue view <n> --json number,title,body,state,labels`. CLOSED → drop the lane, tell the user.
+5. Parse each body's "Blocked by" section: a blocker that is still open and NOT in this batch → refuse that lane (report why); a blocker inside the batch → record the ordering (it becomes a stacked lane at Gate 1).
+6. Stateless resume check per issue — derive the stage from artifacts, never from memory:
    - Plan file exists with `Status: READY` → skip Phase A for that lane (offer replan if the user asks).
    - Plan commit messages already in `git log` of the lane's branch → those commits are done. A sub-lane whose commits are all present resumes by re-running the review — safe and idempotent, since nothing records that a review already passed.
    - A worktree already exists for the branch → reuse it as-is.
