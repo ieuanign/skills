@@ -1,6 +1,8 @@
 # Gitignored files that worktrees need, in gitignore syntax.
-# Nothing to copy: .claude/ is copied by provisioning itself, and .DS_Store is OS noise.
+# Nothing to copy: dependencies are the Setup command's job, .scratch holds
+# plans the lane reaches by absolute path, and .claude/{skills,agents} are
+# dogfooding links a lane has no use for.
 
 # MUST stay last — gitignore matching is last-match-wins, so only the final
-# position reliably stops copy mechanisms cloning .scratch (worktrees included).
-!.scratch/**
+# position reliably stops copy mechanisms cloning existing worktrees into a new one.
+!.claude/worktrees/**

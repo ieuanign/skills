@@ -1,5 +1,27 @@
 # ieuanign-skills
 
+## 0.2.2
+
+### Patch Changes
+
+- [#37](https://github.com/ieuanign/skills/pull/37) [`413a820`](https://github.com/ieuanign/skills/commit/413a820aa08ff482b02112d87e2815a62a302b8e) Thanks [@ieuanign](https://github.com/ieuanign)! - `/dev-loop`: worktrees move to `.claude/worktrees/`, and provisioning stops copying `.claude` into them.
+
+  Act 2 copied `<MAIN>/.claude` into every lane worktree, justified as "the CLAUDE.md layer must exist in the worktree". That justification was wrong twice over: `CLAUDE.md` is a tracked root file the checkout already delivers, and `.claude/` is a different thing entirely. Nothing needed the copy — the agents are Agent-tool subagents of a session rooted in MAIN, so their definitions, skills, settings, and permissions resolve from MAIN's config regardless of which directory they `cd` into, and no bundled agent or phase script references `.claude/` at all.
+
+  What the copy did do was inject files that are untracked in the worktree. In a repo that neither tracks nor gitignores `.claude/` — the default state after a first run, since Act 0 creates the roster there — Gate 2's `git worktree remove`, forbidden from using `--force`, then refused on every lane. Worktrees accumulated and the closing guarantee that a fully approved run leaves only the main worktree was false. Deleting the copy removes the cause: a worktree now holds the checkout plus declared `.worktreeinclude` files, nothing else.
+
+  Worktrees also move from `.scratch/worktrees/` to `.claude/worktrees/`, matching where Claude Code's own worktrees live, with a precondition that the path is gitignored so a live worktree never pollutes MAIN's `git status`. `.scratch/` stays for plans. The `.worktreeinclude` guard line follows to `!.claude/worktrees/**`.
+
+  `.worktreeinclude` guidance tightens to match what it is for: env files and local config a cold checkout cannot run without. Dependencies leave it — a copied `node_modules/` carries platform-specific native builds and drifts from the lockfile — and become a new **Setup command** profile key that Act 2 runs once per worktree. That keeps worktree lifecycle whole inside the orchestrator's acts, per the skill's own rule that provisioning is never agent work; the bundled agents are untouched.
+
+  Verified across all three repo classes (gitignores `.claude/`, tracks `.claude/agents/`, neither): removal succeeds without `--force`, `.env` reaches the worktree, `node_modules` does not, and MAIN's `git status` stays clean with a live worktree.
+
+## 0.2.1
+
+### Patch Changes
+
+- [#34](https://github.com/ieuanign/skills/pull/34) [`bac71bc`](https://github.com/ieuanign/skills/commit/bac71bc6b20c42ca95ec432dc87953b1fe20229a) Thanks [@ieuanign](https://github.com/ieuanign)! - Maintainer tooling: `.claude-plugin/plugin.json` now tracks `package.json`'s version automatically. `changeset version` bumps only `package.json` and has no knowledge of the plugin manifest, so every release PR arrived with the two out of sync and had to be corrected by hand — and `claude plugin validate --strict` passes that state, so nothing caught it but a human remembering. The `version` script now chains `scripts/sync-plugin-version.sh`, which rewrites the version string in place (leaving the rest of the file byte-identical) and is a no-op when the two already agree. The release workflow calls `npm run version` so CI and a local run take the same path. The README's maintainer list gains it, plus `npm run check`, which was added without being documented there.
+
 ## 0.2.0
 
 ### Minor Changes

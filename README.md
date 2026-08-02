@@ -96,9 +96,13 @@ run. Run it once per repo (re-run by hand if `CLAUDE.md` changes materially).
 
 ## For maintainers
 
+- `npm run check` (`scripts/check.sh`) — validate the plugin manifest, compile every phase script, and
+  confirm `package.json` and `plugin.json` versions agree. Run it before opening a PR.
 - `scripts/link-skills.sh` — symlink the skills and the roster into this repo's own `.claude/`, so
   local edits are live while working here and in no other project.
 - `scripts/list-skills.sh` — list every `SKILL.md`.
+- `scripts/sync-plugin-version.sh` — copies `package.json`'s version into `plugin.json`. Runs
+  automatically as part of `npm run version`; you should never need it by hand.
 - Versioned with [changesets](https://github.com/changesets/changesets); see `CLAUDE.md` for the
   add-a-skill checklist.
 
