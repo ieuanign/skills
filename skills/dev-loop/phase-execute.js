@@ -21,7 +21,7 @@ export const meta = {
 // ending null = the lane completed clean. HALT = nothing reviewable exists, no PR.
 // UNRESOLVED = the code exists and is not clean; the lane's conclusion decides what that means.
 // subResults: [{branch, area, commits, plannedCommits, madeCommits, deviations, disputed,
-//               criterionVerdicts, reviewNotes}]
+//               criterionVerdicts, reviewNotes, fixedFindings, wontFix}]
 
 // The harness may deliver args as a JSON string; normalize to an object.
 const input = typeof args === 'string' ? JSON.parse(args) : args
@@ -86,10 +86,14 @@ function writerPrompt(lane, sub, instruction) {
 
 // The body is fenced rather than interpolated bare: issue bodies are markdown and routinely
 // contain the same headings and checklists the surrounding prompt uses.
-function specClause(lane) {
-  return lane.issueBody
-    ? `\n\nSpec axis — issue #${lane.issue}'s body verbatim, between the markers below. Judge the diff against its acceptance criteria and return one criterionVerdicts entry per criterion, in the issue's order. These NEVER block: they stay out of findings, do not change the verdict, and trigger no fix cycle.\n<<<<ISSUE-BODY\n${lane.issueBody}\nISSUE-BODY>>>>`
-    : `\n\nNo issue body was passed, so there is no spec axis this run — return an empty criterionVerdicts and say so in notes.`
+// The scope line matters on multi-PR plans: the criteria belong to the whole issue but the
+// range is one sub-lane, so without it every early PR reads as failing work not yet due.
+function specClause(lane, sub) {
+  if (!lane.issueBody) {
+    return `\n\nNo issue body was passed, so there is no spec axis this run — return an empty criterionVerdicts and say so in notes.`
+  }
+  const scope = `You are judging ONE sub-lane of this issue${sub.area ? ` (area: ${sub.area})` : ''} — the range above, no more. A criterion the plan's Commit / PR breakdown delivers in a different sub-lane is 'partial', naming that sub-lane; never 'not-met'.`
+  return `\n\nSpec axis — issue #${lane.issue}'s body verbatim, between the markers below. Judge the diff against its acceptance criteria and return one criterionVerdicts entry per criterion, in the issue's order. ${scope} These NEVER block: they stay out of findings, do not change the verdict, and trigger no fix cycle.\n<<<<ISSUE-BODY\n${lane.issueBody}\nISSUE-BODY>>>>`
 }
 
 function absorb(rec, writerResult) {
@@ -162,7 +166,7 @@ const laneResults = await parallel(input.lanes.map(lane => async () => {
         ? `\nThe code-writer DISPUTED these findings with the evidence below — re-verify each against that evidence. Retract any where the evidence holds (record retractions in notes); list any you STILL confirm in contestedFindings — those end the lane UNRESOLVED with the stalemate unbroken, so contest only what you can re-confirm with a concrete failure scenario:\n${disputes.join('\n')}`
         : ''
       const review = await agent(
-        `Review branch ${sub.branch} against the plan at ${lane.planPath} (absolute path; read it with the Read tool).\nDiff exactly the range ${sub.base}..${sub.branch} — the base may itself be a stacked feature branch; never review the base's own commits.${disputeClause}${specClause(lane)}`,
+        `Review branch ${sub.branch} against the plan at ${lane.planPath} (absolute path; read it with the Read tool).\nDiff exactly the range ${sub.base}..${sub.branch} — the base may itself be a stacked feature branch; never review the base's own commits.${disputeClause}${specClause(lane, sub)}`,
         { agentType: 'reviewer', label: `review:#${lane.issue}${sub.area ? ':' + sub.area : ''}${cycles ? ':r' + cycles : ''}`, phase: 'Review', schema: REVIEW_SCHEMA }
       )
       if (!review) return halt('reviewer died')

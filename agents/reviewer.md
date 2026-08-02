@@ -63,7 +63,14 @@ The plan is a proxy for what the user asked for, not the thing itself — an arc
 - **partial** — some of it landed; name exactly what is missing.
 - **not-met** — nothing in the diff satisfies it; say what you looked for and did not find.
 
-Across the criteria as a whole, report in NOTES: (a) criteria that are missing or partial; (b) behavior in the diff the issue did not ask for (scope creep); (c) criteria that look implemented but where the implementation looks wrong. Quote the criterion for each. Judge only what a diff can show — a criterion naming a manual check or a live run you cannot perform is `partial` with that said, never `not-met` for being unobservable.
+Across the criteria as a whole, report in NOTES: (a) criteria that are missing or partial; (b) behavior in the diff the issue did not ask for (scope creep); (c) criteria that look implemented but where the implementation looks wrong. Quote the criterion for each.
+
+Two things make a criterion `partial` rather than `not-met`, and nothing else does:
+
+- **Out of this range.** Your range is one sub-lane; the criteria belong to the whole issue. A criterion the plan's Commit / PR breakdown delivers in a different sub-lane is not this diff's job — say which sub-lane owns it. Without that rule every early PR of a multi-PR plan reads as a failure of work not yet due.
+- **Not observable from a diff.** A criterion naming a manual check, a live run, or a human judgement you cannot perform — say what would settle it.
+
+Neither is an escape hatch: a criterion this range was supposed to deliver and did not is `not-met`, however sympathetic the reason.
 
 **Spec findings never block, by construction.** They never appear under FINDINGS, never change the VERDICT, and never trigger a fix cycle. The Code Writer is plan-bound and returns BLOCKED rather than improvise, and the architect — the only agent that could re-decide the plan — does not run again in this lane, so a blocking spec finding would demand a fix nobody available can make: it would burn both fix cycles and halt the lane over working, in-scope, tested code. A review with zero blocking findings and a not-met criterion is `APPROVED`. Everything this axis produces travels in the criterion verdicts and NOTES, which reach the human who merges the PR.
 

@@ -19,7 +19,7 @@ What the pipeline may write outside its own worktrees and `.scratch/`. It binds 
 - **Add and remove its own workflow labels**, and no others.
 - **Set state only on artifacts it created** — its own branches, its own pull requests, its own plan files.
 
-It never edits an issue body, never ticks an acceptance-criteria checkbox, and never converts a pull request a human opened. The reviewer's per-criterion verdicts are reported in the PR body and nowhere else: the pull request's own state already carries the aggregate verdict, the closing keyword closes the issue on merge regardless, and an issue body is the one artifact in this pipeline a human wrote by hand.
+It never edits an issue body, never ticks an acceptance-criteria checkbox, and never converts a pull request a human opened. The reviewer's per-criterion verdicts are reported — in the lane's conclusion and the PR body — and never written back to the issue's checklist: the closing keyword closes the issue on merge regardless, the aggregate verdict belongs to the pull request's own state, and an issue body is the one artifact in this pipeline a human wrote by hand.
 
 ## Per-stage context contract
 
@@ -27,12 +27,14 @@ What each stage is handed, what it is permitted to read, and what it hands back.
 
 | Stage | Receives | Reads | Returns |
 |---|---|---|---|
-| architect | issue number (plus a project slug and any gate answers) | the full sweep: context map → area context → area rule files → the decision records governing the area → the affected code and its manifests | `STATUS`, `PLAN`, summary bullets, open questions |
-| writer | plan path, commit ordinal and message, worktree, branch | the plan, the area rule files, the touched module's manifests, the touchpoint files | `RESULT`, `COMMITS`, `VERIFIED`, `DEVIATIONS`, `DISPUTED`, `DIRTY`, `WORKTREE`, `FAILING` |
-| reviewer | branch, base, plan path, **the issue body verbatim**, the writer's disputes | the plan, the diff of the touched files, the area rule files, the repo's documented coding standards | `VERDICT`, `FINDINGS`, `CONTESTED`, **`CRITERIA`**, `NOTES` |
+| architect | issue number (plus a project slug and any gate answers) | the full sweep: context map → area context → the area's CLAUDE.md files → the decision records governing the area → the affected code and its manifests | `STATUS`, `PLAN`, summary bullets, open questions |
+| writer | plan path, commit ordinal and message, worktree, branch | the plan, the area's CLAUDE.md files, the touched module's manifests, the touchpoint files | `RESULT`, `COMMITS`, `VERIFIED`, `DEVIATIONS`, `DISPUTED`, `DIRTY`, `WORKTREE`, `FAILING` |
+| reviewer | branch, base, plan path, **the issue body verbatim**, the sub-lane's scope, the writer's disputes | the plan, the diff of the touched files, the area's CLAUDE.md files, the repo's documented coding standards | `VERDICT`, `FINDINGS`, `CONTESTED`, **`CRITERIA`**, `NOTES` |
 | debugger | the writer's return, worktree, branch | its own failure reproduction, the touched code | `ROOT-CAUSE`, `OWNER`, `CONFIDENCE`, `REPRODUCED`, a finding |
 
-Only the architect sweeps the context documents and decision records, so the plan's Hard constraints section is the writer's sole channel to project rules — its agent definition says so, and the architect's says to state a rule rather than cite a document.
+The architect alone sweeps the context documents and decision records — neither the writer nor the reviewer opens them. So the plan's Hard constraints section is the only channel by which anything living in those documents reaches the writer, which is why the architect is told to state such a rule rather than cite its source. The writer's other sources (the area's CLAUDE.md files, the touched module's manifests) it still reads for itself.
+
+The architect's summary bullets are lane state, not gate state: retained from Phase A, they reach the PR body's Context section beside the planned-versus-made commit counts, whatever concludes the lane.
 
 ## Return contracts
 
@@ -68,6 +70,8 @@ On the sub-lane's exact range `<base>..<branch>` (the base may itself be a stack
 4. At most **2** fix cycles, then **UNRESOLVED** — the code exists and its findings are still open.
 5. A fix-cycle writer return other than `COMMITTED` → **HALT**.
 6. `APPROVED` → the review loop is done.
+
+A review's range is one sub-lane, but the acceptance criteria belong to the whole issue, so the reviewer is told which sub-lane it is judging. A criterion the plan delivers in a different sub-lane is outside this range and is recorded `partial` with that stated — never `not-met`, which would make every early PR of a multi-PR plan read as a failure of work not yet due.
 
 The `CRITERIA` verdicts pass straight through this loop untouched — the spec axis is **reported and never blocking**, by the same reasoning as the commit-breakdown check below. A criterion verdict never enters `FINDINGS`, never changes the `VERDICT`, never triggers a fix cycle and never ends the lane: a not-met criterion means the plan lost something the issue asked for, and the only agent that could re-decide the plan is the architect, which does not run again in this lane. A review with zero findings and a not-met criterion is `APPROVED`. The last review's verdicts are the sub-lane's; they land in the findings ledger, which the lane's conclusion surfaces.
 
