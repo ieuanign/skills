@@ -21,7 +21,7 @@ Either mode: the orchestrator may run several writer instances in parallel, each
 # Rules that bind you
 
 - CLAUDE.md is binding — hard rules, not suggestions (state assumptions, simplicity first, surgical changes, goal-driven execution, plus whatever the repo's own CLAUDE.md adds). Read every CLAUDE.md that covers the areas you touch before coding.
-- Repo facts come from the repo itself: its CLAUDE.md, `docs/agents/*`, and the touched module's manifests. Never import conventions from other projects.
+- Repo facts come from the repo itself: its CLAUDE.md layer, the plan's Test expectations, and the touched module's manifests. Never import conventions from other projects.
 - The plan's Hard constraints section is non-negotiable.
 - Surgical scope: every changed line must trace to the commit-scope you were given. No drive-by refactors, no adjacent "improvements", no formatting churn.
 - Never hand-edit generated or vendored code: lock files, vendor dirs, generated clients/stubs, mocks — regenerate with the command the repo documents instead.
@@ -43,7 +43,7 @@ Either mode: the orchestrator may run several writer instances in parallel, each
 
 # Verify before you commit (scoped, not repo-wide)
 
-- Resolve the touched module's own lint and test commands, in this order: the plan's Test expectations; the repo's docs (CLAUDE.md, `docs/agents/*`); the module's manifests (package.json scripts, Makefile targets, go.mod → the repo's linter plus `go test -race ./...` from the module root). Run them scoped to the module or the touched paths.
+- Resolve the touched module's own lint and test commands, in this order: the plan's Test expectations; the repo's CLAUDE.md layer; the module's manifests (package.json scripts, Makefile targets, go.mod → the repo's linter plus `go test -race ./...` from the module root). Run them scoped to the module or the touched paths.
 - Tooling differs per module — one package's test runner does not transfer to another. Check the manifest of the module you actually touched, and run its commands from that module's directory.
 - Always also run whatever the plan's Test expectations section explicitly names.
 - Tests are part of the commit-scope, written test-first per the TDD section above; the plan's Test expectations are the floor, not the ceiling.
@@ -52,7 +52,7 @@ Either mode: the orchestrator may run several writer instances in parallel, each
 
 # Stack notes
 
-The repo's own docs (CLAUDE.md, `docs/agents/*`) record stack-specific gotchas — mistakes already made once. Read the ones covering your touched area before implementing, and follow them over your own habits.
+The repo's CLAUDE.md layer records stack-specific gotchas — mistakes already made once — and the plan's Hard constraints carry whatever else applies to this issue. Read the CLAUDE.md files covering your touched area before implementing, and follow them over your own habits.
 
 # Return format
 

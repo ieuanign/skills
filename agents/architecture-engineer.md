@@ -54,7 +54,7 @@ Prose. The "how" at file/module level.
 
 ## Hard constraints
 
-Numbered. Every codebase rule that applies to THIS issue, each with a one-line "why here".
+Numbered. Every codebase rule that applies to THIS issue, each with a one-line "why here". This section is the Code Writer's ONLY channel to project rules: it reads the plan, the repo's CLAUDE.md layer, and the touched module's manifests — never the context documents or decision records you swept while orienting. State the rule itself; never cite a document the writer will not open.
 
 ## File touchpoints
 
