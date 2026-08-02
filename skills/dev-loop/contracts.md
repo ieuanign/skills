@@ -16,7 +16,7 @@ This file is the single source of truth for the pipeline's role contracts, bound
 What the pipeline may write outside its own worktrees and `.scratch/`. It binds the host and every agent, identically in both modes — there is no ending, no ceiling and no absent human that relaxes it.
 
 - **Append** to issues and pull requests. Comments only.
-- **Add and remove its own workflow labels**, and no others.
+- **Add and remove its own workflow labels**, and no others. This clause writes to an issue a human filed, and it is inside the invariant because the write is additive and reversible: a label add or remove destroys nothing a human authored, and human intent is what the invariant guards.
 - **Set state only on artifacts it created** — its own branches, its own pull requests, its own plan files.
 
 It never edits an issue body, never ticks an acceptance-criteria checkbox, and never converts a pull request a human opened. The reviewer's per-criterion verdicts are reported — in the lane's conclusion and the PR body — and never written back to the issue's checklist: the closing keyword closes the issue on merge regardless, the aggregate verdict belongs to the pull request's own state, and an issue body is the one artifact in this pipeline a human wrote by hand.
@@ -103,7 +103,7 @@ Every other section of this contract is single-version: both modes implement it 
 - A `HALT` lane is reported with its stage, the verbatim contract lines, and its resume command. No PR.
 - Gate 2 for a wave fires before the next wave is provisioned, so a dependent wave is never built on a base the human has not vetted.
 
-**unattended** — there is no human to conclude the lane, so the terminal-state table governs what each ending produces, and notifications fire. Both are specified separately; this is the section they fill.
+**unattended** — there is no human to conclude the lane, so the terminal-state table governs what each ending produces, and notifications fire. Both are specified separately; this is the section they fill. The notifications half is `notifications.md`, normative for what a run writes to the outside world as it goes: the event table and the writer owning each event, the label roles and the rule that selects one, the message and comment formats, the channel contract, the ordering guarantees. This file stays normative for the state machine those events report on — the role contracts, the bounds, the terminal categories, the findings ledger, the append-only invariant — which `notifications.md` names and never redefines. The terminal-state table is still specified separately from both.
 
 **Mode A implements the gated half only, and never the unattended half.** The unattended half therefore has exactly one implementation, which is what keeps this file's rule — a behaviour change edits the contract first, then both implementations in the same change — cheap to honour.
 
