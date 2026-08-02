@@ -9,15 +9,19 @@ export const meta = {
 }
 
 // args: {
-//   lanes: [{ issue, planPath, subLanes: [{ branch, worktree, base, area?, commits: [{ordinal, message}] }] }],
+//   lanes: [{ issue, issueBody, planPath, subLanes: [{ branch, worktree, base, area?, commits: [{ordinal, message}] }] }],
 //   maxFixCycles: number
 // }
 // subLanes contains only the CURRENT wave's sub-lanes; worktree is absolute.
+// issueBody is the issue's body verbatim, which the host already fetched at intake — the
+// reviewer's Spec axis reads it from its arguments rather than fetching it, keeping its
+// Bash read-only and git-only. Omit it and the reviewer runs no spec axis.
 // Returns per-lane:
 // { issue, ending: {category: 'HALT'|'UNRESOLVED', reason: string}|null, subResults: [...] }
 // ending null = the lane completed clean. HALT = nothing reviewable exists, no PR.
 // UNRESOLVED = the code exists and is not clean; the lane's conclusion decides what that means.
-// subResults: [{branch, area, commits, plannedCommits, madeCommits, deviations, disputed, reviewNotes}]
+// subResults: [{branch, area, commits, plannedCommits, madeCommits, deviations, disputed,
+//               criterionVerdicts, reviewNotes}]
 
 // The harness may deliver args as a JSON string; normalize to an object.
 const input = typeof args === 'string' ? JSON.parse(args) : args
@@ -47,6 +51,19 @@ const REVIEW_SCHEMA = {
     verdict: { type: 'string', enum: ['APPROVED', 'CHANGES_REQUESTED', 'ERROR'] },
     findings: { type: 'array', items: { type: 'string' }, description: 'file:line — defect — failure scenario — suggested fix' },
     contestedFindings: { type: 'array', items: { type: 'string' }, description: 'disputed findings you STILL confirm after re-verifying against the writer\'s evidence — empty unless disputes were given' },
+    criterionVerdicts: {
+      type: 'array',
+      description: 'Spec axis: one entry per acceptance criterion in the issue body, in the issue\'s order — empty when no issue body was passed. Never blocking: these change neither verdict nor findings.',
+      items: {
+        type: 'object',
+        properties: {
+          criterion: { type: 'string', description: 'the criterion, quoted or trimmed to its first clause' },
+          verdict: { type: 'string', enum: ['met', 'partial', 'not-met'] },
+          evidence: { type: 'string', description: 'file:line, the test that shows it, or what you looked for and did not find' },
+        },
+        required: ['criterion', 'verdict', 'evidence'],
+      },
+    },
     notes: { type: 'string' },
   },
   required: ['verdict', 'findings'],
@@ -65,6 +82,14 @@ const DEBUG_SCHEMA = {
 
 function writerPrompt(lane, sub, instruction) {
   return `${instruction}\nPlan: ${lane.planPath} (absolute path — .scratch exists only in the main worktree).\nWork in the checkout at ${sub.worktree} on branch ${sub.branch} — cd there first, verify \`git branch --show-current\` prints ${sub.branch} (return BLOCKED if not), and work only inside that checkout.`
+}
+
+// The body is fenced rather than interpolated bare: issue bodies are markdown and routinely
+// contain the same headings and checklists the surrounding prompt uses.
+function specClause(lane) {
+  return lane.issueBody
+    ? `\n\nSpec axis — issue #${lane.issue}'s body verbatim, between the markers below. Judge the diff against its acceptance criteria and return one criterionVerdicts entry per criterion, in the issue's order. These NEVER block: they stay out of findings, do not change the verdict, and trigger no fix cycle.\n<<<<ISSUE-BODY\n${lane.issueBody}\nISSUE-BODY>>>>`
+    : `\n\nNo issue body was passed, so there is no spec axis this run — return an empty criterionVerdicts and say so in notes.`
 }
 
 function absorb(rec, writerResult) {
@@ -86,7 +111,7 @@ const laneResults = await parallel(input.lanes.map(lane => async () => {
       // Both counts are scoped to THIS run: on resume sub.commits is the remainder, so the
       // pair still detects a split or an append, it just isn't the plan's grand total.
       commits: [], plannedCommits: sub.commits.length, madeCommits: 0,
-      deviations: 0, disputed: 0, reviewNotes: '',
+      deviations: 0, disputed: 0, criterionVerdicts: [], reviewNotes: '',
       fixedFindings: [], wontFix: [],
     }
     subResults.push(rec)
@@ -137,12 +162,16 @@ const laneResults = await parallel(input.lanes.map(lane => async () => {
         ? `\nThe code-writer DISPUTED these findings with the evidence below — re-verify each against that evidence. Retract any where the evidence holds (record retractions in notes); list any you STILL confirm in contestedFindings — those end the lane UNRESOLVED with the stalemate unbroken, so contest only what you can re-confirm with a concrete failure scenario:\n${disputes.join('\n')}`
         : ''
       const review = await agent(
-        `Review branch ${sub.branch} against the plan at ${lane.planPath} (absolute path; read it with the Read tool).\nDiff exactly the range ${sub.base}..${sub.branch} — the base may itself be a stacked feature branch; never review the base's own commits.${disputeClause}`,
+        `Review branch ${sub.branch} against the plan at ${lane.planPath} (absolute path; read it with the Read tool).\nDiff exactly the range ${sub.base}..${sub.branch} — the base may itself be a stacked feature branch; never review the base's own commits.${disputeClause}${specClause(lane)}`,
         { agentType: 'reviewer', label: `review:#${lane.issue}${sub.area ? ':' + sub.area : ''}${cycles ? ':r' + cycles : ''}`, phase: 'Review', schema: REVIEW_SCHEMA }
       )
       if (!review) return halt('reviewer died')
       if (review.verdict === 'ERROR') return halt(`reviewer ERROR: ${review.notes || ''}`)
       rec.reviewNotes = review.notes || ''
+      // Recorded before every ending below so an UNRESOLVED lane still carries them; the
+      // last review's verdicts win. Read nowhere else in this file — the spec axis is
+      // reported, never blocking, so nothing branches on them.
+      rec.criterionVerdicts = review.criterionVerdicts || []
       if (review.contestedFindings && review.contestedFindings.length) {
         const u = unresolved(`contested findings — reviewer still confirms ${review.contestedFindings.length} finding(s) the writer disputed`)
         u.contested = review.contestedFindings
