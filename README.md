@@ -96,8 +96,8 @@ run. Run it once per repo (re-run by hand if `CLAUDE.md` changes materially).
 
 ## For maintainers
 
-- `scripts/link-skills.sh` — symlink every skill into `~/.claude/skills` and `~/.agents/skills` to
-  dogfood local edits.
+- `scripts/link-skills.sh` — symlink the skills and the roster into this repo's own `.claude/`, so
+  local edits are live while working here and in no other project.
 - `scripts/list-skills.sh` — list every `SKILL.md`.
 - Versioned with [changesets](https://github.com/changesets/changesets); see `CLAUDE.md` for the
   add-a-skill checklist.

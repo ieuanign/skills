@@ -2,3 +2,8 @@ node_modules/
 .DS_Store
 .scratch/
 *.log
+
+# Dogfooding links written by scripts/link-skills.sh — symlinks back into this
+# repo's own skills/ and agents/, recreated on demand and never committed.
+.claude/skills/
+.claude/agents/

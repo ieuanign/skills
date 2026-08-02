@@ -39,12 +39,14 @@ Do **not** add an `agents` field to `plugin.json` — the default discovery alre
 
 ## Dogfooding
 
-`scripts/link-skills.sh` symlinks every skill in this repo into `~/.claude/skills` and `~/.agents/skills`,
-and every roster agent into `~/.claude/agents` (Claude Code only — the definitions carry Claude Code
-frontmatter), so local edits are picked up live. `scripts/list-skills.sh` prints every `SKILL.md` path.
+`scripts/link-skills.sh` symlinks every skill into this repo's own `.claude/skills/`, and every roster
+agent into `.claude/agents/`, so local edits are live here and nowhere else. `scripts/list-skills.sh`
+prints every `SKILL.md` path.
 
-A repo's own `.claude/agents/` still wins over the linked copies, so clear any stale roster files
-there before dogfooding — `/dev-loop` no longer puts them there and nothing removes them for you.
+Project scope on purpose. A half-finished skill under `~/.claude/skills/` would outrank the released
+one in every other project on the machine — personal scope overrides project scope, so the in-progress
+copy wins wherever you go. Keeping the links here confines that to the repo they belong to. Both
+destinations are gitignored and every link is relative, so the checkout stays clean and movable.
 
 ## Portability rule
 
