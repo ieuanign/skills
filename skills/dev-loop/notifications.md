@@ -1,6 +1,6 @@
 # /dev-loop notifications — the normative specification both writers implement
 
-This file is the single source of truth for what an unattended run writes to the outside world as it goes: its workflow labels, its one issue comment per lane, and its messages. Two writers emit them — the **host**, at its own boundaries, and the **notifier** subagent, from inside a running phase script — and each implements this file rather than restating it. It is normative for its subject the way `contracts.md` is normative for the state machine: the role contracts, terminal categories, findings ledger and append-only invariant are `contracts.md`'s, and this file names them without redefining them. If an implementation and this file disagree, this file governs.
+This file is the single source of truth for what an unattended run writes to the outside world as it goes: its workflow labels, its issue comments, and its messages. Two writers emit them — the **host**, at its own boundaries, and the **notifier** subagent, from inside a running phase script — and each implements this file rather than restating it. It is normative for its subject the way `contracts.md` is normative for the state machine: the role contracts, terminal categories, findings ledger and append-only invariant are `contracts.md`'s, and this file names them without redefining them. If an implementation and this file disagree, this file governs.
 
 **Nothing here fires in gated mode** (the supervised run, where a human concludes the lane). Stated once; no section below repeats it.
 
@@ -44,7 +44,7 @@ Two properties fall out of that question rather than being designed in:
 
 A **halt message** says why in one line, so it can be triaged from a phone. A **completion message** carries the PR link and whether it opened ready or draft. Detail belongs on the issue, not in the message.
 
-**One comment per lane on the issue** — an extremely concise summary plus open questions, never a transcript. The plan file already survives on disk at tens of kilobytes, and no agent ever reads the comment (the writer and the reviewer both take the plan from disk), so inlining it buries the thread to serve nobody. A halted lane never reaches the end of a lane, so its halt comment *is* that lane's one comment.
+**At most one comment of each kind per lane** — one plan comment after planning, and, if the lane dies, one halt comment. Each is an extremely concise summary plus open questions, never a transcript: the plan file already survives on disk at tens of kilobytes, and no agent ever reads the comment (the writer and the reviewer both take the plan from disk), so inlining it buries the thread to serve nobody. A halted lane never reaches the end of a lane, so its halt comment is the *last* one it posts.
 
 ## Channel contract
 
