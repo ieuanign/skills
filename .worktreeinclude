@@ -1,7 +1,16 @@
 # Gitignored files that worktrees need, in gitignore syntax.
-# Nothing to copy: dependencies are the Setup command's job, .scratch holds
-# plans the lane reaches by absolute path, and .claude/{skills,agents} are
-# dogfooding links a lane has no use for.
+
+# The dogfooding links scripts/link-skills.sh writes. They are RELATIVE
+# symlinks, so a copied link resolves against the worktree's own skills/ and
+# agents/ — each lane dogfoods the branch it is working on, not the main
+# checkout. Without these a lane runs against whatever is installed globally,
+# which is the opposite of dogfooding.
+.claude/skills/
+.claude/agents/
+
+# Deliberately absent: dependencies (the Setup command's job — a copied tree
+# carries platform-specific builds and drifts from the lockfile) and .scratch
+# (plans are reached by absolute path into the main worktree).
 
 # MUST stay last — gitignore matching is last-match-wins, so only the final
 # position reliably stops copy mechanisms cloning existing worktrees into a new one.
