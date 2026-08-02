@@ -96,11 +96,11 @@ The result reaches the human in both places it is due — the lane's conclusion 
 
 ### A red suite is diagnosed, not handed straight to the writer
 
-A red suite is a **failure**, not a finding: the gate observed only that the suite is red, and the breakage is usually in a module outside the writer's commit scope, so a blind fix would flail. A red result routes to the **debugger** — the failure path that already exists, reused verbatim — and the debugger's own routing decides what happens next, by the same three routes as the per-commit implement loop:
+A red suite is a **failure**, not a finding: the gate observed only that the suite is red, and the breakage is usually in a module outside the writer's commit scope, so a blind fix would flail. A red result routes to the **debugger**, and the debugger's own routing decides what happens next — the per-commit implement loop's three routes, reused rather than reinvented, each landing where this stage's own position puts it:
 
-- `retry` → run the gate again; a transient failure has nothing to fix.
+- `retry` → run the gate again; a transient failure has nothing to fix, so there is no writer call to repeat.
 - `code-writer` → writer Mode 2 against the diagnosis, then run the gate again.
-- `replan` or `user` → the lane ends, carrying the diagnosis.
+- `replan` or `user` → the lane ends, carrying the diagnosis — `UNRESOLVED` here, where the implement loop's identical route is `HALT`. That is the one deliberate difference between the two, and the reason is below: by this stage reviewable code exists, and it does not in the implement loop.
 
 Ordinary review findings still go straight to the writer: they already arrive with a failure scenario and a suggested fix, so a diagnosis adds nothing to those.
 

@@ -24,8 +24,8 @@ export const meta = {
 // UNRESOLVED = the code exists and is not clean; the lane's conclusion decides what that means.
 // subResults: [{branch, area, commits, plannedCommits, madeCommits, deviations, disputed,
 //               criterionVerdicts, reviewNotes, fixedFindings, wontFix, suite}]
-// suite: {state: 'passed'|'failed'|'not-run', failing: [ids], output} — 'not-run' is a state of
-// its own and is never reported as passed.
+// suite: {state: 'passed'|'failed'|'not-run', failing: [ids], output} — always present, whatever
+// ended the sub-lane. 'not-run' is a state of its own and is never reported as passed.
 
 // The harness may deliver args as a JSON string; normalize to an object.
 const input = typeof args === 'string' ? JSON.parse(args) : args
@@ -141,9 +141,14 @@ const laneResults = await parallel(input.lanes.map(lane => async () => {
       // pair still detects a split or an append, it just isn't the plan's grand total.
       commits: [], plannedCommits: sub.commits.length, madeCommits: 0,
       deviations: 0, disputed: 0, criterionVerdicts: [], reviewNotes: '',
-      fixedFindings: [], wontFix: [], suite: null,
+      fixedFindings: [], wontFix: [],
+      // Never absent: the ledger renders passed / failed / not-run-and-why, and has no rendering
+      // for a missing value. A sub-lane the review loop ends never reaches the gate, and must
+      // still say so — an empty slot is exactly the "reads as green" this state exists to prevent.
+      suite: { state: 'not-run', failing: [], output: 'the sub-lane ended before the suite gate ran' },
     }
     subResults.push(rec)
+    const tag = `#${lane.issue}${sub.area ? ':' + sub.area : ''}`
 
     // 1. Implement each plan commit sequentially
     for (const c of sub.commits) {
@@ -192,7 +197,7 @@ const laneResults = await parallel(input.lanes.map(lane => async () => {
         : ''
       const review = await agent(
         `Review branch ${sub.branch} against the plan at ${lane.planPath} (absolute path; read it with the Read tool).\nDiff exactly the range ${sub.base}..${sub.branch} — the base may itself be a stacked feature branch; never review the base's own commits.${disputeClause}${specClause(lane, sub)}`,
-        { agentType: 'reviewer', label: `review:#${lane.issue}${sub.area ? ':' + sub.area : ''}${cycles ? ':r' + cycles : ''}`, phase: 'Review', schema: REVIEW_SCHEMA }
+        { agentType: 'reviewer', label: `review:${tag}${cycles ? ':r' + cycles : ''}`, phase: 'Review', schema: REVIEW_SCHEMA }
       )
       if (!review) return halt('reviewer died')
       if (review.verdict === 'ERROR') return halt(`reviewer ERROR: ${review.notes || ''}`)
@@ -235,14 +240,13 @@ const laneResults = await parallel(input.lanes.map(lane => async () => {
     // 3. Suite gate — the repo's own full suite, once per sub-lane, after the findings settle.
     // Every ending here is UNRESOLVED and never HALT: the gate runs only once the plan's commits
     // exist and a review approved them, and the categories turn on whether reviewable code does.
-    const tag = `#${lane.issue}${sub.area ? ':' + sub.area : ''}`
     if (!suiteConfigured) {
       // A declared 'none' is answered, not unanswered — so no agent is spent to run nothing.
       rec.suite = { state: 'not-run', failing: [], output: 'no full-suite command is configured for this repository' }
       log(`#${lane.issue}: ${sub.branch} suite not run — no full-suite command configured`)
     } else {
-      const seen = new Set() // every failing identifier this sub-lane has ever shown
-      let stale = 0          // consecutive red rounds that brought nothing previously unseen
+      const seen = new Set()          // every failing identifier this sub-lane has ever shown
+      let roundsWithoutNewFailure = 0 // consecutive red rounds that brought nothing previously unseen
       let round = 0
       while (true) {
         round++
@@ -250,7 +254,10 @@ const laneResults = await parallel(input.lanes.map(lane => async () => {
         const suite = await agent(suitePrompt(sub), {
           label: `suite:${tag}${suffix}`, phase: 'Suite', model: 'haiku', effort: 'low', schema: SUITE_SCHEMA,
         })
-        if (!suite) return unresolved(`suite gate died on ${sub.branch} — the suite never ran`)
+        if (!suite) {
+          rec.suite = { state: 'not-run', failing: [], output: 'the suite gate died before it reported' }
+          return unresolved(`suite gate died on ${sub.branch} — the suite never ran`)
+        }
         rec.suite = { state: suite.state, failing: suite.failing || [], output: suite.output || '' }
         log(`#${lane.issue}: ${sub.branch} suite ${rec.suite.state}${round > 1 ? ` (round ${round})` : ''}`)
         if (rec.suite.state !== 'failed') break
@@ -258,9 +265,9 @@ const laneResults = await parallel(input.lanes.map(lane => async () => {
         // Progress-sensitive, not a flat cap: a shrinking set of the same failures is not progress.
         const fresh = rec.suite.failing.filter(id => !seen.has(id))
         rec.suite.failing.forEach(id => seen.add(id))
-        stale = fresh.length ? 1 : stale + 1
+        roundsWithoutNewFailure = fresh.length ? 1 : roundsWithoutNewFailure + 1
         const redReason = `suite red on ${sub.branch} — ${rec.suite.failing.length} failing test(s): ${rec.suite.failing.join(', ')}`
-        if (stale >= 2) return unresolved(`${redReason} — 2 rounds brought no previously unseen failure`)
+        if (roundsWithoutNewFailure >= 2) return unresolved(`${redReason} — 2 rounds brought no previously unseen failure`)
         // Checked before the debugger, so no agent is spent on a round that cannot run. A
         // mis-parsed identifier list looks new every round and would reset the counter forever.
         if (round >= SUITE_CEILING) return unresolved(`${redReason} — the ${SUITE_CEILING}-round ceiling`)
