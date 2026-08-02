@@ -5,12 +5,14 @@ export const meta = {
   phases: [
     { title: 'Implement', detail: 'code-writer per plan commit, sequential within a lane' },
     { title: 'Review', detail: 'reviewer + fix cycles (capped)' },
+    { title: 'Suite', detail: "the repo's full suite, once per sub-lane", model: 'haiku' },
   ],
 }
 
 // args: {
 //   lanes: [{ issue, issueBody, planPath, subLanes: [{ branch, worktree, base, area?, commits: [{ordinal, message}] }] }],
-//   maxFixCycles: number
+//   maxFixCycles: number,
+//   suiteCommand: string   // the profile's Full-suite command; 'none' or absent ⇒ every suite is not-run
 // }
 // subLanes contains only the CURRENT wave's sub-lanes; worktree is absolute.
 // issueBody is the issue's body verbatim, which the host already fetched at intake — the
@@ -21,13 +23,20 @@ export const meta = {
 // ending null = the lane completed clean. HALT = nothing reviewable exists, no PR.
 // UNRESOLVED = the code exists and is not clean; the lane's conclusion decides what that means.
 // subResults: [{branch, area, commits, plannedCommits, madeCommits, deviations, disputed,
-//               criterionVerdicts, reviewNotes, fixedFindings, wontFix}]
+//               criterionVerdicts, reviewNotes, fixedFindings, wontFix, suite}]
+// suite: {state: 'passed'|'failed'|'not-run', failing: [ids], output} — 'not-run' is a state of
+// its own and is never reported as passed.
 
 // The harness may deliver args as a JSON string; normalize to an object.
 const input = typeof args === 'string' ? JSON.parse(args) : args
 
 const writerType = 'code-writer'
 const MAX_FIX = input.maxFixCycles || 2
+
+// Configuration, never discovery: a discovered command that needs infrastructure this pipeline
+// does not stand up returns a red result that means nothing. 'none' is a real, persisted answer.
+const suiteCommand = String(input.suiteCommand || '').trim()
+const suiteConfigured = Boolean(suiteCommand) && suiteCommand.toLowerCase() !== 'none'
 
 const WRITER_SCHEMA = {
   type: 'object',
@@ -68,6 +77,15 @@ const REVIEW_SCHEMA = {
   },
   required: ['verdict', 'findings'],
 }
+const SUITE_SCHEMA = {
+  type: 'object',
+  properties: {
+    state: { type: 'string', enum: ['passed', 'failed', 'not-run'] },
+    failing: { type: 'array', items: { type: 'string' }, description: "the runner's own identifier per failing test — empty unless state is failed" },
+    output: { type: 'string', description: "the command's output, trimmed to the failing portion if it is long" },
+  },
+  required: ['state', 'failing', 'output'],
+}
 const DEBUG_SCHEMA = {
   type: 'object',
   properties: {
@@ -96,6 +114,12 @@ function specClause(lane, sub) {
   return `\n\nSpec axis — issue #${lane.issue}'s body verbatim, between the markers below. Judge the diff against its acceptance criteria and return one criterionVerdicts entry per criterion, in the issue's order. ${scope} These NEVER block: they stay out of findings, do not change the verdict, and trigger no fix cycle.\n<<<<ISSUE-BODY\n${lane.issueBody}\nISSUE-BODY>>>>`
 }
 
+// No agent type and no persona: loading a role definition — merge-base rules, blocking bars,
+// dispute handling — to run one command is waste. The command is quoted, never described.
+function suitePrompt(sub) {
+  return `Run this repository's full test suite once and report what it did. Nothing else: fix nothing, commit nothing, modify no file.\ncd ${sub.worktree} (branch ${sub.branch}) and run exactly this command:\n${suiteCommand}\nReturn state 'passed' when it exits 0, 'failed' when it does not, and 'not-run' when the command cannot run at all (no such script, no such runner) — never 'passed' for a suite you did not actually run. When it failed, put every failing test in failing using the runner's own identifier for it (file path plus test name), and the command's output in output.`
+}
+
 function absorb(rec, writerResult) {
   rec.commits.push(...(writerResult.commits || []))
   rec.madeCommits = rec.commits.length // kept live so a sub-lane that ends early still reports its counts
@@ -116,7 +140,7 @@ const laneResults = await parallel(input.lanes.map(lane => async () => {
       // pair still detects a split or an append, it just isn't the plan's grand total.
       commits: [], plannedCommits: sub.commits.length, madeCommits: 0,
       deviations: 0, disputed: 0, criterionVerdicts: [], reviewNotes: '',
-      fixedFindings: [], wontFix: [],
+      fixedFindings: [], wontFix: [], suite: null,
     }
     subResults.push(rec)
 
@@ -207,7 +231,27 @@ const laneResults = await parallel(input.lanes.map(lane => async () => {
       log(`#${lane.issue}: fix cycle ${cycles} committed${disputes.length ? ` (${disputes.length} disputed)` : ''}, re-reviewing`)
     }
 
-    // 3. Commit-breakdown check — plain list diff, reported and never blocking
+    // 3. Suite gate — the repo's own full suite, once per sub-lane, after the findings settle.
+    // Every ending here is UNRESOLVED and never HALT: the gate runs only once the plan's commits
+    // exist and a review approved them, and the categories turn on whether reviewable code does.
+    const suiteLabel = `suite:#${lane.issue}${sub.area ? ':' + sub.area : ''}`
+    if (!suiteConfigured) {
+      // A declared 'none' is answered, not unanswered — so no agent is spent to run nothing.
+      rec.suite = { state: 'not-run', failing: [], output: 'no full-suite command is configured for this repository' }
+      log(`#${lane.issue}: ${sub.branch} suite not run — no full-suite command configured`)
+    } else {
+      const suite = await agent(suitePrompt(sub), {
+        label: suiteLabel, phase: 'Suite', model: 'haiku', effort: 'low', schema: SUITE_SCHEMA,
+      })
+      if (!suite) return unresolved('suite gate died — the suite never ran')
+      rec.suite = { state: suite.state, failing: suite.failing || [], output: suite.output || '' }
+      log(`#${lane.issue}: ${sub.branch} suite ${rec.suite.state}`)
+      if (rec.suite.state === 'failed') {
+        return unresolved(`suite red on ${sub.branch} — ${rec.suite.failing.length} failing test(s): ${rec.suite.failing.join(', ')}`)
+      }
+    }
+
+    // 4. Commit-breakdown check — plain list diff, reported and never blocking
     log(`#${lane.issue}: ${sub.branch} done (${rec.plannedCommits} planned, ${rec.madeCommits} made)`)
   }
   return { issue: lane.issue, ending: null, subResults }

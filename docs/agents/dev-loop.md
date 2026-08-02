@@ -23,6 +23,16 @@ The lockfile is committed and the changesets CLI lives in `devDependencies`, so 
 `npm run changeset` step needs `node_modules` present. `npm run check` itself needs only node and
 the `claude` CLI.
 
+## Full-suite command
+
+```bash
+npm run check
+```
+
+The whole verification surface a cold worktree can run: the plugin manifest, every phase script's
+syntax, and the package/plugin version sync. The `.scratch/dev-loop-checks/` state-machine checks
+are deliberately not in it — they are gitignored, so a provisioned worktree does not have them.
+
 ## Constraints
 
 None recorded.
