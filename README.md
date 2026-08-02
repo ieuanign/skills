@@ -3,54 +3,29 @@
 Ieuan's add-on agent skills for Claude Code — an issue-to-PR **dev-loop** over a custom agent roster,
 plus a **coding-standards** setup skill.
 
-Straight from my `.claude` directory, packaged so you can install them the same way you install
-[Matt Pocock's skills](https://github.com/mattpocock/skills):
-
-```bash
-npx skills@latest add ieuanign/skills
-```
+Straight from my `.claude` directory, packaged as a plugin.
 
 > **This is an add-on, not a standalone.** These skills lean on Matt Pocock's skills (`/tdd`,
-> `/code-review`, `/to-spec`, `/to-tickets`, the issue-tracker setup). **Install and configure
-> [`mattpocock/skills`](https://github.com/mattpocock/skills) first** — see below.
+> `/code-review`, `/to-spec`, `/to-tickets`, the issue-tracker setup). The plugin **declares
+> [`mattpocock/skills`](https://github.com/mattpocock/skills) as a dependency**, so installing this
+> one pulls Matt's in automatically.
 
 ---
 
-## Prerequisite — install `mattpocock/skills` first
+## Install
 
 ```bash
-# 1. Install Matt's skills, selecting /setup-matt-pocock-skills among them.
-npx skills@latest add mattpocock/skills
-
-# 2. In your agent, configure them once per repo.
-/setup-matt-pocock-skills
-```
-
-That sets up your issue tracker, triage labels, and doc layout (`docs/agents/*`) — the config these
-add-on skills also read.
-
-## Install these skills
-
-```bash
-npx skills@latest add ieuanign/skills
-```
-
-Pick the skills you want and which agents to install them on. Then configure the coding-standards rubric
-once per repo:
-
-```bash
-/setup-ieuanign-skills
-```
-
-### Or install as a plugin (stays up to date)
-
-`npx skills add` copies the skill files into place and never touches them again. The plugin path
-installs a managed bundle instead — install once, and new releases of this repo reach you as updates:
-
-```bash
-# In your agent, one-time:
 /plugin marketplace add ieuanign/skills
 /plugin install ieuanign-skills@ieuanign
+```
+
+That brings in the three skills, the four `dev-loop` roster agents, and Matt's plugin as a declared
+dependency. Then configure each repo once — the two setup commands are independent, so run them in
+either order:
+
+```bash
+/mattpocock-skills:setup-matt-pocock-skills   # issue tracker, triage labels, docs/agents/* layout
+/setup-ieuanign-skills                        # the coding-standards rubric
 ```
 
 To pick up new releases, either run `/plugin marketplace update ieuanign` when you want them, or turn
@@ -70,7 +45,17 @@ automatically when they trust the repo:
 }
 ```
 
-Either way, still run `/setup-ieuanign-skills` once per repo afterwards.
+### `npx skills add` — best effort
+
+```bash
+npx skills@latest add ieuanign/skills
+```
+
+This still copies the skill files into place and they work, but two things don't come with them.
+The `dev-loop` roster agents ship as **plugin** agents, so `npx` doesn't install them — `/dev-loop`
+has nothing to dispatch. And `code-writer` and `debugger` preload their skills under Matt's plugin
+namespace, which only resolves on the plugin path. Use the plugin install unless you have a reason
+not to.
 
 ## The skills
 
@@ -79,7 +64,7 @@ Either way, still run `/setup-ieuanign-skills` once per repo afterwards.
 `/dev-loop <issues>` drives one or more GitHub issues end-to-end — plan → implement → review —
 each in its own git worktree, with parallel lanes and human gates only at plan approval and push/PR.
 
-You are the orchestrator; a bundled agent roster does the work:
+You are the orchestrator; the agent roster does the work:
 
 | Agent | Role |
 |---|---|
@@ -88,10 +73,9 @@ You are the orchestrator; a bundled agent roster does the work:
 | `reviewer` | Report-only, severity-ranked findings against the plan + your standards |
 | `debugger` | Report-only root-cause investigator for red tests/builds |
 
-The roster ships **inside** the skill (`skills/dev-loop/agents/`). On its first run in a repo, `dev-loop`
-copies any missing roster members into that repo's `.claude/agents/` — no separate install step.
-The skill is repo- and machine-agnostic; per-repo settings live in `docs/agents/dev-loop.md`
-(ask-then-persist on first run).
+The roster ships as **plugin agents** (`agents/`), installed alongside the skills — no copy step and
+nothing added to your repo. The skill is repo- and machine-agnostic; per-repo settings live in
+`docs/agents/dev-loop.md` (ask-then-persist on first run).
 
 ### [`/code-review-mp`](./skills/code-review-mp/SKILL.md) — two-axis diff review
 
@@ -114,8 +98,8 @@ run. Run it once per repo (re-run by hand if `CLAUDE.md` changes materially).
 
 - `npm run check` (`scripts/check.sh`) — validate the plugin manifest, compile every phase script, and
   confirm `package.json` and `plugin.json` versions agree. Run it before opening a PR.
-- `scripts/link-skills.sh` — symlink every skill into `~/.claude/skills` and `~/.agents/skills` to
-  dogfood local edits.
+- `scripts/link-skills.sh` — symlink the skills and the roster into this repo's own `.claude/`, so
+  local edits are live while working here and in no other project.
 - `scripts/list-skills.sh` — list every `SKILL.md`.
 - `scripts/sync-plugin-version.sh` — copies `package.json`'s version into `plugin.json`. Runs
   automatically as part of `npm run version`; you should never need it by hand.

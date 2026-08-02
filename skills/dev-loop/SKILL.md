@@ -53,11 +53,10 @@ Profile keys:
    - `.scratch` not gitignored (`git check-ignore -q .scratch` fails) → append `.scratch/` to `.gitignore` and tell the user; plans live there.
    - `.worktreeinclude` missing — the repo-root file naming which gitignored files worktrees need (gitignore syntax; the same file Claude Code's own worktrees read) → ask-then-persist, the file itself being the persistence: offer candidates from `git ls-files -oi --exclude-standard --directory`, write the selection as a tracked file. "None" writes a comment-only file, which counts as answered. Offer only what a cold checkout cannot run without — env files and local config. Dependencies belong to the Setup command however cheap the Fast copy looks: a copied tree carries platform-specific native builds and drifts from the lockfile.
    - `.worktreeinclude`'s LAST line must be `!.claude/worktrees/**` — append or move it there (gitignore matching is last-match-wins, so only the final position shields reliably). It keeps every copy mechanism — Act 2 and Claude Code's native worktrees alike — from cloning existing worktrees into a new one.
-3. Roster check: architecture-engineer, code-writer, reviewer, and debugger must exist in `MAIN/.claude/agents/`. Copy any that are missing from `<this-skill-dir>/agents/` and tell the user.
-4. `git fetch origin <DEFAULT>` once.
-5. Per issue: `gh issue view <n> --json number,title,body,state,labels`. CLOSED → drop the lane, tell the user.
-6. Parse each body's "Blocked by" section: a blocker that is still open and NOT in this batch → refuse that lane (report why); a blocker inside the batch → record the ordering (it becomes a stacked lane at Gate 1).
-7. Stateless resume check per issue — derive the stage from artifacts, never from memory:
+3. `git fetch origin <DEFAULT>` once.
+4. Per issue: `gh issue view <n> --json number,title,body,state,labels`. CLOSED → drop the lane, tell the user.
+5. Parse each body's "Blocked by" section: a blocker that is still open and NOT in this batch → refuse that lane (report why); a blocker inside the batch → record the ordering (it becomes a stacked lane at Gate 1).
+6. Stateless resume check per issue — derive the stage from artifacts, never from memory:
    - Plan file exists with `Status: READY` → skip Phase A for that lane (offer replan if the user asks).
    - Plan commit messages already in `git log` of the lane's branch → those commits are done. A sub-lane whose commits are all present resumes by re-running the review — safe and idempotent, since nothing records that a review already passed.
    - A worktree already exists for the branch → reuse it as-is.
@@ -82,7 +81,7 @@ Only lanes the user approves proceed. Drop the rest with a note.
 Wave logic: **anything based on origin/<DEFAULT> runs in wave 1; anything based on a branch that gets its commits in wave N runs in wave N+1** — this applies to stacked _lanes_ AND to dependent _sub-lanes_ within one lane (a frontend sub-lane based on its own backend sub-lane's branch waits for the next wave; provisioning it earlier would capture a base with zero feature commits). Provision a wave only after its bases completed the previous wave. For each sub-lane in the current wave:
 
 1. `git worktree add <WORKTREES>/<slug> -b <branch> <base>`. Base is `origin/<DEFAULT>` or the stack/sub-lane base branch. On resume: an existing worktree is reused as-is; an existing branch WITHOUT a worktree reattaches with `git worktree add <WORKTREES>/<slug> <branch>` (no `-b` — the `-b` form errors on an existing branch).
-2. `.worktreeinclude` copies: `git -C <MAIN> ls-files -oi --exclude-from=.worktreeinclude --directory` lists the matches (files, plus fully-ignored dirs collapsed to one entry); fast-copy each from MAIN into the worktree at the same relative path, creating parent directories. Worktree contents never appear in the list — the `!.claude/worktrees/**` line Act 0 guarantees excludes them.
+2. `.worktreeinclude` copies: `git -C <MAIN> ls-files -oi --exclude-from=.worktreeinclude --directory` lists the matches (files, plus fully-ignored dirs collapsed to one entry). Fast-copy each from MAIN into the worktree at the same relative path, creating parent directories — but STRIP the trailing slash git puts on directory entries first: `cp -R dir/ dest/` copies the directory's contents rather than the directory itself, scattering them one level too high. Worktree contents never appear in the list — the `!.claude/worktrees/**` line Act 0 guarantees excludes them.
 3. Run the profile's Setup command from inside the worktree.
 
 ## Act 3 — Phase B: execute
