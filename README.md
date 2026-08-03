@@ -101,13 +101,19 @@ Outbound sending is safe to run concurrently with anything else using the same b
 Without step 1 you get messages but no labels; without step 2, labels but no messages; without
 either, a run that works in silence. No notification failure ever changes a lane's outcome.
 
-**Nothing to set up: what each lane cost.** When an unattended batch finishes it writes
-`.scratch/<project>/cost/<issue>.md`, one file per lane — the lane's total on the measured
-baseline's metric (input + cache creation + output, *excluding* cache reads), the per-stage split
-that says which dial to turn rather than only that a lane was expensive, and a signed percentage
-against the baseline. Every lane gets one, including a lane that halted or crashed. It is reporting
-and only reporting: no lane ever stops, warns, or changes what it does because of what it spent,
-and no issue is refused for being large.
+**Nothing to set up: what each lane cost.** When an unattended batch finishes it appends one line
+per lane to `.scratch/<project>/cost.log`, so the file tells you what any given pull request cost:
+
+```
+2026-08-03T14:22:01Z #8 641K (target 608K, +5%) write 44% · plan 28% · review 28% · suite 0.5%
+```
+
+The total is on the measured baseline's metric (input + cache creation + output, *excluding* cache
+reads), the percentage is against that baseline, and the split says which dial to turn rather than
+only that a lane was expensive. Every lane gets a line, including one that halted or crashed, and a
+lane nothing was measured for says so rather than showing a zero. It is reporting and only
+reporting: no lane ever stops, warns, or changes what it does because of what it spent, and no
+issue is refused for being large.
 
 You are the orchestrator; the agent roster does the work:
 

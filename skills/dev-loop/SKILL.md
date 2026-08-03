@@ -217,13 +217,20 @@ The pipeline's claim is that it is cheap enough to run on every issue; this is t
 
 Run `node <this-skill-dir>/cost-log.mjs` with the request piped in from a **quoted** heredoc (`<<'JSON'`), for the same reason every other payload in this skill is: it carries agent-generated free text — ending reasons, diagnoses — which a composed shell string mangles or executes. The request is one JSON object:
 
-- **`outDir`** — `<MAIN>/.scratch/<project>/cost`, ABSOLUTE, `<project>` being the same slug the run's plan paths use. One directory for the whole batch. You pass it because you are the one who knows where your scratch directory is and which slug this run used; omit it and it is derived from the first lane carrying a plan, which is the same place. A batch where no lane ever got a plan has nothing to derive from, and you get told nothing was written rather than a project slug being invented.
+- **`outFile`** — `<MAIN>/.scratch/<project>/cost.log`, ABSOLUTE, `<project>` being the same slug the run's plan paths use. One file for the whole batch, in the directory Act 0 has already guaranteed is gitignored. Required, never derived: you are the one who knows where your scratch directory is and which slug this run used.
 - **`runs`** — the `transcriptDir` of EVERY Workflow call this batch made: Act 1's, plus each wave's Act 3. Miss one and the stages that ran in it are simply absent from every lane's split, with no line saying so.
-- **`lanes`** — the lane objects you already passed `phase-execute.js`, handed over rather than rebuilt (extra keys are ignored). **Every lane the run touched**, including one that ended, one that `crashed`, and one that got no further than Act 0 — a log only for the lanes that went well would hide exactly the lanes worth reading. Add each lane's `ending` from the phase-script result, which the log prints beside the cost.
+- **`lanes`** — the lane objects you already passed `phase-execute.js`, handed over rather than rebuilt (extra keys are ignored). **Every lane the run touched**, including one that ended, one that `crashed`, and one that got no further than Act 0 — a log only for the lanes that went well would hide exactly the lanes worth reading.
 
 There is deliberately **no key for the target**: this file's configuration rule refuses a per-run override of cost behaviour, and a target that can be passed in is one.
 
-It writes `<outDir>/<issue>.md`, one file per lane, in the directory Act 0 has already guaranteed is gitignored. Not the issue: the per-lane comment is specified as an extremely concise summary plus open questions, and a cost table would bury it. It prints one summary line per lane on stdout; put those in your closing report, and leave the per-stage table in the file.
+It **appends one line per lane**, and that line is the whole report — what this pull request cost:
+
+```
+2026-08-03T14:22:01Z #8 641K (target 608K, +5%) write 44% · plan 28% · review 28% · suite 0.5%
+2026-08-03T14:22:01Z #12 not measured — no transcript named this lane
+```
+
+Appended rather than overwritten, because a later run over another issue would otherwise erase these. Not the issue thread: the per-lane comment is specified as an extremely concise summary plus open questions, and cost would crowd it. The same lines go to stdout — put them in your closing report verbatim rather than re-describing them.
 
 ## Cleanup mode (`/dev-loop cleanup`)
 

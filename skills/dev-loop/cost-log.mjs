@@ -14,21 +14,20 @@
 // notify.sh uses in this folder:
 //
 //   node <skill-dir>/cost-log.mjs <<'JSON'
-//   { "outDir": "/abs/.scratch/<project>/cost",
+//   { "outFile": "/abs/.scratch/<project>/cost.log",
 //     "runs": ["<transcriptDir>", ...],
-//     "lanes": [{ "issue": 8, "planPath": "...", "ending": {"category":"HALT","reason":"..."},
+//     "lanes": [{ "issue": 8, "planPath": "...",
 //                 "subLanes": [{ "branch": "feat/8", "worktree": "/abs/..." }] }] }
 //   JSON
 //
 // `lanes` is the array the host already passed to phase-execute.js — extra keys are ignored, so
 // it is handed over rather than rebuilt. `runs` is one transcript directory per Workflow call the
 // batch made (Phase A, plus each wave's Phase B), which is why the host is told to keep them.
-// `outDir` is one directory for the whole batch, because the host is what knows where its own
-// scratch directory is and which project slug the run used.
+// `outFile` is one file for the whole batch, appended to, one line per lane.
 //
 // There is deliberately NO key for the target below. SKILL.md's configuration rule refuses a
 // per-run override of cost behaviour, and a target that can be passed in is one.
-import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
+import { appendFile, mkdir, readFile, readdir } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -256,102 +255,56 @@ export function formatDelta(total) {
   return `${delta < 0 ? '-' : '+'}${Math.round(Math.abs(delta))}%`
 }
 
-// The two lines the ticket specified, verbatim in shape: the total against the target, then the
-// per-stage split. The split is the entire value the baseline produced — a bare total says a lane
-// was expensive, the split says which dial to turn.
-export function summaryLine(laneTally) {
-  if (!laneTally.measured) {
-    return 'Cost: not measured — no agent transcripts were found for this lane.'
-  }
-  const split = laneTally.stages.map(s => `${s.stage} ${formatShare(s.share)}`).join(' · ')
-  return `Cost: ${formatTokens(laneTally.total)} excluding cache reads (target ${formatTokens(TARGET_TOKENS)}, ${formatDelta(laneTally.total)})\n  ${split}`
-}
-
-export function renderLane(laneTally, { runs = [], unattributed } = {}) {
-  const lane = laneTally.lane
-  const lines = [`# Cost — issue #${laneTally.issue}`, '', '```', summaryLine(laneTally), '```', '']
-
-  if (lane.ending) {
-    lines.push(`Lane ending: **${lane.ending.category}** — ${lane.ending.reason}`, '')
-  }
-
-  if (laneTally.measured) {
-    lines.push('| Stage | Tokens | Share |', '| --- | ---: | ---: |')
-    for (const s of laneTally.stages) {
-      lines.push(`| ${s.stage} | ${formatTokens(s.tokens)} | ${formatShare(s.share)} |`)
-    }
-    lines.push(`| **total** | **${formatTokens(laneTally.total)}** | **100%** |`, '')
-    lines.push(`${laneTally.agents} agent transcript(s) across ${runs.length} workflow run(s).`, '')
-  } else {
-    lines.push(
-      `Nothing was found to measure. ${runs.length} workflow run(s) were read and no agent`,
-      'transcript in them named this lane — its plan path, its worktrees, its branches or its',
-      'issue number. Either the lane never dispatched an agent, or the transcript directories it',
-      'ran in were not passed here.',
-      '',
-    )
-  }
-
-  if (unattributed && unattributed.agents) {
-    lines.push(
-      `Caveat: ${unattributed.agents} agent transcript(s) totalling ${formatTokens(unattributed.tokens)} could`,
-      'not be attributed to any lane in this batch, so they are in no lane\'s total. Reported rather',
-      'than spread, which would put an unknown cost on lanes that did not incur it.',
-      '',
-    )
-  }
-
-  lines.push(
-    'Metric: input + cache creation + output, **excluding cache reads** — the metric the baseline',
-    'was measured on, and the only one the target compares against.',
-    '',
-    'Reporting only. Nothing in the pipeline halts, warns, or changes behaviour on cost, and this',
-    'file describes ONE run — the next run over this issue overwrites it.',
-    '',
-  )
-  return lines.join('\n')
-}
-
-// One directory for the whole batch. The host passes it, because the host is what knows where its
-// own scratch directory is and which project slug the run used — the same `.scratch/<project>` the
-// plans live in, already gitignored in every repository this runs against, which is the whole
-// reason the log is on disk rather than on the issue, where a cost table would bury a thread
-// specified to be an extremely concise summary plus open questions.
+// ONE LINE PER LANE, and the format is the whole contract:
 //
-// A host that omits it gets it derived from the first lane carrying a plan, since the plans are in
-// that same directory. A batch where no lane got as far as a plan has nothing to derive from, and
-// this returns nothing rather than inventing a project slug — a log written where nobody looks is
-// indistinguishable from no log, and costs a stray directory as well.
-export function outDirOf(request) {
-  if (request.outDir) return request.outDir
-  const planned = (request.lanes || []).find(lane => lane.planPath)
-  return planned ? join(dirname(dirname(planned.planPath)), 'cost') : ''
+//   <stamp> #<issue> <total> (target <target>, <delta>) <stage> <share> · <stage> <share> · …
+//   2026-08-03T14:22:01Z #8 641K (target 608K, +5%) write 44% · plan 28% · review 28% · suite 0.5%
+//   2026-08-03T14:22:01Z #12 not measured — no transcript named this lane
+//
+// The issue number comes first after the stamp so the file greps by pull request, which is the
+// question it exists to answer: what did #8 cost? The total answers it, and the split — the entire
+// value the baseline produced — says which dial to turn rather than only that a lane was expensive.
+//
+// Never a total of zero for a lane nothing was measured for: zero reads as free, and unmeasured is
+// not free. That line says so in words instead.
+export function reportLine(laneTally, stamp) {
+  const head = `${stamp} #${laneTally.issue}`
+  if (!laneTally.measured) return `${head} not measured — no transcript named this lane`
+  const split = laneTally.stages.map(s => `${s.stage} ${formatShare(s.share)}`).join(' · ')
+  return `${head} ${formatTokens(laneTally.total)} (target ${formatTokens(TARGET_TOKENS)}, ${formatDelta(laneTally.total)}) ${split}`
 }
 
-export async function writeCostLogs(request) {
+// Transcripts that named no lane are their own line rather than being spread across the lanes,
+// which would put an unknown cost on lanes that did not incur it, or dropped, which would make a
+// batch's lines quietly fail to add up.
+export function unattributedLine(unattributed, stamp) {
+  return `${stamp} unattributed ${unattributed.agents} transcript(s) ${formatTokens(unattributed.tokens)} — in no lane's total`
+}
+
+// Appended, not overwritten: it is a log. A later run over another issue would otherwise erase the
+// lines this one wrote, and the stamp is what keeps a re-run of the same issue readable beside its
+// first attempt. Cross-run aggregation is somebody else's job — this only refrains from destroying
+// the input for it.
+//
+// `outFile` is required and never derived. The host is what knows where its own scratch directory
+// is and which project slug the run used, and a guess would have to invent one for the lanes that
+// never got a plan — a log written where nobody looks is indistinguishable from no log.
+export async function writeCostLog(request) {
   const lanes = Array.isArray(request.lanes) ? request.lanes : []
   const runs = Array.isArray(request.runs) ? request.runs : []
+  const file = request.outFile
+  if (!file) throw new Error('the request named no outFile — see Act 4 in SKILL.md')
 
   const agents = (await Promise.all(runs.map(readRun))).flat()
   const tallied = tally(agents, lanes)
 
-  const dir = outDirOf(request)
-  if (!dir) {
-    return {
-      written: [],
-      unattributed: tallied.unattributed,
-      skipped: 'no output directory: the request named none, and no lane carries a plan path to derive one from',
-    }
-  }
+  const stamp = new Date().toISOString().replace(/\.\d+Z$/, 'Z')
+  const lines = tallied.lanes.map(laneTally => reportLine(laneTally, stamp))
+  if (tallied.unattributed.agents) lines.push(unattributedLine(tallied.unattributed, stamp))
 
-  const written = []
-  await mkdir(dir, { recursive: true })
-  for (const laneTally of tallied.lanes) {
-    const file = join(dir, `${laneTally.issue}.md`)
-    await writeFile(file, renderLane(laneTally, { runs, unattributed: tallied.unattributed }))
-    written.push({ issue: laneTally.issue, file, summary: summaryLine(laneTally) })
-  }
-  return { written, unattributed: tallied.unattributed }
+  await mkdir(dirname(file), { recursive: true })
+  await appendFile(file, lines.map(l => `${l}\n`).join(''))
+  return { file, lines }
 }
 
 async function readStdin() {
@@ -367,17 +320,9 @@ async function main() {
     process.exitCode = 1
     return
   }
-  const { written, unattributed, skipped } = await writeCostLogs(JSON.parse(raw))
-  for (const w of written) process.stdout.write(`#${w.issue} → ${w.file}\n${w.summary}\n\n`)
-  if (unattributed.agents) {
-    process.stdout.write(`${unattributed.agents} agent transcript(s) were attributed to no lane.\n`)
-  }
-  if (skipped) {
-    // Non-zero so the host notices and can say so; its own rule is to report this and carry on,
-    // reporting never being allowed to change what a run did.
-    process.stderr.write(`cost-log: wrote nothing — ${skipped}\n`)
-    process.exitCode = 1
-  }
+  // The same lines that were appended, so the host can relay them without reading the file back.
+  const { lines } = await writeCostLog(JSON.parse(raw))
+  process.stdout.write(lines.map(l => `${l}\n`).join(''))
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
