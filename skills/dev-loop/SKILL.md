@@ -20,9 +20,11 @@ This skill is repo- and machine-agnostic: it hardcodes no repository name, path,
 
 ### Run mode — `gated` or `unattended`
 
-`auto` present ⇒ **unattended**; absent ⇒ **gated**. Act 0 parses it ONCE and carries it as a single value for the whole run — no later stage re-derives it from the arguments. It is contracts.md's **Lane conclusion** branch, and in this file it decides exactly one thing:
+`auto` present ⇒ **unattended**; absent ⇒ **gated**. Act 0 parses it ONCE and carries it as a single value for the whole run — no later stage re-derives it from the arguments. It is contracts.md's **Lane conclusion** branch, and in this file it decides exactly two things:
 
 > **Gate suppression.** Both gates raise their questions under `gated`, and neither raises any under `unattended`. This line is the only place that is decided: no argument and no profile key overrides it.
+
+> **Notifications.** Under `unattended` you emit `notifications.md`'s host-owned events, at the three boundaries marked **⟨notify⟩** below. Under `gated` you emit none of them. This line is the only place that is decided too: each ⟨notify⟩ boundary says *what* to run and never *whether*, so the guard cannot drift apart across three sites. `notifications.md` governs what each event says, which label role it writes, and in what order — nothing about that is restated here.
 
 **Suppression removes the questions, not the work.** Every step of both gates still runs; each question resolves to its unattended answer instead:
 
@@ -37,6 +39,15 @@ This skill is repo- and machine-agnostic: it hardcodes no repository name, path,
 | Between waves — authorize the next wave? | it proceeds |
 
 A gate's `PushNotification` goes with its question — it exists to summon someone to a gate, and under `unattended` nobody is being summoned. What an unattended run does emit instead is `notifications.md`'s, governed entirely there.
+
+### How you write a ⟨notify⟩ event — the mechanism only
+
+`notifications.md` decides what each event says and which label role it takes. This says only how to run it, and applies to every ⟨notify⟩ boundary below.
+
+- **Labels are `gh issue edit <n> --add-label/--remove-label`.** Resolve the three roles — in-progress, awaiting-human, failed — to label strings ONCE at Act 0, through the repo's own `docs/agents/triage-labels.md`. Roles never appear as strings in this skill: a repository keeps its own vocabulary. **A role that file gives no string for is skipped silently** for the whole run — seeding labels is that repository's setup work, and inventing one creates a label nobody's tooling knows.
+- **Comments are `gh issue comment <n> --body-file -`**, with the body piped in from a **quoted** heredoc (`<<'BODY'`). Never `--body "<text>"`: the bodies carry agent-generated free text — reasons, diagnoses, stack traces — full of backticks, dollar signs and quotes, which a composed shell string mangles or executes.
+- **Messages are `<this-skill-dir>/notify.sh`**, which reads its payload on standard input for the same reason. Feed it the same way: `<this-skill-dir>/notify.sh <<'MSG' … MSG`. It is silent, and exits 0, when the channel is not configured — that is a supported state, so never check for it, never ask about it, and never add a profile key for it.
+- **Labels are crash-safe; messaging is best-effort.** Neither costs tokens. A label write goes before the tokens it guards, so a session that dies still leaves the marker. A `gh` or messaging failure is reported and never stops, fails, or changes a lane.
 
 Touchpoint intersection, sub-lane splitting, the profile's Constraints, the push and the PR itself are gate *work*, and happen identically under both modes. The one-time ask-then-persist preconditions are not gates and fire under both. What a sub-lane's *ending* means for its PR's state — ready, draft, or none — is contracts.md's **terminal-state table**, which the phase script has already applied: every sub-lane result carries a `terminal` of `{pr, push, reasons}`, so under `unattended` you open what it names rather than deciding it here.
 
@@ -115,12 +126,15 @@ Profile keys:
    - Plan file exists with `Status: READY` → skip Phase A for that lane (offer replan if the user asks).
    - Plan commit messages already in `git log` of the lane's branch → those commits are done. A sub-lane whose commits are all present resumes by re-running the review — safe and idempotent, since nothing records that a review already passed.
    - A worktree already exists for the branch → reuse it as-is.
+9. **⟨notify⟩ Lane start.** For every lane that survived steps 6–8 — so a dropped or refused lane is never marked as being worked — add the in-progress label and send the started message, per lane. This is the LAST step of Act 0, and that position is the point: both writes land before a single token is spent, so a session that dies anywhere in Phase A still leaves the marker on the issue. The label is also a claim marker, which is a bonus rather than a design: a separate orchestration system refuses any issue wearing one, so the two get mutual exclusion for free. `notifications.md` records the hazard that comes with it — do not solve it here.
 
 ## Act 1 — Phase A: plans
 
 Mode W: run the Workflow tool with `scriptPath: <this-skill-dir>/phase-plan.js` and `args: { issues: [{number, title, project, answers?}] }`. Mode A: the equivalent parallel architect runs per contracts.md. One architect per issue, parallel. Each returns `{status, planPath, summary, openQuestions}`. A lane returning `status: DIED` means its architect crashed — report it at Gate 1 and offer a re-run; never silently drop a requested issue.
 
 KEEP each lane's `summary` bullets for the rest of the run. They are the architect's orientation, and Gate 2 puts them in the PR body's Context section — so they must survive whether or not Gate 1 fires, and are not consumed by presenting them there.
+
+**⟨notify⟩ Plan comment.** Per lane, comment the plan's summary bullets and the architect's open questions on the issue. **Never the plan file** — it survives on disk at tens of kilobytes, no agent ever reads this comment (the writer and the reviewer both take the plan from disk), and inlining it buries the thread to serve nobody. On the clean path this is the lane's one comment; a lane that ends later gets one more, the notifier's, and no others. Pass `planPath` in the comment so a human can open the real thing.
 
 ## Gate 1 — plan approval (asks under `gated` only; ONE batch interruption; PushNotification first)
 
