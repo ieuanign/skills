@@ -4,21 +4,17 @@
 #
 #   printf '%s' "$message" | notify.sh
 #
-# Its behaviour is specified in notifications.md's Channel contract; this is only the
-# implementation. Two properties are load-bearing and neither is an optimisation:
+# notifications.md's Channel contract specifies its behaviour; this is only the implementation.
+# Two notes for whoever edits it next, because both properties look like accidents:
 #
-# 1. THE PAYLOAD ARRIVES ON STANDARD INPUT AND NEVER ENTERS A SHELL STRING. Messages
-#    interpolate agent-generated free text, which carries backticks, dollar signs, quotes and
-#    newlines. Composing a shell string around that fails — silently, and on exactly the
-#    message that matters most, because the worst failures produce the ugliest text. Handing
-#    stdin straight to the HTTP client to URL-encode closes that at its root rather than
-#    escaping or validating after the fact. There is deliberately no variable holding the
-#    message anywhere below: what does not exist cannot be interpolated.
+# 1. THERE IS DELIBERATELY NO VARIABLE HOLDING THE MESSAGE. It goes from standard input to the
+#    HTTP client's URL-encoder without passing through a shell string, which is what the
+#    contract requires. Do not "simplify" it into an argument: what does not exist cannot be
+#    interpolated, and a composed string fails on exactly the messages that matter most.
 #
-# 2. SILENT UNLESS CONFIGURED. With either variable missing the script says nothing and exits
-#    successfully. That is what makes the channel genuinely optional at zero cost — no profile
-#    key, no ask-then-persist question, no intake precondition, and a developer who never sets
-#    it up gets silence rather than an error on every lane.
+# 2. EXIT 0 IS ALWAYS CORRECT HERE, including with no configuration and including on a failed
+#    send. The contract makes an unconfigured channel silent and messaging best-effort, so a
+#    non-zero exit would let a notification change the outcome of the lane reporting it.
 #
 # Configuration is per-machine, in the environment:
 #

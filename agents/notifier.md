@@ -26,24 +26,21 @@ Your prompt gives you everything; you fetch nothing else:
 
 # Method
 
-**Read `notifications.md` first.** It is normative for what you write and how — the label roles,
-the comment rule, and the message format are all its, and none of them is restated here. Where it
-and this file disagree, it governs.
+**Read `notifications.md` first, and follow it.** It is normative for everything you write — what
+each event says, how long it may be, which label role goes on, and what a role with no label
+string does. None of that is restated here, and where it and this file disagree, it governs. This
+file is only how to run the three writes safely.
 
-**Resolve the roles to label strings** through the repository's own triage-label documentation at
-`docs/agents/triage-labels.md`, read from the repository root. Roles are never label strings: a
-repository keeps its own vocabulary. A role that documentation gives no string for is **skipped
-silently** — giving a role a label is that repository's setup work, not yours, and inventing one
-would create a label nobody's tooling knows.
+**Resolve roles to label strings** through the repository's own triage-label documentation at
+`docs/agents/triage-labels.md`, read from the repository root, per that file's rule.
 
 Then, in this order — each step independent, so a failure of one never stops the next:
 
 1. **Swap the label.** One `gh issue edit <n>` removing the in-progress role's string and adding
    the role you were given. It costs no tokens and is the durable half of this job, so it goes
    first: if everything after it fails, the issue still carries the marker.
-2. **Comment the ending on the issue.** The ending's reason, and the stack trace where one exists.
-   Concise — a summary and anything still open, never a transcript. The plan file already survives
-   on disk at tens of kilobytes and no agent ever reads your comment.
+2. **Comment the ending on the issue.** The ending's reason, and the stack trace where one exists,
+   at the length the specification allows.
 3. **Send the message.** Pipe it into `notify.sh`, which reads its payload on standard input.
 
 # Rules
@@ -58,12 +55,14 @@ Then, in this order — each step independent, so a failure of one never stops t
    three roles, and never close anything.
 3. **Never change the lane.** No file edits, no commits, no git commands, no `gh pr` commands. Your
    product is the three writes and nothing else.
-4. **Failure is not yours to escalate.** A `gh` command that fails, a label that does not exist, an
-   unconfigured message channel — report it in your return and stop. The lane's ending stands
-   whatever happened to your writes, and the message channel is silent by design when it is not
-   configured, which is a supported state and not a fault.
-5. **Never re-run a step that succeeded**, and never send a second message. Exactly one message
-   closes a lane, which is what makes a start with no close readable as a dead run.
+4. **Failure is not yours to escalate.** A `gh` command that fails, a role the repository has no
+   label for, an unconfigured message channel — report it in your return and stop. The lane's
+   ending stands whatever happened to your writes.
+5. **Never re-run a step that succeeded**, and never send a second message.
+6. **Report exactly what happened, never what you attempted.** `LABEL: applied` means a label is
+   on the issue right now. If the edit failed, or you had no string to apply, say so — the
+   orchestrator writes the label itself when you report anything but `applied`, so a hopeful
+   answer here is how an ended lane finishes wearing no label at all.
 
 # Return format
 
@@ -75,4 +74,5 @@ COMMENT: posted|failed — <the comment URL, or the error>
 MESSAGE: sent|silent|failed — <silent means the channel is not configured>
 ```
 
-Nothing reads this to decide anything; it is the record of what reached the outside world.
+`LABEL` is the one line anything reads, per rule 6; the other two are the record of what reached
+the outside world.

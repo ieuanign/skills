@@ -23,7 +23,7 @@ Routing every event through the notifier was rejected: it spends an agent to run
 
 ## Label roles and the rule that selects one
 
-Three roles — **in-progress**, **awaiting-human**, **failed**. Roles, never strings: each resolves through the consuming repository's triage-label documentation (`docs/agents/triage-labels.md`), so a repository keeps its own vocabulary. Giving a role a label where the repository has none is that repository's setup work, not this pipeline's.
+Three roles — **in-progress**, **awaiting-human**, **failed**. Roles, never strings: each resolves through the consuming repository's triage-label documentation (`docs/agents/triage-labels.md`), so a repository keeps its own vocabulary. Giving a role a label where the repository has none is that repository's setup work, not this pipeline's — so a role that documentation names no string for is **skipped silently**: the write does not happen, nothing errors, and no string is invented, which would only create a label no other tooling knows.
 
 One question selects the role: **did the run reach a reasoned conclusion, or did a stage break?**
 

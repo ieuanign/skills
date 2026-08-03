@@ -27,7 +27,9 @@ const agentType = 'architecture-engineer'
 const died = (number, why) => ({ issue: number, status: 'DIED', planPath: '', summary: why, openQuestions: [] })
 
 // Honest about what a throw actually carried: a dead agent often throws a bare value with neither
-// a message nor a stack, and a summary promising a trace that is empty helps nobody.
+// a message nor a stack, and a summary promising a trace that is empty helps nobody. The same
+// shape as phase-execute.js's, which cannot be shared — a phase script imports nothing, being
+// compiled as one function over the runner's globals.
 function crashLine(err) {
   const message = err && typeof err.message === 'string' ? err.message.trim() : ''
   if (message) return message
@@ -37,20 +39,24 @@ function crashLine(err) {
   return `it threw a ${typeof err} value (${shown || 'empty'}), carrying no message`
 }
 
-const results = await parallel(input.issues.map(iss => () =>
-  agent(
-    `Mode 1 — implementation plan for GitHub issue #${iss.number} ("${iss.title}") in this repository.` +
-    (iss.project ? ` Project slug: ${iss.project}.` : '') +
-    (iss.answers ? ` The user answered your previous open questions as follows — incorporate them and do not re-ask: ${iss.answers}` : '') +
-    ` Fetch the issue yourself, explore the code, write the plan file, and report status, plan path, summary, and open questions.`,
-    { agentType, label: `plan:#${iss.number}`, phase: 'Plan', schema: PLAN_SCHEMA }
-  ).then(r => (r
-    ? { issue: iss.number, ...r }
-    : died(iss.number, 'architect died — re-run this lane')))
-   // A throw is the same outcome as a dead architect and takes the same entry: without this the
-   // runner resolves the thunk to nothing and the issue disappears from the batch entirely.
-   .catch(err => died(iss.number, `architect threw — re-run this lane: ${crashLine(err)}`))
-))
+// try/catch around the whole thunk, not `.catch` on the promise: a synchronous throw out of
+// agent() never builds the chain, so a trailing .catch would not be there to catch it — and that
+// is the case where the issue disappears from the batch entirely.
+const results = await parallel(input.issues.map(iss => async () => {
+  try {
+    const r = await agent(
+      `Mode 1 — implementation plan for GitHub issue #${iss.number} ("${iss.title}") in this repository.` +
+      (iss.project ? ` Project slug: ${iss.project}.` : '') +
+      (iss.answers ? ` The user answered your previous open questions as follows — incorporate them and do not re-ask: ${iss.answers}` : '') +
+      ` Fetch the issue yourself, explore the code, write the plan file, and report status, plan path, summary, and open questions.`,
+      { agentType, label: `plan:#${iss.number}`, phase: 'Plan', schema: PLAN_SCHEMA }
+    )
+    // A throw is the same outcome as a dead architect and takes the same entry.
+    return r ? { issue: iss.number, ...r } : died(iss.number, 'architect died — re-run this lane')
+  } catch (err) {
+    return died(iss.number, `architect threw — re-run this lane: ${crashLine(err)}`)
+  }
+}))
 
 // No filter: every requested issue leaves this script with an entry. The thunks cannot throw, so
 // a null here is the runner itself dropping one, which is the same unattributable loss.
