@@ -70,7 +70,7 @@ Adding a value to this pipeline? The rule decides its home, so a new value never
 | **Argument** | the run mode, the issue list, the optional `project:<slug>` |
 | **Repository profile** (ask-then-persist, below) | every key in **Repo profile** below — branch template, suite command, **fix cycles** |
 | **Phase-script constant** | per-stage effort and model tiers, the per-commit debug-and-fix bound, the suite gate's two round bounds, the stage list each mode runs |
-| **Skill constant** | gate suppression under `unattended` (stated once under Run mode above), the cost reporting target |
+| **Skill constant** | gate suppression under `unattended` (stated once under Run mode above), the cost reporting target (`cost-log.mjs`'s `TARGET_TOKENS`) |
 
 These are **homes, not an inventory**. A value this pipeline does not have yet still has its home decided here — which is the point of a rule over a list, and why the refusals below can name things nothing has built.
 
@@ -78,7 +78,7 @@ These are **homes, not an inventory**. A value this pipeline does not have yet s
 
 - **No per-repository effort tiers.** Cost behaviour stays predictable across repositories; a tier is a phase-script constant or it is nothing.
 - **No per-run overrides of gates, stages, or cost behaviour.** The run mode is the only argument that changes pipeline behaviour, and all it selects is the Lane conclusion branch.
-- **The cost reporting target stays a constant** — it was measured as a single median across repositories, with no evidence it varies by one. Promote it if one repository's lanes prove consistently larger.
+- **The cost reporting target stays a constant** — it was measured as a single median across repositories, with no evidence it varies by one. Promote it if one repository's lanes prove consistently larger. It is a marker the log prints a percentage against and nothing more: no key anywhere turns it into a limit, because there is no limit for it to be.
 
 Each refusal is a cheap promotion from constant to profile key if a repository ever actually needs one. That cheapness is the reason to refuse now rather than pre-empt.
 
@@ -129,7 +129,7 @@ Profile keys:
 
 ## Act 1 — Phase A: plans
 
-Mode W: run the Workflow tool with `scriptPath: <this-skill-dir>/phase-plan.js` and `args: { issues: [{number, title, project, answers?}] }`. Mode A: the equivalent parallel architect runs per contracts.md. One architect per issue, parallel. Each returns `{status, planPath, summary, openQuestions}`. A lane returning `status: DIED` means its architect crashed — report it at Gate 1 and offer a re-run; never silently drop a requested issue.
+Mode W: run the Workflow tool with `scriptPath: <this-skill-dir>/phase-plan.js` and `args: { issues: [{number, title, project, answers?}] }`. **Keep the `transcriptDir` the tool returns** — Act 4 reads the planning stage's cost out of it, and nothing recovers it afterwards. Mode A: the equivalent parallel architect runs per contracts.md. One architect per issue, parallel. Each returns `{status, planPath, summary, openQuestions}`. A lane returning `status: DIED` means its architect crashed — report it at Gate 1 and offer a re-run; never silently drop a requested issue.
 
 KEEP each lane's `summary` bullets for the rest of the run. They are the architect's orientation, and Gate 2 puts them in the PR body's Context section — so they must survive whether or not Gate 1 fires, and are not consumed by presenting them there.
 
@@ -156,7 +156,7 @@ Wave logic: **anything based on origin/<DEFAULT> runs in wave 1; anything based 
 
 ## Act 3 — Phase B: execute
 
-Per wave, Mode W: run the Workflow tool with `scriptPath: <this-skill-dir>/phase-execute.js` and `args: { lanes, mode, maxFixCycles, suiteCommand, skillDir }` — the lane list, the mode, the fix-cycle count, the suite command and this skill's own folder, and nothing else. `skillDir` is `<this-skill-dir>` as an ABSOLUTE path: a workflow script cannot see where it was loaded from, and the notifier it dispatches needs `notifications.md` and `notify.sh` by path. Omit it and no notifier is dispatched — one with no specification to read writes worse than nothing. `mode` is the run mode Act 0 parsed — literally `gated` or `unattended`, never the `auto` token the developer typed — passed rather than re-derived, so the script reaches a lane's conclusion knowing which half of contracts.md's branch applies; `maxFixCycles` is the profile's **Fix cycles** key and `suiteCommand` its **Full-suite command**, both ask-then-persisted before this first runs and passed verbatim — never a literal here, and a `none` or omitted `suiteCommand` makes every sub-lane's suite **not run**. Each lane is `{ issue, issueBody (the body Act 0 fetched, verbatim), planPath (ABSOLUTE — .scratch exists only in the main tree), subLanes: [{ branch, worktree (absolute), base, area, commits: [{ordinal, message}] }] }`. Mode A: the same lanes through the same state machine per contracts.md. A lane's subLanes array contains only THIS wave's sub-lanes — later-wave sub-lanes of the same issue go into the next wave's args.
+Per wave, Mode W: run the Workflow tool with `scriptPath: <this-skill-dir>/phase-execute.js` and `args: { lanes, mode, maxFixCycles, suiteCommand, skillDir }` — the lane list, the mode, the fix-cycle count, the suite command and this skill's own folder, and nothing else. `skillDir` is `<this-skill-dir>` as an ABSOLUTE path: a workflow script cannot see where it was loaded from, and the notifier it dispatches needs `notifications.md` and `notify.sh` by path. Omit it and no notifier is dispatched — one with no specification to read writes worse than nothing. `mode` is the run mode Act 0 parsed — literally `gated` or `unattended`, never the `auto` token the developer typed — passed rather than re-derived, so the script reaches a lane's conclusion knowing which half of contracts.md's branch applies; `maxFixCycles` is the profile's **Fix cycles** key and `suiteCommand` its **Full-suite command**, both ask-then-persisted before this first runs and passed verbatim — never a literal here, and a `none` or omitted `suiteCommand` makes every sub-lane's suite **not run**. Each lane is `{ issue, issueBody (the body Act 0 fetched, verbatim), planPath (ABSOLUTE — .scratch exists only in the main tree), subLanes: [{ branch, worktree (absolute), base, area, commits: [{ordinal, message}] }] }`. Mode A: the same lanes through the same state machine per contracts.md. A lane's subLanes array contains only THIS wave's sub-lanes — later-wave sub-lanes of the same issue go into the next wave's args. **Keep this call's `transcriptDir` too**, alongside Act 1's and every earlier wave's: Act 4 wants all of them, one wave's holding only the stages that ran in it.
 
 Build each sub-lane's `commits` from the plan's `## Commit / PR breakdown`: the entries belonging to that sub-lane's PR, in plan order; `ordinal` = 1-based position within the whole breakdown; `message` verbatim from the plan. Omit commits Act 0 already found in the branch's git log (resume).
 
@@ -209,6 +209,19 @@ Stacked lanes: PR base is the base lane's branch; note the stack in the body ("S
 
 Ended sub-lanes: report the label (**HALT** — something deliberately stopped; **FAILED** — something broke), the stage, the reason (verbatim contract lines), the diagnosis if a debugger produced one, the attempt log in order, and the exact resume command — `/dev-loop <n>` re-derives everything. The label explains the ending and decides nothing: under `gated` the two are offered the same push, the same draft-PR question and the same kept worktree, and under `unattended` both reach the terminal-state table as the same row.
 
+## Act 4 — Cost log (runs under `unattended` only; no agents, no gate, nothing it can stop)
+
+The pipeline's claim is that it is cheap enough to run on every issue; this is the only thing that says whether a given run was. contracts.md's **Cost reporting** section is normative for it, and its first line is that no lane ever halts, warns, or changes behaviour on what it spent — so nothing here is a gate, nothing here is asked, and a failure here is reported and let go exactly as a notification failure is. A run whose reporting broke still did the work.
+
+**Once per run, not per wave**, after the last wave's Gate 2 — a lane whose sub-lanes span waves then gets one log covering all of them rather than one a wave that each undercounts it.
+
+Run `node <this-skill-dir>/cost-log.mjs` with the request piped in from a **quoted** heredoc (`<<'JSON'`), for the same reason every other payload in this skill is: it carries agent-generated free text — ending reasons, diagnoses — which a composed shell string mangles or executes. The request is one JSON object:
+
+- **`runs`** — the `transcriptDir` of EVERY Workflow call this batch made: Act 1's, plus each wave's Act 3. Miss one and the stages that ran in it are simply absent from every lane's split, with no line saying so.
+- **`lanes`** — the lane objects you already passed `phase-execute.js`, handed over rather than rebuilt (extra keys are ignored). **Every lane the run touched**, including one that ended, one that `crashed`, and one that got no further than Act 0 — a log only for the lanes that went well would hide exactly the lanes worth reading. Add each lane's `ending` from the phase-script result, which the log prints beside the cost.
+
+It writes `.scratch/<project>/cost/<issue>.md` — one file per lane, beside that lane's own plan, in the directory Act 0 has already guaranteed is gitignored. Not the issue: the per-lane comment is specified as an extremely concise summary plus open questions, and a cost table would bury it. It prints one summary line per lane on stdout; put those in your closing report, and leave the per-stage table in the file.
+
 ## Cleanup mode (`/dev-loop cleanup`)
 
 Cleanup reaps what has an exact done-signal and **lists** what does not. It is safe to run at any time, including while another batch is mid-wave, and that is the property to preserve.
@@ -230,6 +243,7 @@ Cleanup reaps what has an exact done-signal and **lists** what does not. It is s
 - Never proceed past a gate without explicit user approval, unless the run mode is `unattended`.
 - **Append-only, whoever is watching.** The run may append to issues and pull requests (`gh issue comment`, `gh pr comment`), may add and remove its own workflow labels and no others, and may set state only on artifacts it created — its own branches, its own PRs, its own plan files. It NEVER edits an issue body, NEVER ticks an acceptance-criteria checkbox, and NEVER converts a pull request a human opened. Per-criterion verdicts are *reported*, never written back to the issue's checklist — contracts.md's **Append-only invariant** carries the reasoning.
 - NEVER remove, force-modify, or `rm -rf` the main worktree (first entry of `git worktree list`). Worktree removal applies only to worktrees under `<WORKTREES>`, and only via `git worktree remove` without `--force`.
+- **Nothing halts on tokens, in either mode.** No lane stops, warns, or changes what it does because of what it spent, and no big issue is refused for being big. Cost is measured after the fact, written to a log and acted on by nobody — contracts.md's **Cost reporting** carries why the ceiling that used to be specified was dropped rather than repaired, so it is not re-proposed.
 - **Never force-push, whoever is watching.** Every push this pipeline makes is a fast-forward by construction, so forcing is never the fix — and an unattended run that forced one would destroy history with nobody there to notice. A rejected push is reported, never retried harder.
 - **Push before you remove.** A worktree is removed only after a push of its branch succeeded, because after removal the remote branch is the only copy of that work.
 - A lane worktree is a cold checkout plus its `.worktreeinclude` files and whatever the Setup command installs. Everything else an agent needs — skills, roster, settings, permissions — it already has: it runs in a session rooted in MAIN whatever directory it works in.

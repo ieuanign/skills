@@ -101,6 +101,14 @@ Outbound sending is safe to run concurrently with anything else using the same b
 Without step 1 you get messages but no labels; without step 2, labels but no messages; without
 either, a run that works in silence. No notification failure ever changes a lane's outcome.
 
+**Nothing to set up: what each lane cost.** When an unattended batch finishes it writes
+`.scratch/<project>/cost/<issue>.md`, one file per lane — the lane's total on the measured
+baseline's metric (input + cache creation + output, *excluding* cache reads), the per-stage split
+that says which dial to turn rather than only that a lane was expensive, and a signed percentage
+against the baseline. Every lane gets one, including a lane that halted or crashed. It is reporting
+and only reporting: no lane ever stops, warns, or changes what it does because of what it spent,
+and no issue is refused for being large.
+
 You are the orchestrator; the agent roster does the work:
 
 | Agent | Role |

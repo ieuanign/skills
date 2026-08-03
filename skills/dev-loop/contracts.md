@@ -143,6 +143,24 @@ At the end of a sub-lane the host compares two lists it already holds: the plan'
 
 The result is carried as `<n> planned, <m> made`, both scoped to the ordinals this run was asked to make — on a resumed lane that is the remainder, not the plan's grand total, which still detects a split or an append. A mismatch is **reported and never blocks**: it does not halt the lane, does not trigger a fix cycle, and does not change the terminal state. Fix cycles legitimately append commits and a writer may legitimately split one, so the count is information for the human merging the PR, not a halt condition.
 
+## Cost reporting — measured, never enforced
+
+A lane's token cost is written down and **nothing is done about it**. No ending, no push, no pull request and no worktree differs by what a lane spent, no loop stops early because of it, and no issue is ever refused for being large. This binds every stage above without exception.
+
+A per-lane **token ceiling** was specified before this and is dropped rather than repaired. It could not work, three ways, each independently fatal:
+
+- the budget total is unset unless a human explicitly typed a budget directive, so with nobody there to type one the guard silently never fires — the worst failure mode a safety stop can have;
+- the spend figure is turn-wide and shared across the host and every lane, while the measured figure is per-lane: with lanes in parallel there is nothing to attribute, and one shared ceiling would stop every lane together;
+- the spend figure counts output tokens; the baseline counts input plus cache creation plus output, excluding cache reads. The two are not interchangeable, so the ceiling would have been compared against a number it was not measuring.
+
+The obvious repair — have the phase script read the per-agent transcripts the way the analysis did — is not available. A workflow script has no filesystem access, so the instrument that produced the figure is unreachable from the thing meant to enforce it.
+
+**It was also unnecessary.** A lane is already bounded in agent invocations from five directions: the per-commit debug-and-fix bound, the fix-cycle bound, the suite gate's two round bounds, a commit count fixed by the plan, and the workflow runner's own backstop on total agents. Nothing here can loop forever. And the most expensive lane in the measured set was not stuck — it was thirteen commits of genuine work against a median of three. A ceiling would not have caught a runaway; it would have refused a big issue. **The failure mode it was written for does not exist.**
+
+**Reporting replaces it, and it is the host's**, because the host has a shell and the phase scripts do not. Once the scripts have returned, the host reads the per-agent transcripts — the same instrument the baseline was measured with, and the only one carrying usage at all, the journal recording each agent's return value and no usage — and writes one cost log per lane, to the scratch directory rather than to the issue, where a cost table would bury a thread specified to be an extremely concise summary plus open questions.
+
+**Every lane gets one**, including one that ended and one that threw: improvement data collected only from the lanes that went well hides exactly the lanes worth reading. Granularity is the total **plus the per-stage split**, because the split is the whole value the baseline produced — a bare total says a lane was expensive, and the split says which dial to turn. The metric, the baseline figure it prints a percentage against, and the log's shape are `cost-log.mjs`'s; when the host runs it is SKILL.md's; and which runs write one at all is **Lane conclusion**'s branch below, not this section's.
+
 ## HALT and FAILED — two labels that decide nothing
 
 Every ending above carries exactly one of two labels, and one question selects it: **did something deliberately stop, or did something break?**
@@ -181,6 +199,8 @@ The explanation is identical in both: what stopped or what broke, its stage, the
 - Gate 2 for a wave fires before the next wave is provisioned, so a dependent wave is never built on a base the human has not vetted.
 
 **unattended** — there is no human to conclude the lane, so the table above happens unprompted and notifications fire. Read `notifications.md` before emitting any notification: it governs every one of them, and nothing here restates it. Which endings open a **ready** pull request rather than a **draft** one is the terminal-state table below.
+
+- This is also the half that writes each lane's **cost log**, once the batch's phase scripts have returned — nobody watched the run, so what it cost is a thing to be found on disk afterwards rather than in a terminal somebody had open. **Cost reporting** above states what the log contains and that nothing halts on it; the supervised half writes none, its human having their own terminal to look at.
 
 **Mode A implements the gated half only, and never the unattended half.** The unattended half therefore has exactly one implementation, which is what keeps this file's rule — a behaviour change edits the contract first, then both implementations in the same change — cheap to honour.
 
