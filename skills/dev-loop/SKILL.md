@@ -20,11 +20,13 @@ This skill is repo- and machine-agnostic: it hardcodes no repository name, path,
 
 ### Run mode — `gated` or `unattended`
 
-`auto` present ⇒ **unattended**; absent ⇒ **gated**. Act 0 parses it ONCE and carries it as a single value for the whole run — no later stage re-derives it from the arguments. It is contracts.md's **Lane conclusion** branch, and in this file it decides exactly two things:
+`auto` present ⇒ **unattended**; absent ⇒ **gated**. Act 0 parses it ONCE and carries it as a single value for the whole run — no later stage re-derives it from the arguments. It is contracts.md's **Lane conclusion** branch, and in this file it decides exactly three things:
 
 > **Gate suppression.** Both gates raise their questions under `gated`, and neither raises any under `unattended`. This line is the only place that is decided: no argument and no profile key overrides it.
 
 > **Notifications.** Under `unattended` you emit `notifications.md`'s host-owned events, at the three boundaries marked **⟨notify⟩** below. Under `gated` you emit none of them. This line is the only place that is decided too: each ⟨notify⟩ boundary says *what* to run and never *whether*, so the guard cannot drift apart across three sites. `notifications.md` governs what each event says, which label role it writes, and in what order — nothing about that is restated here.
+
+> **Cost log.** Under `unattended` you write Act 4's per-lane cost log. Under `gated` you write none, and a supervised run is otherwise untouched. This line is the only place that is decided as well — Act 4 says what to write and never whether, and the transcript directories it needs are captured under both modes because remembering a string is free and a guard split across two sites is not.
 
 **Suppression removes the questions, not the work.** Every step of both gates still runs; each question resolves to its unattended answer instead:
 
@@ -131,6 +133,8 @@ Profile keys:
 
 Mode W: run the Workflow tool with `scriptPath: <this-skill-dir>/phase-plan.js` and `args: { issues: [{number, title, project, answers?}] }`. Mode A: the equivalent parallel architect runs per contracts.md. One architect per issue, parallel. Each returns `{status, planPath, summary, openQuestions}`. A lane returning `status: DIED` means its architect crashed — report it at Gate 1 and offer a re-run; never silently drop a requested issue.
 
+**KEEP the transcript directory this invocation reports** (Mode W only — Mode A has none), alongside every later one. Act 4 feeds them all to the cost report, and planning is the invocation whose cost is easiest to lose: it is roughly three tenths of a lane and it lands in a different directory from execution's.
+
 KEEP each lane's `summary` bullets for the rest of the run. They are the architect's orientation, and Gate 2 puts them in the PR body's Context section — so they must survive whether or not Gate 1 fires, and are not consumed by presenting them there.
 
 **⟨notify⟩ Plan comment.** Per lane, comment the plan's summary bullets and the architect's open questions on the issue. **Never the plan file** — it survives on disk at tens of kilobytes, no agent ever reads this comment (the writer and the reviewer both take the plan from disk), and inlining it buries the thread to serve nobody. On the clean path this is the lane's one comment; a lane that ends later gets one more, the notifier's, and no others. Pass `planPath` in the comment so a human can open the real thing.
@@ -161,6 +165,8 @@ Per wave, Mode W: run the Workflow tool with `scriptPath: <this-skill-dir>/phase
 Build each sub-lane's `commits` from the plan's `## Commit / PR breakdown`: the entries belonging to that sub-lane's PR, in plan order; `ordinal` = 1-based position within the whole breakdown; `message` verbatim from the plan. Omit commits Act 0 already found in the branch's git log (resume).
 
 Per lane (lanes parallel; sub-lanes and commits sequential): writer Mode 1 per commit → on FAILED the debugger diagnoses and routes → reviewer on the sub-lane's range, with the issue body in for its Spec axis → fix cycles with dispute/arbitration handling → the suite gate on the sub-lane's worktree, a red suite diagnosed by the debugger before any writer fix and re-run under its own bounds → commit-breakdown check. The Spec axis's per-criterion verdicts are reported and never blocking — like the commit-breakdown counts, they ride out to Gate 2 and the PR body without ever triggering a fix cycle or halting a lane. Every loop is bounded and every bound, route, and ending is in contracts.md — enforce them exactly. Each sub-lane finishes clean or ends carrying one of contracts.md's two labels: **HALT** (something deliberately stopped) or **FAILED** (something broke). Report the ending in those words, with its stage and its attempt log; the label explains and **decides nothing** — Gate 2 disposes of an ended sub-lane the same way whichever label it carries. An ending ends its own sub-lane, so the lane's later sub-lanes still run and no ending kills the batch.
+
+**KEEP each wave's transcript directory too**, exactly as Act 1 says — a lane whose sub-lanes span waves has its records spread across one directory per wave, and Act 4 wants all of them.
 
 Mode W's per-LANE result carries two flags Gate 2's step 4 reads and nothing else does: `crashed`, true when that lane's closure threw, and `notified`, true when the notifier **applied** that lane's label at its ending — never merely attempted it. Under `gated` both are always false, nothing writing a label there. Each lane's arg accepts `notified` back, so a lane whose sub-lanes span waves is not notified twice; carry it from the previous wave's result.
 
@@ -209,6 +215,29 @@ Stacked lanes: PR base is the base lane's branch; note the stack in the body ("S
 
 Ended sub-lanes: report the label (**HALT** — something deliberately stopped; **FAILED** — something broke), the stage, the reason (verbatim contract lines), the diagnosis if a debugger produced one, the attempt log in order, and the exact resume command — `/dev-loop <n>` re-derives everything. The label explains the ending and decides nothing: under `gated` the two are offered the same push, the same draft-PR question and the same kept worktree, and under `unattended` both reach the terminal-state table as the same row.
 
+## Act 4 — the cost log (per the Run mode guard: `unattended` only)
+
+Once the LAST wave's Gate 2 is done and the run has nothing left to do, write one cost log per lane. Here and not per wave: a lane's records are spread across every invocation it touched, so a per-wave log would report a fraction of a lane and call it the total.
+
+Per issue **the run was asked to work** — the list Act 0 parsed, before anything dropped or refused a lane:
+
+```bash
+mkdir -p <MAIN>/.scratch/dev-loop-cost
+node <this-skill-dir>/cost-report.mjs --issues <n> <transcriptDir>... \
+  > <MAIN>/.scratch/dev-loop-cost/<n>.txt \
+  || rm -f <MAIN>/.scratch/dev-loop-cost/<n>.txt
+```
+
+The `rm` is the point of the `||`: a redirect creates its file before the command runs, so a failure without it leaves a zero-byte log — which reads as a lane that was measured and found to cost nothing, the one conclusion this whole exercise exists to prevent. No file at all is the honest outcome of a report that did not run.
+
+- **One file per lane, keyed by the issue number**, so a parallel batch does not interleave into one unreadable file. `.scratch/` is gitignored — Act 0's preconditions guarantee it — so the run adds nothing to version control.
+- **Every transcript directory the run captured**, planning and every wave, in one command. A lane's planning cost lands in a different directory from its execution cost and is roughly three tenths of the lane.
+- **Whatever the lane's ending.** A lane that ended HALT, one that ended FAILED, one that finished with findings still open, one whose plan never came back READY, one that crashed — every one gets a log. Improvement data collected only on the clean path hides exactly the lanes worth looking at. A lane dropped at intake before any agent ran gets a log too, which will say it was not measured — accurate, and cheaper than a rule about which lanes qualify.
+- **Nothing goes to the issue thread or the PR body.** The lane's one unattended comment is a concise summary plus open questions, and a cost table would bury it.
+- **Best-effort, and last for that reason.** A failure here — the script missing, a directory unreadable, no transcript directory captured at all — is reported and dropped. It never changes a lane's ending, never blocks the run's conclusion, and never makes a batch report failure. Nothing downstream reads these files.
+
+Then tell the user where the logs are. What the report contains, the metric it uses and why the target is a constant are in `cost-report.mjs` — do not restate them here, and do not read the transcripts yourself: **no lane halts, warns, or changes its behaviour on token spend**, which contracts.md records as a standing rule rather than an implementation detail of this Act.
+
 ## Cleanup mode (`/dev-loop cleanup`)
 
 Cleanup reaps what has an exact done-signal and **lists** what does not. It is safe to run at any time, including while another batch is mid-wave, and that is the property to preserve.
@@ -233,6 +262,7 @@ Cleanup reaps what has an exact done-signal and **lists** what does not. It is s
 - **Never force-push, whoever is watching.** Every push this pipeline makes is a fast-forward by construction, so forcing is never the fix — and an unattended run that forced one would destroy history with nobody there to notice. A rejected push is reported, never retried harder.
 - **Push before you remove.** A worktree is removed only after a push of its branch succeeded, because after removal the remote branch is the only copy of that work.
 - A lane worktree is a cold checkout plus its `.worktreeinclude` files and whatever the Setup command installs. Everything else an agent needs — skills, roster, settings, permissions — it already has: it runs in a session rooted in MAIN whatever directory it works in.
+- **Never halt, warn, or change a lane's behaviour because of what it costs.** Token spend is reported by Act 4 and enforced nowhere — contracts.md carries why a ceiling could not work and why a lane is already bounded without one. No argument, profile key or ending unlocks this.
 - Never run agents for work you can do with one Bash command (provisioning, pushing), and never do agent work (planning, coding, reviewing) yourself.
 - Plan paths passed to agents are always ABSOLUTE.
 - If the session dies mid-run, `/dev-loop <same issues>` resumes from artifacts — do not keep separate state files.
