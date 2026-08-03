@@ -13,6 +13,34 @@ Sub-lanes append the area: `{type}/{issue}-{area}`.
 
 `<type>(<scope>): #<issue> - <title>` — the repo default.
 
+## PR body template
+
+Prose-first, in the house style of the repo's hand-written PRs: a lead paragraph saying what was
+wrong and what changed, then thematic `##` sections explaining the change, then the pipeline's
+required sections. Whatever the prose, these must survive:
+
+```markdown
+Closes #<n>.                       <!-- first sub-lane only; later ones reference without closing -->
+<stacked note, when the base is a feature branch>
+
+<lead paragraph + thematic ## sections>
+
+## Context
+<the architect's summary bullets>
+<n> planned, <m> made
+
+## Acceptance criteria
+- <met|partial|not-met> — <criterion> — <evidence>      <!-- verbatim from the reviewer; omit the section when it returned none -->
+
+## Review findings
+<count> fixed, <count> won't-fix (each with the writer's reason). Reviewer NOTES verbatim.
+
+## Suite
+<passed | failed + failing test identifiers | not run + why>
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+```
+
 ## Setup command
 
 ```bash
