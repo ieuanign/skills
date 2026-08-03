@@ -66,7 +66,8 @@ See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
-The five canonical triage roles, each label string equal to its role name.
+Two families, each label string equal to its role name: the five canonical triage roles a human
+applies, and the three workflow roles an unattended `/dev-loop` run applies to report on itself.
 See `docs/agents/triage-labels.md`.
 
 ### Domain docs
