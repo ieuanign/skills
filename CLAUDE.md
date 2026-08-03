@@ -56,6 +56,11 @@ consuming repo's `docs/agents/` (via the setup skills), never here.
 
 ## Subagent returns
 
+Roster agents carry their own return budget in `agents/<name>.md`. This covers the ones with no
+definition file to hold one — `Explore`, `general-purpose`, and one-off `Task` spawns — and stays
+deliberately looser, because they return to a person rather than to an orchestrator that routes on
+shape.
+
 A subagent's return is data for its caller, not an essay. Verdict first, then bullets that each
 carry a concrete anchor — file:line, path, command, or exact output. Compress by cutting sentences,
 never facts; keep every identifier verbatim. No preamble, no restating the task, no closing summary.
