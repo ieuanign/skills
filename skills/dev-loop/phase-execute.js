@@ -83,6 +83,24 @@ const skillDir = String(input.skillDir || '').trim()
 // is what makes the mapping mechanical: the notifier is told which role to write, never asked.
 const ROLE_OF = { HALT: 'awaiting-human', FAILED: 'failed' }
 
+// The lane-and-stage marker every dispatched prompt leads with. It says which lane (the issue
+// number) and which stage an agent belongs to, so its own transcript identifies it without anyone
+// pattern-matching the English of a prompt that gets reworded. Inert to the agent: nothing is
+// asked to return it and no parsing of a return depends on it — only the cost report, reading the
+// transcripts afterwards, cares.
+//
+// The stage is the workflow phase the call is dispatched under, named in the cost baseline's own
+// vocabulary: Implement is `write`, Review is `review`, Suite is `suite`, Notify is `notify`. A
+// recovery is charged to the stage that needed it — a debugger called on a red suite is suite
+// cost, not a stage of its own — because the split exists to say which dial to turn, and the dial
+// for a red suite is the suite gate's.
+//
+// The vocabulary is shared with phase-plan.js and with cost-report.js, and each copy is written
+// out in full: a phase script imports nothing, being compiled as one function over the runner's
+// globals. Add a stage in one and add it in all three.
+const STAGE = { PLAN: 'plan', WRITE: 'write', REVIEW: 'review', SUITE: 'suite', NOTIFY: 'notify' }
+const mark = (issue, stage) => `[dev-loop lane=${issue} stage=${stage}]\n`
+
 const WRITER_SCHEMA = {
   type: 'object',
   properties: {
@@ -293,6 +311,7 @@ async function notify(lane, ending) {
   if (MODE !== 'unattended' || !skillDir) return false
   try {
     const notified = await agent(
+      mark(lane.issue, STAGE.NOTIFY) +
       `A /dev-loop lane just ended and you are its only writer until this run finishes.\n` +
       `Issue: #${lane.issue}\n` +
       `Label role to apply: ${ROLE_OF[ending.category] || 'failed'} — remove the in-progress role's label in the same edit.\n` +
@@ -327,6 +346,7 @@ const runLane = async (lane, subResults) => {
     // 1. Implement each plan commit sequentially
     for (const c of sub.commits) {
       let res = await agent(
+        mark(lane.issue, STAGE.WRITE) +
         writerPrompt(lane, sub, `Mode 1 — implement commit ${c.ordinal} ("${c.message}") from the plan's Commit / PR breakdown.`),
         { agentType: writerType, label: `write:#${lane.issue}:c${c.ordinal}`, phase: 'Implement', schema: WRITER_SCHEMA }
       )
@@ -335,6 +355,7 @@ const runLane = async (lane, subResults) => {
         tries++
         const attempt = attemptOf(rec, 'Implement', `commit ${c.ordinal} returned FAILED (debug+fix attempt ${tries} of 2)`)
         const diag = await agent(
+          mark(lane.issue, STAGE.WRITE) +
           `A code-writer returned FAILED while implementing commit ${c.ordinal} ("${c.message}") of plan ${lane.planPath}. This is debug+fix attempt ${tries} of 2 — after 2 the sub-lane ends.\nIts return: ${JSON.stringify(res)}\nReproduce inside the checkout at ${sub.worktree} (branch ${sub.branch}) and diagnose. When owner=code-writer, phrase the handoff as a finding (file:line — defect — failure scenario).`,
           { agentType: 'debugger', label: `debug:#${lane.issue}:c${c.ordinal}:t${tries}`, phase: 'Implement', schema: DEBUG_SCHEMA }
         )
@@ -342,12 +363,14 @@ const runLane = async (lane, subResults) => {
         attempt.debugger = `${diag.owner}: ${diag.rootCause}`
         if (diag.owner === 'retry') {
           res = await agent(
+            mark(lane.issue, STAGE.WRITE) +
             writerPrompt(lane, sub, `Mode 1 — implement commit ${c.ordinal} ("${c.message}"). A previous attempt failed transiently (debugger: ${diag.rootCause}); retry attempt ${tries} of 2.${giveUpClause(lane, c, tries)}`),
             { agentType: writerType, label: `retry:#${lane.issue}:c${c.ordinal}:t${tries}`, phase: 'Implement', schema: WRITER_SCHEMA }
           )
           attempt.outcome = `the retry returned ${res ? res.result : 'nothing'}`
         } else if (diag.owner === 'code-writer') {
           res = await agent(
+            mark(lane.issue, STAGE.WRITE) +
             writerPrompt(lane, sub, `Mode 2 — fix this debugger-diagnosed defect (commit the fix as fix(<scope>): #<issue> - ...). Fix attempt ${tries} of 2.\nDiagnosis: ${diag.rootCause}\nFinding: ${diag.finding || '(see diagnosis)'}\nThen check git log: if plan commit ${c.ordinal} ("${c.message}") was never committed, complete it afterward under Mode 1 rules as its own commit with the plan's exact message.${giveUpClause(lane, c, tries)}`),
             { agentType: writerType, label: `debugfix:#${lane.issue}:c${c.ordinal}:t${tries}`, phase: 'Implement', schema: WRITER_SCHEMA }
           )
@@ -378,6 +401,7 @@ const runLane = async (lane, subResults) => {
         ? `\nThe code-writer DISPUTED these findings with the evidence below — re-verify each against that evidence. Retract any where the evidence holds (record retractions in notes); list any you STILL confirm in contestedFindings — those end the sub-lane with the stalemate unbroken, so contest only what you can re-confirm with a concrete failure scenario:\n${disputes.join('\n')}`
         : ''
       const review = await agent(
+        mark(lane.issue, STAGE.REVIEW) +
         `Review branch ${sub.branch} against the plan at ${lane.planPath} (absolute path; read it with the Read tool).\nDiff exactly the range ${sub.base}..${sub.branch} — the base may itself be a stacked feature branch; never review the base's own commits.${disputeClause}${specClause(lane, sub)}`,
         { agentType: 'reviewer', label: `review:${tag}${cycles ? ':r' + cycles : ''}`, phase: 'Review', schema: REVIEW_SCHEMA }
       )
@@ -408,6 +432,7 @@ const runLane = async (lane, subResults) => {
       cycles++
       const attempt = attemptOf(rec, 'Review', `CHANGES_REQUESTED — ${review.findings.length} finding(s), fix cycle ${cycles} of ${MAX_FIX}`)
       const fix = await agent(
+        mark(lane.issue, STAGE.REVIEW) +
         writerPrompt(lane, sub, `Mode 2 — apply these reviewer findings (dispute any you can refute, with evidence):\n${review.findings.join('\n')}`),
         { agentType: writerType, label: `fix:#${lane.issue}:r${cycles}`, phase: 'Review', schema: WRITER_SCHEMA }
       )
@@ -437,7 +462,7 @@ const runLane = async (lane, subResults) => {
       while (true) {
         round++
         const suffix = round > 1 ? `:r${round}` : ''
-        const suite = await agent(suitePrompt(sub), {
+        const suite = await agent(mark(lane.issue, STAGE.SUITE) + suitePrompt(sub), {
           label: `suite:${tag}${suffix}`, phase: 'Suite', model: 'haiku', effort: 'low', schema: SUITE_SCHEMA,
         })
         if (!suite) {
@@ -462,6 +487,7 @@ const runLane = async (lane, subResults) => {
         // A red suite is a failure, not a finding: the gate observed only that it is red, and the
         // breakage is usually outside the writer's commit scope. Same routing as a FAILED commit.
         const diag = await agent(
+          mark(lane.issue, STAGE.SUITE) +
           `The repository's full test suite is red on branch ${sub.branch}, after its review loop settled. This is round ${round} of at most ${SUITE_CEILING} for this sub-lane.\nThe suite gate ran \`${suiteCommand}\` inside ${sub.worktree} and returned: ${JSON.stringify(rec.suite)}\nReproduce inside that checkout and diagnose. The breakage is often outside the commit scope of the work on this branch — say so if it is. When owner=code-writer, phrase the handoff as a finding (file:line — defect — failure scenario).`,
           { agentType: 'debugger', label: `suitedebug:${tag}:r${round}`, phase: 'Suite', schema: DEBUG_SCHEMA }
         )
@@ -469,6 +495,7 @@ const runLane = async (lane, subResults) => {
         attempt.debugger = `${diag.owner}: ${diag.rootCause}`
         if (diag.owner === 'code-writer') {
           const fix = await agent(
+            mark(lane.issue, STAGE.SUITE) +
             writerPrompt(lane, sub, `Mode 2 — the repository's full suite is red and a debugger diagnosed it. Fix it and commit as fix(<scope>): #${lane.issue} - ... . Suite round ${round}.\nDiagnosis: ${diag.rootCause}\nFinding: ${diag.finding || '(see diagnosis)'}\nFailing: ${rec.suite.failing.join(', ')}`),
             { agentType: writerType, label: `suitefix:${tag}:r${round}`, phase: 'Suite', schema: WRITER_SCHEMA }
           )
