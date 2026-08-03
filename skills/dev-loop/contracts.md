@@ -192,7 +192,7 @@ The explanation is identical in both: what stopped or what broke, its stage, the
 
 **Mode A implements the gated half only, and never the unattended half.** The unattended half therefore has exactly one implementation, which is what keeps this file's rule — a behaviour change edits the contract first, then both implementations in the same change — cheap to honour.
 
-The three subsections that follow are not part of that branch. Push and the worktree invariant are single-version and bind both modes; the terminal-state table is read only where the unattended half sends it.
+The four subsections that follow are not part of that branch. Push, stack linking and the worktree invariant are single-version and bind both modes; the terminal-state table is read only where the unattended half sends it.
 
 ### Push — once per sub-lane, at the end of its layer
 
@@ -205,6 +205,26 @@ A sub-lane's branch reaches the remote exactly once, and never before its own wo
 **Per-commit push is not implementable, and is not to be re-proposed.** The whole commit loop runs inside a single workflow call and a workflow script has no shell, so the host's first control point is that call returning. Reaching it otherwise would mean either changing the writer's contract — it never pushes — or spending an agent invocation on one git command, which the skill's hard rules forbid in terms. Nothing in this pipeline consumes an intermediate push either — the reviewer diffs local refs — so the only thing one could feed is a repository's own push-triggered CI, which gains nothing from being run against a branch the pipeline is still committing to.
 
 **Accepted cost, recorded rather than solved.** This version is always one layer, so the end of a layer is the end of the run: a three-issue batch holds the first-finished sub-lane's pull request until the slowest one ends. Rejected: one workflow call per lane launched in the background, which buys per-lane immediacy at the cost of the host juggling several background tasks, each carrying its own concurrency cap independently.
+
+### Stack linking — once per batch, after every pull request exists
+
+A batch whose sub-lanes stack finishes by telling GitHub they form a stack, so that the ordering is data the platform holds rather than a sentence in a pull request body. The base chaining, the bodies and the stacked note are unchanged and still carry the run: linking is **additive**, and everything below is what keeps it that way.
+
+**The call fires at the very end of the batch** — after every sub-lane of every lane has pushed and opened its pull request, and never per layer. A stack is a property of the finished batch, and a half-linked stack is worse than none: it would show a reviewer a chain that stops short of the work. Gate 2 runs once per layer, so a stacked batch reaches it more than once; only the **last** of those does this.
+
+**One call per chain, not one per batch.** The arguments are a single stack, bottom to top — and a batch is not necessarily one stack. A batch whose layer 1 holds two independent lanes and whose layer 2 holds a sub-lane stacked on one of them contains one chain of two and one chain of one; handing all three pull requests to a single call would assert that the independent lane is what the top layer builds on, which is a claim the pipeline never made and a reviewer would have no way to disbelieve. So the host walks each maximal chain of the base relation and links that chain. A chain of **fewer than two** pull requests is not a stack and is skipped, which is why the ordinary unstacked batch — every lane on the trunk, every chain of length one — makes no call at all.
+
+**The pull requests are identified by number, bottom to top.** Never by branch name. Given branch names the tool pushes them and opens pull requests of its own, with its own titles and bodies — which would fight the profile's title format, overwrite the body template, and cost the run the `Closes #<n>`, the summary bullets and the findings ledger it just composed. Given numbers it adopts the pull requests that already exist and adds nothing. This is the difference between the feature being additive and the feature being a second, competing author.
+
+**Ready-for-review is never requested.** The tool can mark the pull requests in a stack ready; the run must never ask it to. Draft-versus-ready is decided by the terminal-state table from each sub-lane's own inputs, and a batch-wide flag applied at link time would override every one of those decisions from the wrong place — promoting a draft the pipeline drafted deliberately.
+
+**No local state, in either direction.** The link writes no local tracking state and changes no branch, which is what makes it safe to run while lane worktrees still hold those branches checked out. Linked worktrees share one common git directory, so any command that *did* keep local stack state would have every concurrent lane racing over the same files; this one does not, and nothing here may be swapped for a command that does.
+
+**A machine without the tool behaves exactly as it does today.** The linking sits behind one bundled script, which detects the tool's absence and exits having called nothing. No gate checks for it, no precondition asks about it, no run fails or prompts for want of it, and the batch concludes with its bases chained by branch name and the stack noted in the body — which is the whole of today's behaviour. The pipeline stays copyable to any machine, and the stack is a bonus where it is available.
+
+**A failed link is reported and costs nothing else.** It leaves every pull request exactly as the run created it — title, body, draft state and base — because the tool either records the stack or does not, and never half-edits the pull requests to get there. The failure is reported with the tool's own message verbatim; no sub-lane's ending changes, no worktree decision changes, and nothing is retried. Losing the stack never costs the run the work.
+
+Neither mode is exempt and neither differs: this subsection is single-version, and the two conclusions call the same script with the same arguments.
 
 ### The worktree invariant
 
