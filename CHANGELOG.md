@@ -1,5 +1,71 @@
 # ieuanign-skills
 
+## 0.7.0
+
+### Minor Changes
+
+- [#72](https://github.com/ieuanign/skills/pull/72) [`ca77c76`](https://github.com/ieuanign/skills/commit/ca77c76eb8a4dc3b170937910bdd41ff240e351e) Thanks [@ieuanign](https://github.com/ieuanign)! - `dev-loop`: a lane that throws comes back attributed instead of vanishing.
+
+  A lane that died from a terminal API error left no trace at all. The workflow runner resolves a thrown thunk to nothing and both phase scripts filtered their results for truthiness, so the lane disappeared from the returned array entirely — no entry, no issue number, no reason, no record of which issue was lost. Supervised mode survives this because a human counts lanes at Gate 2; unattended there is nothing to count against.
+
+  Each per-lane closure is now wrapped once. A throw is caught and converted into an ending of the shape the lane would have produced itself: the issue number, the **FAILED** category, and a reason built from the error message plus the stack trace where one exists. A genuinely dead agent frequently throws neither, so the wording says so rather than promising a trace that will be empty.
+
+  The crashed lane's partial sub-results come back with it, **attempt log included** — the record most worth keeping from a lane that crashed mid-recovery. Each unfinished sub-lane takes the same ending and is run through the terminal-state table, so the host meets a complete row at Gate 2 rather than a record with no `terminal` it cannot dispose of. Per the terminal-category split the label decides nothing: a crashed lane with commits on its branch pushes and opens a draft pull request like any other ending.
+
+  **Neither phase script can drop a requested issue any more.** Both final filters became maps that attribute a null, which — now that the thunks cannot throw — can only be the runner itself dropping a lane, and is exactly as unattributable as the throw used to be. A throw in the planning phase's per-issue thunk returns the same `DIED` entry a dead architect already produced.
+
+  The attribution is **mode-neutral**: the catch, the category and the reason are identical under `gated` and `unattended`, because a lane vanishing is a bug in the gated path too — there it shows up as a lane silently missing from the Gate 2 report.
+
+  The wrapper is also the single point later work hooks an ending-time dispatch into. The lane body has seventeen ending sites, and threading anything through each of them is how two writers drift apart.
+
+- [#72](https://github.com/ieuanign/skills/pull/72) [`ca77c76`](https://github.com/ieuanign/skills/commit/ca77c76eb8a4dc3b170937910bdd41ff240e351e) Thanks [@ieuanign](https://github.com/ieuanign)! - `dev-loop`: an optional messaging channel, as a bundled script reading its payload on standard input.
+
+  Notification messages interpolate agent-generated free text — halt reasons, diagnoses, stack traces — which carries backticks, dollar signs, quotes and newlines. Composing a shell string around that fails silently on exactly the message that matters most, because the worst failures produce the ugliest text. `notify.sh` ships with the skill in the shape that closes that at its root: the payload arrives on standard input and is handed straight to the HTTP client to URL-encode, so it never enters a shell string and there is deliberately no variable holding it anywhere in the script.
+
+  **Silent unless configured.** With either of its two environment variables missing it says nothing and exits successfully, which is what makes the channel genuinely optional at zero cost — no profile key, no ask-then-persist question, no intake precondition, and no error on every lane for a developer who never set it up. It drains its input before exiting, so a caller piping into an unconfigured channel never takes a broken pipe. A send that fails still exits 0: messaging is best-effort by specification, and no notification failure may change a lane's outcome.
+
+  Rejected, so it is not re-derived: a protocol server. Payload safety was the one real argument for a typed integration and standard input closes it several rungs lower, while a server costs a runtime process, a dependency absent from this package, and a registration living outside the skill — the machine-precondition coupling this pipeline has deliberately been removing.
+
+- [#72](https://github.com/ieuanign/skills/pull/72) [`ca77c76`](https://github.com/ieuanign/skills/commit/ca77c76eb8a4dc3b170937910bdd41ff240e351e) Thanks [@ieuanign](https://github.com/ieuanign)! - `dev-loop`: an unattended run now says what it is doing, at its start and at its end.
+
+  `/dev-loop auto`'s human touchpoints were its two gates, and unattended mode removes both by definition without putting anything in their place. A developer who started a batch and walked away learned that a lane halted only by opening GitHub, and a batch could finish partly halted and partly shipped at a time they did not choose. Both host boundaries are now written up.
+
+  **Lane start.** Act 0's final step adds the in-progress label and sends a started message, per lane. Its position _is_ the guarantee rather than a comment about one — Act 1 is the first agent dispatch, so both writes land before a single token is spent and a session that dies during planning still leaves the marker on the issue. It fires only for lanes that survived intake, so an issue this run dropped or refused is never marked as being worked on. After planning, the architect's summary bullets and open questions are commented on the issue — never the plan file, which survives on disk at tens of kilobytes and which no agent ever reads the comment version of.
+
+  **Lane conclusion.** Gate 2 gains a fourth step, per lane and at the lane's last wave. Every lane loses its in-progress label without exception; then one rule decides what replaces it, from flags the phase-script result already carries. A lane whose closure **threw** takes the failed role — the case that previously left no trace at all. A lane the **notifier already labelled** is left standing, because a second verdict over the first is how two writers come to disagree in public. A **draft** with neither takes awaiting-human. A **ready** pull request takes nothing.
+
+  **Exactly one closing message per lane**, unconditional, carrying each pull request's link and its ready-or-draft state. Unconditional is the point: paired with the started message it is the run's dead-session signal, so a start with no close plus a stale in-progress label reads as a dead run by inspection.
+
+  The mode guard is **one line**, next to gate suppression. Each boundary is marked `⟨notify⟩` and states only _what_ to run, never _whether_ — three sites each testing the mode is three places for the guard to drift. A shared mechanism section says how a host write is made and nothing about what it says: free text goes in on standard input at every boundary, and label **roles** resolve to strings through the consuming repository's own triage-label documentation, resolved once at Act 0. No label string appears anywhere in the skill, and a role that repository has no string for is skipped silently — seeding labels is its setup work.
+
+  This also closes a gap in the specification. It assumed every draft came from an ending, but a clean sub-lane drafts on an unmet acceptance criterion **alone**, and no notifier ever runs for that one — so without the amendment that draft would reach a human wearing no label at all. `notifications.md` now names the two drafts with no ending behind them and gives both to the host.
+
+  The session-stopped class — a rate limit, a closed terminal, a sleeping machine — is named as uncoverable rather than quietly ignored: no code runs, so only what already reached GitHub survives. A watchdog stays out of scope; the human typed the command and can see their own terminal.
+
+  Nothing here fires under `gated`, whose human touchpoints are its two gates.
+
+- [#72](https://github.com/ieuanign/skills/pull/72) [`ca77c76`](https://github.com/ieuanign/skills/commit/ca77c76eb8a4dc3b170937910bdd41ff240e351e) Thanks [@ieuanign](https://github.com/ieuanign)! - `dev-loop`: a **notifier** joins the roster, writing a lane's ending from inside the running phase script.
+
+  The host is blind while a phase script runs — a workflow script has no shell — so a lane that ended mid-script had no writer able to tell anyone. A run of several lanes can have one end at minute three while the rest run for another forty, and the developer should learn about it at minute three rather than when the wave returns.
+
+  The notifier is the fifth roster agent, at the cheapest model and the lowest effort: it exists to run two or three commands in a context the host cannot reach, not to reason. Per ending it swaps the issue's label, comments the ending with its stack trace where one exists, and sends the one-line message. Its definition points at `notifications.md` for every rule it implements and restates none of them; what it adds is _how_ to execute safely — free text goes in on standard input (`--body-file -`, a quoted heredoc, `printf | notify.sh`) and never into a composed shell string.
+
+  It is dispatched **once per lane at the crash wrapper**, not once per ending site: the label is per issue, so a lane with two ended sub-lanes still writes once, and the dispatch fires as that lane returns rather than when the wave does. The role is chosen by the script rather than the agent — `notifications.md` states the question that selects a role and `contracts.md` records that its two ending labels answer that same question, so **HALT** maps to awaiting-human and **FAILED** to failed. That keeps the mapping mechanical instead of a judgement made at the cheapest tier.
+
+  **Neither write can change what the lane returned.** A notifier that dies, throws, or finds no label string for its role leaves the ending, the sub-results and the terminal state exactly as they were, and a dispatch that failed does not claim the label was written — the host relabels that lane instead. A lane that _threw_ is the host's too: a throw unwinds past the dispatch point, which is the latency the specification already accepts.
+
+  Nothing fires under `gated`, where both gates already put every one of these outcomes in front of a human.
+
+### Patch Changes
+
+- [#72](https://github.com/ieuanign/skills/pull/72) [`11b3bd3`](https://github.com/ieuanign/skills/commit/11b3bd342c992c769a13a36bdf692bf995d6d8d6) Thanks [@ieuanign](https://github.com/ieuanign)! - `dev-loop`: the README says what an unattended run needs before it can report anything.
+
+  Both of the reporting channels an unattended run uses are optional and **silent when absent** — which is what makes them cost nothing to skip, and also what made them impossible to discover. A developer who installed the plugin and ran `/dev-loop auto` got no labels and no messages, with nothing anywhere naming what to set up: the three workflow labels were mapped only in this repo's own `docs/agents/triage-labels.md`, which never installs into a consumer, and the two environment variables were named only in a comment inside `notify.sh`, a file nobody has reason to open.
+
+  The README now carries both, with the commands: `gh label create` lines for the three labels, where to map roles to strings and that the names are yours to choose, and the two variables with what happens when each is missing. It also says plainly that neither applies to a supervised run.
+
+  `notifications.md` gains the durability clause the rest of the file implied but never stated: **no notification failure changes the lane it is reporting.** A failed `gh` command, a role with no label string, a label string naming a label the tracker does not have, an unreachable channel — each is reported and let go, and the lane's ending, push, pull request and worktree are what they would have been anyway. A run whose reporting is broken still does the work.
+
 ## 0.6.0
 
 ### Minor Changes
