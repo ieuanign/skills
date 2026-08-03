@@ -19,7 +19,7 @@ Straight from my `.claude` directory, packaged as a plugin.
 /plugin install ieuanign-skills@ieuanign
 ```
 
-That brings in the three skills, the four `dev-loop` roster agents, and Matt's plugin as a declared
+That brings in the three skills, the five `dev-loop` roster agents, and Matt's plugin as a declared
 dependency. Then configure each repo once — the two setup commands are independent, so run them in
 either order:
 
@@ -65,7 +65,11 @@ not to.
 each in its own git worktree, with parallel lanes and human gates only at plan approval and push/PR.
 
 `/dev-loop auto <issues>` runs the same pipeline **unattended**: neither gate asks, so an issue goes
-from filed to pushed PR without supervision. Suppression removes the questions, not the work.
+from filed to pushed PR without supervision. Suppression removes the questions, not the work — and
+since nobody is watching, the run reports itself instead: it labels each issue in progress before it
+spends a token, comments the plan, labels and comments any lane that ends the moment it ends, and
+messages you at each lane's start and finish. The messaging channel is a bundled script that stays
+silent unless you set two environment variables, so it costs nothing to skip.
 
 You are the orchestrator; the agent roster does the work:
 
@@ -75,6 +79,7 @@ You are the orchestrator; the agent roster does the work:
 | `code-writer` | Implements one commit-scope at a time, commits locally |
 | `reviewer` | Report-only, severity-ranked findings against the plan + your standards |
 | `debugger` | Report-only root-cause investigator for red tests/builds |
+| `notifier` | Writes an ended lane's label, comment and message from inside a running phase script (unattended only) |
 
 The roster ships as **plugin agents** (`agents/`), installed alongside the skills — no copy step and
 nothing added to your repo. The skill is repo- and machine-agnostic; per-repo settings live in
