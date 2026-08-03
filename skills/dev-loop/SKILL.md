@@ -223,20 +223,20 @@ Per issue **the run was asked to work** — the list Act 0 parsed, before anythi
 
 ```bash
 mkdir -p <MAIN>/.scratch/dev-loop-cost
+# `|| rm` because a redirect creates its file before the command runs: without it a
+# failure leaves a zero-byte log, which reads as measured-and-free rather than unmeasured.
 node <this-skill-dir>/cost-report.mjs --issues <n> <transcriptDir>... \
   > <MAIN>/.scratch/dev-loop-cost/<n>.txt \
   || rm -f <MAIN>/.scratch/dev-loop-cost/<n>.txt
 ```
 
-The `rm` is the point of the `||`: a redirect creates its file before the command runs, so a failure without it leaves a zero-byte log — which reads as a lane that was measured and found to cost nothing, the one conclusion this whole exercise exists to prevent. No file at all is the honest outcome of a report that did not run.
-
 - **One file per lane, keyed by the issue number**, so a parallel batch does not interleave into one unreadable file. `.scratch/` is gitignored — Act 0's preconditions guarantee it — so the run adds nothing to version control.
 - **Every transcript directory the run captured**, planning and every wave, in one command. A lane's planning cost lands in a different directory from its execution cost and is roughly three tenths of the lane.
-- **Whatever the lane's ending.** A lane that ended HALT, one that ended FAILED, one that finished with findings still open, one whose plan never came back READY, one that crashed — every one gets a log. Improvement data collected only on the clean path hides exactly the lanes worth looking at. A lane dropped at intake before any agent ran gets a log too, which will say it was not measured — accurate, and cheaper than a rule about which lanes qualify.
+- **Every lane, whatever its ending** — and a lane whose plan never came back READY, which has no ending to speak of. Improvement data collected only on the clean path hides exactly the lanes worth looking at. A lane dropped at intake before any agent ran gets one too, saying it was not measured — accurate, and cheaper than a rule about which lanes qualify.
 - **Nothing goes to the issue thread or the PR body.** The lane's one unattended comment is a concise summary plus open questions, and a cost table would bury it.
 - **Best-effort, and last for that reason.** A failure here — the script missing, a directory unreadable, no transcript directory captured at all — is reported and dropped. It never changes a lane's ending, never blocks the run's conclusion, and never makes a batch report failure. Nothing downstream reads these files.
 
-Then tell the user where the logs are. What the report contains, the metric it uses and why the target is a constant are in `cost-report.mjs` — do not restate them here, and do not read the transcripts yourself: **no lane halts, warns, or changes its behaviour on token spend**, which contracts.md records as a standing rule rather than an implementation detail of this Act.
+Then tell the user where the logs are. `cost-report.mjs` is what reads the transcripts: it measures on the metric the baseline was measured on, and a comparison against any other metric is meaningless.
 
 ## Cleanup mode (`/dev-loop cleanup`)
 
