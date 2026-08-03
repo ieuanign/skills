@@ -103,8 +103,12 @@ either, a run that works in silence. No notification failure ever changes a lane
 
 #### Reading what a run cost
 
-`skills/dev-loop/cost-report.mjs` says what a lane cost and which stage spent it, reading the
-per-agent transcripts a finished run left behind:
+An unattended run leaves one cost log per lane under `.scratch/dev-loop-cost/<issue>.txt` — for
+every lane, whatever its ending, because improvement data collected only on the clean path hides
+exactly the lanes worth looking at. Nothing is posted to the issue or the PR, and a supervised run
+writes none.
+
+The same report runs by hand against any finished run's transcripts:
 
 ```bash
 node skills/dev-loop/cost-report.mjs --issues 28,30 <transcriptDir>...

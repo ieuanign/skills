@@ -158,6 +158,14 @@ Every ending above carries exactly one of two labels, and one question selects i
 
 Every loop above is bounded — nothing retries indefinitely — and no ending kills the batch. Every ending reports its label, its stage, the verbatim contract lines that produced it, its attempt log, and the exact resume command (`/dev-loop <n>` re-derives everything from artifacts). A lane whose base lane ended — or was held by the user — never runs at all, so it ends **HALT** with that reason.
 
+## Token spend is reported, never enforced
+
+**No lane halts, warns, or changes its behaviour because of what it costs.** There is no token ceiling, no per-lane budget and no cost-triggered ending anywhere in this pipeline, and nothing in the sections above may gain one. What exists instead is reporting: the host writes a per-lane cost log after an unattended run, which reads and prints and touches nothing.
+
+A ceiling was specified once and dropped, because it could not work. The runner's budget total is unset unless a human typed a budget directive, so it silently never fires under exactly the unattended run it was meant to guard — the worst failure mode a safety stop can have. Its spend figure is turn-wide and shared across the host and every lane, while the measured baseline is per-lane, so with parallel lanes there is nothing to attribute and one shared ceiling would halt every lane together. And it counts output tokens, which is not the metric the baseline was measured on. The obvious repair — reading the per-agent transcripts the way the baseline analysis did — is unavailable from where the enforcement would live, a workflow script having no filesystem access.
+
+**It was also unnecessary, and this is the load-bearing half.** A lane is already bounded in agent invocations from five directions: the per-commit debug-and-fix bound, the fix-cycle bound, the suite gate's ceiling, a commit count fixed by the plan, and the workflow runner's own backstop on total agents. Nothing here can loop forever. The most expensive lane in the measured set was not stuck — it was thirteen commits of genuine work against a median of three. A token ceiling would not have caught a runaway; it would have refused a big issue.
+
 ## Lane conclusion — the only branch point in this file
 
 Every other section of this contract is single-version: both modes implement it identically. This section is the one place the two are described separately, and a behaviour change that differs by mode belongs here or nowhere. It is also where an ending's label stops mattering: nothing below reads it, and a sub-lane that stopped and one that broke are disposed of identically.
