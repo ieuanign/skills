@@ -1,6 +1,6 @@
 # /dev-loop notifications — the normative specification both writers implement
 
-This file is the single source of truth for what an unattended run writes to the outside world as it goes: its workflow labels, its issue comments, and its messages. Two writers emit them — the **host**, at its own boundaries, and the **notifier** subagent, from inside a running phase script — and each implements this file rather than restating it. It is normative for its subject the way `contracts.md` is normative for the state machine: the role contracts, terminal categories, findings ledger and append-only invariant are `contracts.md`'s, and this file names them without redefining them. If an implementation and this file disagree, this file governs.
+This file is the single source of truth for what an unattended run writes to the outside world as it goes: its workflow labels, its issue comments, and its messages. Two writers emit them — the **host**, at its own boundaries, and the **notifier** subagent, from inside a running phase script — and each implements this file rather than restating it. It is normative for its subject the way `contracts.md` is normative for the state machine: the role contracts, the endings and their labels, the findings ledger and the append-only invariant are `contracts.md`'s, and this file names them without redefining them. If an implementation and this file disagree, this file governs.
 
 **Nothing here fires in gated mode** (the supervised run, where a human concludes the lane).
 
@@ -11,8 +11,8 @@ This file is the single source of truth for what an unattended run writes to the
 | in-progress label added | before planning | host |
 | message: started | before planning | host |
 | plan comment | after planning | host |
-| halt: label swap + halt comment | mid-lane | notifier |
-| message: halted, one-line reason | mid-lane | notifier |
+| halt or failed: label swap + ending comment | mid-lane | notifier |
+| message: halted or failed, one-line reason | mid-lane | notifier |
 | crash: label swap for a lane that threw | when the script returns | host |
 | completion: label removed, PR opened | after the script | host |
 | message: PR link, ready or draft | after the script | host |
@@ -29,22 +29,24 @@ One question selects the role: **did the run reach a reasoned conclusion, or did
 
 | Outcome | Role applied |
 |---|---|
-| a conclusion needing a human — a halt carrying its diagnosis, and every draft PR | awaiting-human |
+| a conclusion needing a human — a halt carrying its diagnosis, and every draft PR from a reasoned ending | awaiting-human |
 | a break — any dead agent, any unrunnable stage | failed |
 | a ready PR | none |
 
-The in-progress role is removed in every one of the three, including the one that applies nothing. Which endings open a draft PR rather than a ready one is the terminal-state table's, specified separately over `contracts.md`'s terminal categories.
+The first two rows overlap, because a break now opens a draft pull request too. **failed wins**: a break is a break whatever it produced, and the question that role answers is the one a dead reviewer leaves open.
+
+The in-progress role is removed in every one of the three, including the one that applies nothing. Which endings open a ready pull request rather than a draft one is the terminal-state table's, specified separately over `contracts.md`'s endings — never over their labels, which decide nothing.
 
 Two properties fall out of that question rather than being designed in:
 
 - **failed is always a crash and never a verdict.** A lane that reasoned its way to an ending takes awaiting-human however bad the ending was, so failed answers exactly one question: *is this worth retrying?*
-- **Every draft-PR case is host-applied and every halt case is notifier-applied** — straight out of the scoping rule, since a PR is opened at a host boundary and a halt happens mid-script.
+- **An ending's role is applied by the notifier, at the ending** — straight out of the scoping rule, since an ending happens mid-script. The draft pull request the host opens afterwards selects nothing: the ending that produced it already did.
 
 ## Messages and comments
 
-A **halt message** says why in one line, so it can be triaged from a phone. A **completion message** carries the PR link and whether it opened ready or draft. Detail belongs on the issue, not in the message.
+An **ending message** says why in one line, so it can be triaged from a phone. A **completion message** carries the PR link and whether it opened ready or draft. Detail belongs on the issue, not in the message.
 
-**At most one comment of each kind per lane** — one plan comment after planning, and, if the lane dies, one halt comment. Each is an extremely concise summary plus open questions, never a transcript: the plan file already survives on disk at tens of kilobytes, and no agent ever reads the comment (the writer and the reviewer both take the plan from disk), so inlining it buries the thread to serve nobody. A halted lane never reaches the end of a lane, so its halt comment is the *last* one it posts.
+**At most one comment of each kind per lane** — one plan comment after planning, and, if anything in the lane ends, one ending comment. Each is an extremely concise summary plus open questions, never a transcript: the plan file already survives on disk at tens of kilobytes, and no agent ever reads the comment (the writer and the reviewer both take the plan from disk), so inlining it buries the thread to serve nobody. The ending comment is the *last* one its lane posts, whatever the conclusion goes on to push or open.
 
 ## Channel contract
 

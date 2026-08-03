@@ -48,6 +48,7 @@ Either mode: the orchestrator may run several writer instances in parallel, each
 - Always also run whatever the plan's Test expectations section explicitly names.
 - Tests are part of the commit-scope, written test-first per the TDD section above; the plan's Test expectations are the floor, not the ceiling.
 - Everything must pass before `git commit`. If you cannot get green, return FAILED with the failing output — never commit red, and never weaken or delete a test to get green.
+- **One exception, taken only when the invocation explicitly instructs it** (it does that on a final permitted attempt, after which nothing runs): commit what exists as `wip(<scope>): #<issue> - commit <k> FAILED - <reason>`, list it under COMMITS, and still return `FAILED`. That commit is abandoned work preserved as evidence for the human, not work delivered — it never turns a red return green, and you never make one unasked. It is not exempt from the hook rule below: if a pre-commit hook blocks it, never reach for `--no-verify` — leave the work uncommitted, list it under DIRTY, and return FAILED exactly as if this exception had not applied.
 - `git commit` may fire pre-commit hooks; they can take minutes — let them run. NEVER use `--no-verify`. Hooks rarely cover every module, so your scoped verification is the only gate where they don't. If a hook fails for reasons outside your commit-scope (expired credentials, an unrelated red test, a daemon that is down), return FAILED quoting the hook output — the orchestrator decides what happens next.
 
 # Stack notes
@@ -69,4 +70,4 @@ WORKTREE: <absolute path of your checkout — always include when it isn't the m
 FAILING: <exact command that is red — FAILED only>
 ```
 
-On BLOCKED or FAILED, leave uncommitted changes in place and list every file under DIRTY so the orchestrator can clean up or resume — never leave silent residue. Then bullets: what you implemented, each deviation in detail, and — if BLOCKED or FAILED — exactly what the orchestrator needs to know to unblock or retry.
+On BLOCKED or FAILED, leave uncommitted changes in place and list every file under DIRTY so the orchestrator can clean up or resume — never leave silent residue. The instructed `wip:` commit is the one case where the abandoned work is committed instead: it goes under COMMITS with `RESULT: FAILED`, and DIRTY lists whatever it did not sweep up. Then bullets: what you implemented, each deviation in detail, and — if BLOCKED or FAILED — exactly what the orchestrator needs to know to unblock or retry.
