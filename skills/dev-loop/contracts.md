@@ -324,6 +324,25 @@ That distinction is the point of having three outcomes rather than two. Collapsi
 
 Sequencing a same-region co-touch is what *avoids* the conflict rather than merely deferring it: the later lane branches from the earlier one, so its writer opens the file with the earlier edit already in it and edits the text as it will actually land. A later layer based on the trunk instead would hit the same conflict at merge time, one layer later.
 
+#### Unattended runs classify identically, and take the recommended remedy
+
+This is smaller than it looks, because the supervised path never asked a human to *classify* an overlap. The host does the intersection and the classification itself, with no agent and no prompt, and the human is handed only the **remedy**, and only in the dependency case. So there is no new judgement stage here and no extra agent: an unattended run performs the same intersection over the same File touchpoints, applies the same three outcomes, and reaches the same layer assignment.
+
+**The dependency case takes the option the supervised path already marks recommended: B is stacked on A.** Not a new decision — the same one, with its default taken rather than confirmed.
+
+**The defer remedy is absent, and this is the reason rather than an oversight.** "Defer B out of this batch" is a human's *not this batch* — a scheduling judgement about what they want to review this afternoon, made from context the pipeline does not hold. Unattended there is nobody whose afternoon it is, and deferring a lane the developer explicitly asked for would silently return less work than was requested. So it drops out, and the recommended remedy is the only one.
+
+**The discovered-blocker comment is posted identically.** It was already a machine action under supervision, and it carries over unchanged — so the reason a lane was stacked is recorded where the work is tracked, on a run nobody watched. The same-region outcome still posts nothing, for the same reason it posts nothing under supervision.
+
+The batch's conclusion then links the stack through the same script, with the same absent-extension fallback, per **Stack linking** above — that subsection is single-version and neither mode is exempt from it.
+
+**Two accepted costs, recorded rather than solved.** Both are real, both are bounded, and neither is worth an engineering answer:
+
+- **A misclassification is unattended.** If a real dependency is read as additive, the two lanes run in the same layer and B's worktree never contains A's code. That surfaces as a **red suite gate or a failed writer in B's lane** — an attributable, bounded failure the existing debugger path already handles, ending that sub-lane with its diagnosis and its attempt log. It is not a silent bad merge, which is the failure worth engineering against.
+- **A same-region co-touch read as additive still conflicts when someone merges.** The unattended run's job ends at the pull request, so that conflict lands on the human doing the merge — **exactly where it lands today**, and exactly where it would land under supervision if the human accepted the same reading.
+
+Neither cost is unique to unattended mode; what is unique is that nobody is watching when it happens, which is why both are named here rather than left to be discovered.
+
 ## Mode implementations
 
 - **Mode W**: `phase-plan.js` (Phase A) and `phase-execute.js` (Phase B) run on the Workflow tool with the args documented in SKILL.md; their embedded JSON schemas mirror the return contracts above.

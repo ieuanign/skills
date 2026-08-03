@@ -34,7 +34,7 @@ This skill is repo- and machine-agnostic: it hardcodes no repository name, path,
 |---|---|
 | Gate 1 — which lanes are approved? | every lane whose plan is `READY` proceeds |
 | Gate 1 — a `BLOCKED` plan's open questions | nobody can answer them, so that lane does not proceed and is reported carrying them |
-| Gate 1 — stack a dependent lane, or defer it? | defer it out of the batch — deciding overlaps without a human is specified separately |
+| Gate 1 — stack a dependent lane, or defer it? | **stack B on A** — the option this gate already marks recommended. Defer is a human's "not this batch" and has no unattended meaning; taking it would return less work than was asked for |
 | Gate 2 — is the push/PR approved? | the sub-lane pushes and opens the PR its `terminal` names — ready, draft, or none |
 | Gate 2 — open a draft PR for a sub-lane that ended? | yes, `--draft` — an ended sub-lane is never ready, and work that exists stays reviewable |
 | Gate 2 — arbitrate a contested finding | nobody rules, so the ledger's **arbitrated** category stays empty and the finding rides out to the PR body |
@@ -152,6 +152,8 @@ Present every lane: summary, plan path (invite the user to edit the file before 
   3. **real dependency** — B consumes what A creates. Post the discovery back to the dependent GitHub issue: `gh issue comment <B> --body "Discovered blocker: depends on #<A> — overlapping files: ..."`. **Unconditionally, and before the remedy is chosen** — the comment records that the dependency *exists*, which is true whichever remedy follows, and it matters most in the branch that drops B from the batch: a deferred lane leaves with the blocker documented on its issue rather than forgotten. Then AskUserQuestion per case, with **"stack B on A's branch" as the first/recommended option** and "defer B out of this batch" as the alternative.
 
   Outcomes 2 and 3 produce the same branch shape — next layer, based on the branch below — and differ only in what is asserted about it. Only 3 posts the comment, and only 3 asks anything.
+
+  **The classification itself is identical under both modes** — it is your plain reading either way, with no agent and no prompt in either. Only outcome 3's question is suppressed under `unattended`, resolving to its recommended answer per the table above; the comment is a machine action and is posted the same in both. Nothing else here is mode-dependent.
 - **Profile Constraints**: apply them now — lanes a constraint forbids from running concurrently go into separate layers (or one is deferred), and say so.
 - **Multi-PR plans**: the lane splits into sub-lanes, sequential, in the plan's order (e.g. migration → backend → frontend). First sub-lane branch from the branch template, later ones with the `-<area>` suffix, each based on the previous sub-lane's branch when the plan says the code depends on it, else `origin/<DEFAULT>`.
 
@@ -219,6 +221,8 @@ Gate 2 fires at the end of EVERY layer, for every sub-lane that layer finished �
    **What this cannot cover** is the session itself stopping: a rate limit, a closed terminal, a sleeping machine. No code runs, so nothing is caught, and only what already reached GitHub survives — which is why Act 0 writes the label before it spends a token. A watchdog is deliberately out of scope; the human typed this command and can see their own terminal.
 
 5. **Stack linking.** Once per BATCH, at its LAST Gate 2. **contracts.md's Stack linking subsection is normative** — read it, and take every rule from there rather than from here. What follows is only what *you* do: when to run it, how to derive its arguments, and what to do with its answer. A stacked batch reaches this gate once per layer, so run this only at the final one, when every sub-lane of every lane has been through steps 1–3 and every pull request that is going to exist does.
+
+   **This step is identical under both modes and asks nothing**, so gate suppression does not touch it: an unattended conclusion links its batch exactly as a supervised one does, through the same script, with the same absent-extension fallback. It has no row in the suppression table because it has no question to suppress.
 
    Keep each sub-lane's PR number from step 2 as you go — the number, not the URL, and `gh pr create` prints the URL, so read it back with `gh pr view <branch> --json number -q .number` if you did not capture it. Then walk the base relation you provisioned in Act 2 and collect each **maximal chain**: a sub-lane whose base is the trunk starts one, and a sub-lane based on another sub-lane's branch extends that one. **Break every chain at a sub-lane that opened no pull request** — step 1 found nothing ahead of its base — and never join across the hole: the runs either side are separate chains, and you report the gap naming that sub-lane. Joining them would tell a reviewer the upper pull request is stacked on the lower one, which is not what this batch did. Per chain, bottom to top:
 
