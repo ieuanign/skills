@@ -20,9 +20,13 @@ export const meta = {
 // reviewer's Spec axis reads it from its arguments rather than fetching it, keeping its
 // Bash read-only and git-only. Omit it and the reviewer runs no spec axis.
 // Returns per-lane:
-// { issue, mode, ending: {category: 'HALT'|'FAILED', reason: string}|null, subResults: [...] }
+// { issue, mode, ending: {category: 'HALT'|'FAILED', reason}|null, crashed, subResults: [...] }
+// EVERY requested issue gets an entry, whatever happened to it — nothing below filters this list.
 // mode is the run mode the host parsed, carried out unchanged rather than re-derived — whatever
 // concludes the lane reads it off the result it already holds.
+// crashed is true only for a lane whose closure THREW. It is what the host reads at the
+// conclusion: every other ending was already labelled mid-script, and a throw is the one that
+// could not be, because a throw unwinds past the point the notifier is dispatched from.
 // An ending ends its SUB-lane, so the lane's ending is a roll-up for reporting only: FAILED if
 // any sub-lane ended FAILED, else HALT if any did, else null. The label decides nothing — the
 // conclusion mode alone decides the push, the PR and the worktree.
@@ -225,8 +229,29 @@ function terminalState(rec) {
   return { pr: 'draft', reasons }
 }
 
-const laneResults = await parallel(input.lanes.map(lane => async () => {
-  const subResults = []
+// What a throw leaves behind, said honestly. A genuinely dead agent often throws a bare value
+// carrying neither a message nor a stack, so this promises a trace only where one exists: a
+// reason reading "stack trace: undefined" sends a human looking for something that never existed.
+function crashReason(err) {
+  const stack = err && typeof err.stack === 'string' ? err.stack.trim() : ''
+  const message = err && typeof err.message === 'string' ? err.message.trim() : ''
+  if (stack) return `the lane threw — ${message || 'the error carried no message'}\n${stack}`
+  if (message) return `the lane threw — ${message}; no stack trace was attached`
+  return `the lane threw ${describe(err)}; it carried neither a message nor a stack trace`
+}
+
+// String() throws on a symbol, and a crash handler that crashes defeats its own purpose.
+function describe(err) {
+  if (err === null) return 'null'
+  if (err === undefined) return 'undefined'
+  let shown
+  try { shown = typeof err === 'symbol' ? err.toString() : String(err) } catch { shown = '(unprintable)' }
+  return `a ${typeof err} value (${shown || 'empty'})`
+}
+
+// The lane body. Its own endings are recorded on the sub-lane records it pushes into subResults,
+// which the caller holds — so whatever this throws, what it managed survives outside it.
+const runLane = async (lane, subResults) => {
 
   const runSubLane = async (sub, rec) => {
     const tag = `#${lane.issue}${sub.area ? ':' + sub.area : ''}`
@@ -427,10 +452,47 @@ const laneResults = await parallel(input.lanes.map(lane => async () => {
   // sub-lane is its own pull request.
   const ended = subResults.filter(r => r.ending)
   const rollUp = ended.find(r => r.ending.category === 'FAILED') || ended[0]
-  return { issue: lane.issue, mode: MODE, ending: rollUp ? { ...rollUp.ending } : null, subResults }
-}))
+  return { issue: lane.issue, mode: MODE, ending: rollUp ? { ...rollUp.ending } : null, crashed: false, subResults }
+}
 
-const done = laneResults.filter(Boolean)
+// THE single wrapper every lane goes through, and the reason the lane body above is a named
+// function rather than the closure it used to be. A throw at any of the body's ending sites used
+// to resolve the lane to nothing, and the filter below then dropped it — so the issue vanished
+// with no label, no comment and no record of which one it was. One catch here covers every site,
+// and it is also the one place an ending-time dispatch hooks into: threading either through
+// seventeen ending sites is how they drift apart.
+const laneThunk = lane => async () => {
+  const subResults = []
+  try {
+    return await runLane(lane, subResults)
+  } catch (err) {
+    const reason = crashReason(err)
+    // The sub-lane in flight when the throw happened is the one that crashed; sub-lanes already
+    // finished keep their own ending and their own terminal state. Everything unfinished takes
+    // the crash and reaches the terminal-state table, so the host can dispose of it like any
+    // other row rather than meeting a record with no `terminal` at Gate 2.
+    for (const rec of subResults) {
+      if (rec.terminal) continue
+      if (!rec.ending) failed(rec, reason)
+      rec.terminal = terminalState(rec)
+    }
+    log(`#${lane.issue}: the lane threw — returning it attributed rather than losing it`)
+    return { issue: lane.issue, mode: MODE, ending: { category: 'FAILED', reason }, crashed: true, subResults }
+  }
+}
+
+const laneResults = await parallel(input.lanes.map(laneThunk))
+
+// No filter: a requested issue leaves this script with an entry whatever happened to it. The
+// thunks above cannot throw, so a null here is the runner itself dropping a lane — skipped by the
+// user, or dead after its retries — which is exactly as unattributable as the throw used to be.
+const done = laneResults.map((lane, i) => lane || {
+  issue: input.lanes[i].issue,
+  mode: MODE,
+  ending: { category: 'FAILED', reason: 'the workflow runner returned nothing for this lane — it was skipped, or it died after its retries' },
+  crashed: true,
+  subResults: [],
+})
 const count = c => done.filter(l => l.ending && l.ending.category === c).length
 log(`${done.filter(l => !l.ending).length} lane(s) completed, ${count('HALT')} HALT, ${count('FAILED')} FAILED`)
 return done
