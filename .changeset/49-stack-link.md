@@ -18,4 +18,8 @@ The link is purely additive and fires after the pull requests already exist, so 
 
 A failed link is reported with the tool's own message and then left alone: every pull request is already open and untouched, and losing the stack never costs the run the work.
 
-One correctness point the design needed and now states: **a batch is not necessarily one stack.** A layer holding two independent lanes with a third stacked on one of them is one chain of two and one chain of one, so the host links per chain rather than per batch — handing all three to one call would tell reviewers the independent lane is what the top layer builds on. A chain of one is not a stack, which is why an ordinary unstacked batch reaches the step and calls nothing.
+Two correctness points the design needed and now states.
+
+**A batch is not necessarily one stack.** A layer holding two independent lanes with a third stacked on one of them is one chain of two and one chain of one, so the host links per chain rather than per batch — handing all three to one call would tell reviewers the independent lane is what the top layer builds on. A chain of one is not a stack, which is why an ordinary unstacked batch reaches the step and calls nothing.
+
+**A gap in a chain is shown, never closed up.** A sub-lane that ends with nothing ahead of its base opens no pull request, while the sub-lane above it is still based on its branch — so a naive walk would hand the link the two pull requests either side of the hole and stack the upper on the lower. The walk stops at a sub-lane with no pull request: the runs either side are separate chains, and the gap is reported naming the sub-lane that produced none. Whether such a layer should run at all is a separate, still-open question and nothing here decides it.
