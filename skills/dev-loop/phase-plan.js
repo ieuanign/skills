@@ -22,6 +22,25 @@ const PLAN_SCHEMA = {
 
 const agentType = 'architecture-engineer'
 
+// The lane-and-stage marker every dispatched prompt leads with. It says which lane (the issue
+// number) and which stage an agent belongs to, so its own transcript identifies it without anyone
+// pattern-matching the English of a prompt that gets reworded. Inert to the agent: nothing is
+// asked to return it and no parsing of a return depends on it — only the cost report, reading the
+// transcripts afterwards, cares.
+//
+// It leads rather than trails because a transcript's first user record is the prompt, and reading
+// its opening line is the cheapest identification there is.
+//
+// Planning is the reason this exists rather than an inference from the prompt's prose: a plan path
+// identifies a lane in every OTHER stage's prompt, but planning runs before a plan file exists, so
+// the architect's prompt has no path to read — and planning is roughly three tenths of a lane.
+//
+// The vocabulary is shared with phase-execute.js and with cost-report.js, and each copy is written
+// out in full: a phase script imports nothing, being compiled as one function over the runner's
+// globals. Add a stage in one and add it in all three.
+const STAGE = { PLAN: 'plan', WRITE: 'write', REVIEW: 'review', SUITE: 'suite', NOTIFY: 'notify' }
+const mark = (issue, stage) => `[dev-loop lane=${issue} stage=${stage}]\n`
+
 // One shape for both ways an architect can fail to produce a plan. A requested issue is never
 // silently dropped, so every path out of a thunk below produces one of these.
 const died = (number, why) => ({ issue: number, status: 'DIED', planPath: '', summary: why, openQuestions: [] })
@@ -45,6 +64,7 @@ function crashLine(err) {
 const results = await parallel(input.issues.map(iss => async () => {
   try {
     const r = await agent(
+      mark(iss.number, STAGE.PLAN) +
       `Mode 1 — implementation plan for GitHub issue #${iss.number} ("${iss.title}") in this repository.` +
       (iss.project ? ` Project slug: ${iss.project}.` : '') +
       (iss.answers ? ` The user answered your previous open questions as follows — incorporate them and do not re-ask: ${iss.answers}` : '') +
