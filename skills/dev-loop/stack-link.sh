@@ -11,9 +11,13 @@
 #
 # It prints ONE machine-readable line on standard output and nothing else:
 #
-#   STACK: linked <n> pull requests (<numbers, bottom to top>)
+#   STACK: linked - <the tool's own summary of what it recorded>
 #   STACK: skipped - <why>          nothing was attempted; today's behaviour stands
 #   STACK: failed - <why>           attempted and refused; every pull request is untouched
+#
+# The linked line relays gh's summary rather than composing one. See the note at the call site:
+# this script cannot tell a pull request number from a stack number, so a count of its own
+# arguments would be a claim it has not earned.
 #
 # Exit 0 for linked and skipped, 1 for failed. THE CALLER MUST NOT TREAT A FAILURE AS FATAL:
 # the stack is a bonus, and losing it never costs the run the work it just pushed. The exit code
@@ -86,11 +90,29 @@ fi
 #
 # BOTH streams are captured, not stderr alone. gh-stack writes its progress and its errors to
 # stderr and nothing at all to stdout today -- but a version that reported a failure on stdout
-# would leave `err` empty, and this script would print a bare `STACK: failed - ` for a failure
-# whose cause it had been handed. On success the capture is discarded either way, so keeping
-# both costs nothing and removes the case where the message goes missing.
-if err="$(gh stack link "$@" </dev/null 2>&1)"; then
-  echo "STACK: linked $# pull requests ($*)"
+# would leave `out` empty, and this script would print a bare `STACK: failed - ` for a failure
+# whose cause it had been handed. Keeping both costs nothing and removes the case where the
+# message goes missing.
+if out="$(gh stack link "$@" </dev/null 2>&1)"; then
+  # THE TOOL'S OWN SUMMARY, not a count composed here. This script cannot know what its
+  # arguments were: `gh stack link` also accepts a STACK number as the first argument, as a
+  # shortcut for appending to an existing stack, and a stack number is numeric so it passes the
+  # guard above indistinguishably from a pull request number. Composing `linked $# pull requests
+  # ($*)` therefore published a falsehood on that path -- it reported a stack number as though it
+  # were a pull request, which is the one thing the POC in #48 recorded as never safe to write,
+  # since `#<stack>` renders as a broken reference to a pull request that does not exist.
+  #
+  # Appending to an existing stack is out of this pipeline's contract anyway -- it links each
+  # chain once, at the end of a batch -- but the script cannot detect the form without an extra
+  # API call per argument, so it stops claiming what it cannot verify. gh already says exactly
+  # what happened ("Created stack with 4 PRs (stack #84)", "Stack #84 is already up to date"),
+  # and relaying it is the same rule the failure path below already follows.
+  summary="$(printf '%s' "$out" | grep '✓' | tail -n 1)"
+  # Fall back to the last non-empty line, then to everything: a future version that drops the
+  # tick, or a locale that mangles it, must still report something true rather than nothing.
+  [ -n "$summary" ] || summary="$(printf '%s' "$out" | grep -v '^[[:space:]]*$' | tail -n 1)"
+  [ -n "$summary" ] || summary="$out"
+  printf 'STACK: linked - %s\n' "$(printf '%s' "$summary" | tr '\n' ' ')"
   exit 0
 fi
 
@@ -98,5 +120,5 @@ fi
 # the repository, bad credentials, an unresolvable number, no network -- exits non-zero with the
 # cause in this message, and none of them edits a pull request on the way out. The message is the
 # only thing that tells them apart, so it is relayed rather than summarised.
-printf 'STACK: failed - %s\n' "$(printf '%s' "$err" | tr '\n' ' ')"
+printf 'STACK: failed - %s\n' "$(printf '%s' "$out" | tr '\n' ' ')"
 exit 1
