@@ -2,9 +2,9 @@
 "ieuanign-skills": minor
 ---
 
-Roster: every agent's return now carries a budget that constrains its **form**, not its length.
+Roster: the architect, writer, debugger and reviewer returns now carry a budget that constrains their **form**, not their length. The notifier is untouched — its return is three fixed lines and one optional sentence, with no prose to budget.
 
-Each roster agent ended its contract with an open-ended instruction — `code-writer` said "Then bullets:", `debugger` said "Then prose:", `reviewer` said "Then `NOTES:`". Only the architect gave a count. A model handed "then prose" with no budget writes to the length the task feels to deserve, which is always long. Unattended that prose is spent for nothing: the orchestrator routes on the machine-readable leading lines and the bullets, and no human is there to skim past the rest.
+Each of those four ended its contract with an open-ended instruction — `code-writer` said "Then bullets:", `debugger` said "Then prose:", `reviewer` said "Then `NOTES:`". Only the architect gave a count. A model handed "then prose" with no budget writes to the length the task feels to deserve, which is always long. Unattended that prose is spent for nothing: the orchestrator routes on the machine-readable leading lines and the bullets, and no human is there to skim past the rest.
 
 **A word or bullet cap is the wrong instrument.** It forces the model to choose which facts to sacrifice, and it reliably keeps the narrative and drops the specifics, because narrative reads as "the answer" and specifics read as "detail". The instrument used instead is the one already proven in this repo — the reviewer's finding line, whose slots leave nowhere to put filler and which nobody ever had to cap. Bullets fill slots: `<what> — <where: file:line, path, or command> — <so what: the consequence, or the next action it enables>`. A bullet missing `where` is an unevidenced claim; one missing `so what` is something nobody can act on.
 
