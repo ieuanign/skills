@@ -48,6 +48,10 @@
 # `init`, or `add`: all three keep state under the common git directory that every linked
 # worktree shares, so concurrent lanes would race over the same files.
 
+# No `-e`, deliberately, where notify.sh has it: every command below is already the condition of
+# an `if` or a `case`, and the two failures that matter -- the absent extension and a refused link
+# -- are outcomes this script reports rather than errors it dies of. Under `-e` the probe would
+# terminate the script before it could print the `skipped` line the caller reads.
 set -uo pipefail
 
 # Fewer than two pull requests is not a chain, so nothing is attempted -- not even the probe.
@@ -62,7 +66,11 @@ for arg in "$@"; do
     ''|*[!0-9]*)
       # Refused rather than forwarded. See note 1: a branch name here would have the tool open
       # pull requests of its own over the ones the run authored.
-      echo "STACK: failed - '$arg' is not a pull request number; this command takes numbers only, never branch names"
+      #
+      # Flattened like the failure below: the caller parses ONE line, and a rejected argument is
+      # by definition not a number -- so it can perfectly well contain the newline that would
+      # turn this single result into what reads as two.
+      printf 'STACK: failed - %s\n' "$(printf '%s' "'$arg' is not a pull request number; this command takes numbers only, never branch names" | tr '\n' ' ')"
       exit 1
       ;;
   esac
@@ -75,7 +83,13 @@ fi
 
 # stdin closed: an unattended run has no terminal, and a command that decided to ask something
 # would hang the run rather than fail it.
-if err="$(gh stack link "$@" </dev/null 2>&1 >/dev/null)"; then
+#
+# BOTH streams are captured, not stderr alone. gh-stack writes its progress and its errors to
+# stderr and nothing at all to stdout today -- but a version that reported a failure on stdout
+# would leave `err` empty, and this script would print a bare `STACK: failed - ` for a failure
+# whose cause it had been handed. On success the capture is discarded either way, so keeping
+# both costs nothing and removes the case where the message goes missing.
+if err="$(gh stack link "$@" </dev/null 2>&1)"; then
   echo "STACK: linked $# pull requests ($*)"
   exit 0
 fi
