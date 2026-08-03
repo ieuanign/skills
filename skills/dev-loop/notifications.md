@@ -61,6 +61,7 @@ The payload arrives on standard input and never enters a shell string: it is age
 
 - Labels are written before a single token is spent, so a crash still leaves the marker behind.
 - Labels are crash-safe; messaging is best-effort. Neither costs tokens.
+- **No notification failure changes the lane it is reporting.** A `gh` command that fails, a role with no label string, a label string naming a label the tracker does not have, an unreachable channel — each is reported and then let go. The lane's ending, its push, its pull request and its worktree are what they would have been had the write succeeded. A run whose reporting is broken still does the work; a run that stopped because its reporting broke would be strictly worse than one that never reported.
 - Exactly one closing message per lane, so a start with no close plus a stale in-progress label reads as a dead run by inspection.
 - An unconfigured channel is silent, per the channel contract above — opting out is a supported state, not a fault.
 
