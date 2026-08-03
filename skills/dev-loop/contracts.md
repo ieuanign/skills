@@ -67,7 +67,7 @@ The writer call of the **final permitted** debug+fix attempt, and no earlier one
 
 The instruction does not exempt that commit from the writer's own pre-commit hooks, and no mode may bypass them for it. In a repository whose hook demands a green suite the evidence commit cannot land, the writer returns `FAILED` with the work left dirty in its worktree, and the sub-lane ends exactly as it would have without the instruction — the evidence survives on the machine rather than on the branch. That is a smaller benefit, not a different ending, and it is the reason nothing downstream may assume the commit exists: the push decision asks git whether the branch is ahead of its base, never the reported commit list.
 
-## Review loop — bound: maxFixCycles = 2
+## Review loop — bound: the repo profile's fix-cycle count (default 2)
 
 On the sub-lane's exact range `<base>..<branch>` (the base may itself be a stacked feature branch — never review the base's own commits), with the issue body passed in so the reviewer runs its Spec axis:
 
@@ -76,7 +76,7 @@ On the sub-lane's exact range `<base>..<branch>` (the base may itself be a stack
 3. The re-review receives the disputes and re-verifies each:
    - retracted disputes become documented **won't-fix** entries in the lane's findings ledger;
    - still-confirmed disputes (`CONTESTED`) end the sub-lane **HALT** immediately — no further cycle is spent on an agent stalemate.
-4. At most **2** fix cycles, then **HALT** — the findings are still open.
+4. At most the profile's **fix-cycle count** cycles, then **HALT** — the findings are still open. The count is a repository fact and reaches both implementations as a value, never as a literal: a repository with a flaky suite raises it, and one that answers `0` spends no fix cycle at all — its first `CHANGES_REQUESTED` ends the sub-lane with the findings open.
 5. A fix-cycle writer return other than `COMMITTED` splits like the implement loop's: `BLOCKED` is **HALT**, `FAILED` or a dead writer is **FAILED**.
 6. `APPROVED` → the review loop is done.
 
@@ -173,7 +173,7 @@ The explanation is identical in both: what stopped or what broke, its stage, the
 
 **One exception, and only one.** A sub-lane where nothing landed at all — the writer stopped before changing a file, so there is not even a `wip:` commit — has no branch ahead of its base: nothing to push, and no pull request to open. Whether the branch is ahead is read from git, never inferred from a reported commit list. Under unattended its explanation is commented on the issue instead, which the append-only invariant permits. This is the only ending in the pipeline that opens no pull request.
 
-**gated** — a human concludes the lane.
+**gated** — the default: a human concludes the lane.
 
 - A clean sub-lane reaches Gate 2 for push/PR approval. Nothing is pushed without it, and an ended sub-lane is *offered* there rather than pushed around it. The suite result is on it, so the human approving a push sees a green suite rather than assuming one.
 - An ended sub-lane carries what is still open to that gate. On contested findings the human arbitrates: uphold → targeted writer fix and resume the lane; accept → documented won't-fix. Either ruling lands in the ledger's **arbitrated** category. On an exhausted fix-cycle bound the human reads the open findings and decides whether to push anyway.
@@ -202,3 +202,9 @@ Lanes run in parallel. Within a lane: sub-lanes sequential, and within a sub-lan
 - **Mode W**: `phase-plan.js` (Phase A) and `phase-execute.js` (Phase B) run on the Workflow tool with the args documented in SKILL.md; their embedded JSON schemas mirror the return contracts above.
 - **Mode A**: the orchestrator drives the Agent tool directly — one background agent per parallel unit (architects in Phase A, lanes in Phase B), sequential awaits inside a lane. Instruct each agent to end with its machine-readable leading lines exactly as its agent definition specifies, parse those as the contract keys, and enforce every bound, route, and ending in this file yourself.
 - **Mode A is tier-locked, by construction.** Effort is settable only in an agent's frontmatter or in Mode W's per-call options, and the direct Agent tool has no effort parameter — so Mode A has no mechanism for varying effort and any future cost dial is Mode W-only. This is a property of the mode, not an oversight.
+- **Unattended mode runs only under Mode W.** Intake refuses it in Mode A rather than degrading into it. Three reasons, each independently sufficient, recorded here so the rule is not re-litigated:
+  1. **Per-stage effort is impossible in Mode A**, by the tier-lock above. An unattended run there would plan, write and review at exactly the tiers a supervised run uses — precisely the cost baseline it exists to beat. The effort dials *are* the cost thesis.
+  2. **The notifier fires from inside the phase script**, because the host is blind while a script runs — a workflow script has no shell. Mode A's host is never blind, so the same notifications would need a second, differently shaped implementation.
+  3. **Bound enforcement is mechanical in a script and merely remembered by a model otherwise.** Acceptable when a human is watching; not when nobody is.
+
+  Mode A is kept for the supervised run, where none of the three bites. Its one real firing was a manual-recovery path — a human had driven a step by hand and the orchestrator continued in this mode, under these same contracts, to finish the lane. It is not a fallback for a missing tool.

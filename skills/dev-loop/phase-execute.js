@@ -11,7 +11,8 @@ export const meta = {
 
 // args: {
 //   lanes: [{ issue, issueBody, planPath, subLanes: [{ branch, worktree, base, area?, commits: [{ordinal, message}] }] }],
-//   maxFixCycles: number,
+//   mode: 'gated' | 'unattended',
+//   maxFixCycles: number,  // the profile's Fix cycles key; absent ⇒ the profile's default of 2
 //   suiteCommand: string   // the profile's Full-suite command; 'none' or absent ⇒ every suite is not-run
 // }
 // subLanes contains only the CURRENT wave's sub-lanes; worktree is absolute.
@@ -19,7 +20,9 @@ export const meta = {
 // reviewer's Spec axis reads it from its arguments rather than fetching it, keeping its
 // Bash read-only and git-only. Omit it and the reviewer runs no spec axis.
 // Returns per-lane:
-// { issue, ending: {category: 'HALT'|'FAILED', reason: string}|null, subResults: [...] }
+// { issue, mode, ending: {category: 'HALT'|'FAILED', reason: string}|null, subResults: [...] }
+// mode is the run mode the host parsed, carried out unchanged rather than re-derived — whatever
+// concludes the lane reads it off the result it already holds.
 // An ending ends its SUB-lane, so the lane's ending is a roll-up for reporting only: FAILED if
 // any sub-lane ended FAILED, else HALT if any did, else null. The label decides nothing — the
 // conclusion mode alone decides the push, the PR and the worktree.
@@ -34,7 +37,16 @@ export const meta = {
 const input = typeof args === 'string' ? JSON.parse(args) : args
 
 const writerType = 'code-writer'
-const MAX_FIX = input.maxFixCycles || 2
+
+// The fix-cycle bound is a repository fact, not a constant: a repository with a flaky suite wants
+// more cycles, and one that would rather read every finding itself answers 0. The host passes the
+// profile's value; the 2 below is the profile's own default, reached only when a host passed no
+// number at all. `|| 2` would be wrong — it turns a deliberate 0 back into two cycles.
+const MAX_FIX = Number.isInteger(input.maxFixCycles) && input.maxFixCycles >= 0 ? input.maxFixCycles : 2
+
+// Passed in, never re-derived. Nothing here branches on it yet — the notifier and the unattended
+// conclusion will. Anything but 'unattended' is gated, so an unknown mode never suppresses a gate.
+const MODE = input.mode === 'unattended' ? 'unattended' : 'gated'
 
 // Configuration, never discovery: a discovered command that needs infrastructure this pipeline
 // does not stand up returns a red result that means nothing. 'none' is a real, persisted answer.
@@ -358,7 +370,7 @@ const laneResults = await parallel(input.lanes.map(lane => async () => {
   // sub-lane is its own pull request.
   const ended = subResults.filter(r => r.ending)
   const rollUp = ended.find(r => r.ending.category === 'FAILED') || ended[0]
-  return { issue: lane.issue, ending: rollUp ? { ...rollUp.ending } : null, subResults }
+  return { issue: lane.issue, mode: MODE, ending: rollUp ? { ...rollUp.ending } : null, subResults }
 }))
 
 const done = laneResults.filter(Boolean)
