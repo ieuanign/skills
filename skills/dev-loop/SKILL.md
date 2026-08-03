@@ -57,7 +57,7 @@ Adding a value to this pipeline? The rule decides its home, so a new value never
 | Home | Values |
 |---|---|
 | **Argument** | the run mode, the issue list, the optional `project:<slug>` |
-| **Repository profile** (ask-then-persist, below) | branch template, PR title format, PR body template, setup command, **full-suite command**, constraints, **fix cycles** |
+| **Repository profile** (ask-then-persist, below) | every key in **Repo profile** below — branch template, suite command, **fix cycles** |
 | **Phase-script constant** | per-stage effort and model tiers, the per-commit debug-and-fix bound, the suite gate's two round bounds, the stage list each mode runs |
 | **Skill constant** | gate suppression under `unattended` (stated once under Run mode above), the cost reporting target |
 
