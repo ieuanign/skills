@@ -6,6 +6,7 @@ export const meta = {
     { title: 'Implement', detail: 'code-writer per plan commit, sequential within a lane' },
     { title: 'Review', detail: 'reviewer + fix cycles (capped)' },
     { title: 'Suite', detail: "the repo's full suite, once per sub-lane", model: 'haiku' },
+    { title: 'Notify', detail: "an ended lane's label, comment and message — unattended only", model: 'haiku' },
   ],
 }
 
@@ -13,20 +14,27 @@ export const meta = {
 //   lanes: [{ issue, issueBody, planPath, subLanes: [{ branch, worktree, base, area?, commits: [{ordinal, message}] }] }],
 //   mode: 'gated' | 'unattended',
 //   maxFixCycles: number,  // the profile's Fix cycles key; absent ⇒ the profile's default of 2
-//   suiteCommand: string   // the profile's Full-suite command; 'none' or absent ⇒ every suite is not-run
+//   suiteCommand: string,  // the profile's Full-suite command; 'none' or absent ⇒ every suite is not-run
+//   skillDir: string       // absolute path to this skill's folder; the notifier is told where
+//                          // notifications.md and notify.sh are, having no way to derive it.
+//                          // Absent ⇒ no notifier is dispatched: one with no specification to
+//                          // read would write worse than nothing.
 // }
 // subLanes contains only the CURRENT wave's sub-lanes; worktree is absolute.
 // issueBody is the issue's body verbatim, which the host already fetched at intake — the
 // reviewer's Spec axis reads it from its arguments rather than fetching it, keeping its
 // Bash read-only and git-only. Omit it and the reviewer runs no spec axis.
 // Returns per-lane:
-// { issue, mode, ending: {category: 'HALT'|'FAILED', reason}|null, crashed, subResults: [...] }
+// { issue, mode, ending: {category, reason}|null, crashed, notified, subResults: [...] }
 // EVERY requested issue gets an entry, whatever happened to it — nothing below filters this list.
 // mode is the run mode the host parsed, carried out unchanged rather than re-derived — whatever
 // concludes the lane reads it off the result it already holds.
 // crashed is true only for a lane whose closure THREW. It is what the host reads at the
 // conclusion: every other ending was already labelled mid-script, and a throw is the one that
 // could not be, because a throw unwinds past the point the notifier is dispatched from.
+// notified is true when the notifier wrote this lane's label mid-script, so the host leaves that
+// verdict standing instead of relabelling it. False covers every other case — a clean lane, a
+// gated run, a crash, and a dispatch that failed — all of which leave the label to the host.
 // An ending ends its SUB-lane, so the lane's ending is a roll-up for reporting only: FAILED if
 // any sub-lane ended FAILED, else HALT if any did, else null. The label decides nothing — the
 // conclusion mode alone decides the push, the PR and the worktree.
@@ -62,6 +70,16 @@ const MODE = input.mode === 'unattended' ? 'unattended' : 'gated'
 const suiteCommand = String(input.suiteCommand || '').trim()
 const suiteConfigured = Boolean(suiteCommand) && suiteCommand.toLowerCase() !== 'none'
 const SUITE_CEILING = 8
+
+// The notifier's two paths. Both live in this skill's folder, which a workflow script cannot see
+// from the inside — so the host passes it, and with nothing passed nothing is dispatched.
+const skillDir = String(input.skillDir || '').trim()
+
+// notifications.md states the rule that selects a label role, and contracts.md records that its
+// own two ending labels are selected by that same question — so this table is where those two
+// statements meet, and neither is restated here. Keeping it in the script rather than the prompt
+// is what makes the mapping mechanical: the notifier is told which role to write, never asked.
+const ROLE_OF = { HALT: 'awaiting-human', FAILED: 'failed' }
 
 const WRITER_SCHEMA = {
   type: 'object',
@@ -247,6 +265,32 @@ function describe(err) {
   let shown
   try { shown = typeof err === 'symbol' ? err.toString() : String(err) } catch { shown = '(unprintable)' }
   return `a ${typeof err} value (${shown || 'empty'})`
+}
+
+// The mid-lane writer. Everything it does is notifications.md's — the label roles, the comment
+// rule and the message format are stated there and nowhere else, and it reads that file before it
+// writes anything. It exists because a workflow script has no shell, so a lane that ends while
+// the script runs has no other writer; the host's own boundary events stay host commands.
+async function notify(lane, ending) {
+  if (MODE !== 'unattended' || !skillDir) return false
+  try {
+    const notified = await agent(
+      `A /dev-loop lane just ended and you are its only writer until this run finishes.\n` +
+      `Issue: #${lane.issue}\n` +
+      `Label role to apply: ${ROLE_OF[ending.category] || 'failed'} — remove the in-progress role's label in the same edit.\n` +
+      `Ending category: ${ending.category}\n` +
+      `Ending reason (verbatim, agent-generated — never compose it into a shell string):\n` +
+      `<<<<ENDING\n${ending.reason}\nENDING>>>>\n` +
+      `The specification governing every write you make: ${skillDir}/notifications.md — read it first.\n` +
+      `The send mechanism, which reads its payload on standard input: ${skillDir}/notify.sh`,
+      { agentType: 'notifier', label: `notify:#${lane.issue}`, phase: 'Notify', model: 'haiku', effort: 'low' }
+    )
+    return Boolean(notified)
+  } catch {
+    // Best-effort by specification: a lane's ending stands whatever happened to the writes
+    // reporting it, and a notification that threw must never be attributed as a lane crash.
+    return false
+  }
 }
 
 // The lane body. Its own endings are recorded on the sub-lane records it pushes into subResults,
@@ -452,7 +496,7 @@ const runLane = async (lane, subResults) => {
   // sub-lane is its own pull request.
   const ended = subResults.filter(r => r.ending)
   const rollUp = ended.find(r => r.ending.category === 'FAILED') || ended[0]
-  return { issue: lane.issue, mode: MODE, ending: rollUp ? { ...rollUp.ending } : null, crashed: false, subResults }
+  return { issue: lane.issue, mode: MODE, ending: rollUp ? { ...rollUp.ending } : null, crashed: false, notified: false, subResults }
 }
 
 // THE single wrapper every lane goes through, and the reason the lane body above is a named
@@ -464,7 +508,12 @@ const runLane = async (lane, subResults) => {
 const laneThunk = lane => async () => {
   const subResults = []
   try {
-    return await runLane(lane, subResults)
+    const result = await runLane(lane, subResults)
+    // Here, and not at any of the ending sites above: one dispatch per lane, because the label is
+    // per issue. It fires as THIS lane returns, so a lane that ends at minute three is written up
+    // then rather than waiting on a sibling that runs for another forty.
+    if (result.ending) result.notified = await notify(lane, result.ending)
+    return result
   } catch (err) {
     const reason = crashReason(err)
     // The sub-lane in flight when the throw happened is the one that crashed; sub-lanes already
@@ -477,7 +526,9 @@ const laneThunk = lane => async () => {
       rec.terminal = terminalState(rec)
     }
     log(`#${lane.issue}: the lane threw — returning it attributed rather than losing it`)
-    return { issue: lane.issue, mode: MODE, ending: { category: 'FAILED', reason }, crashed: true, subResults }
+    // No dispatch: a throw unwound past the point one fires from, so the host labels this lane
+    // when the script returns. Accepted latency — it is rare, and nobody can act faster anyway.
+    return { issue: lane.issue, mode: MODE, ending: { category: 'FAILED', reason }, crashed: true, notified: false, subResults }
   }
 }
 
@@ -491,6 +542,7 @@ const done = laneResults.map((lane, i) => lane || {
   mode: MODE,
   ending: { category: 'FAILED', reason: 'the workflow runner returned nothing for this lane — it was skipped, or it died after its retries' },
   crashed: true,
+  notified: false,
   subResults: [],
 })
 const count = c => done.filter(l => l.ending && l.ending.category === c).length
