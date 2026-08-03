@@ -45,5 +45,6 @@ When a skill names a role, use the corresponding label string from the table abo
 right-hand columns to match whatever vocabulary you actually use — the skills hardcode no label
 string, and a role this file gives no string for is skipped silently rather than erroring.
 
-Labels must exist in the tracker to be applied. `needs-triage`, `needs-info` and `ready-for-human`
-are documented above but not yet created here, so nothing can apply them today.
+Labels must exist in the tracker to be applied. All three workflow labels exist. `needs-triage`,
+`needs-info` and `ready-for-human` are documented above but have never been created here, so
+nothing can apply them today — create them with `gh label create <name>` if you start using them.
