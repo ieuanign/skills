@@ -1,5 +1,57 @@
 # ieuanign-skills
 
+## 0.6.0
+
+### Minor Changes
+
+- [#69](https://github.com/ieuanign/skills/pull/69) [`5ef38c1`](https://github.com/ieuanign/skills/commit/5ef38c1a0f7a7def6643ac117e32e4af77b5903a) Thanks [@ieuanign](https://github.com/ieuanign)! - `dev-loop`: one push per sub-lane, and a worktree removed only once its work reached the remote.
+
+  The push cadence recorded as the standing default — the host pushes after each plan commit — was never implementable. The whole commit loop runs inside a single workflow call and a workflow script has no shell, so the host's first control point is that call returning; reaching it otherwise would mean changing the writer's contract, which never pushes, or spending an agent invocation on one git command, which the skill's hard rules forbid in terms. Nothing in the pipeline consumed an intermediate push either — the reviewer diffs local refs — so the only thing one could feed is a repository's own push-triggered CI, which gains nothing from running against a branch the pipeline is still committing to. `contracts.md` now records **why** it is dead, so it is not re-proposed.
+
+  What replaces it is one rule: **a sub-lane's branch reaches the remote exactly once**, at the end of its wave — a sub-lane that concluded clean pushes immediately before its pull request is created, and one that ended performs that same single push. The push is guarded on the branch being ahead of its base, read from git rather than inferred from the commit list the writers reported, so a sub-lane that ended before it committed anything attempts nothing. It is **never a force-push, in either mode**: every push the pipeline makes is a fast-forward by construction, so forcing is never the fix, and there is no ceiling, ending or absent human that unlocks it. A rejected push stops that sub-lane's conclusion where it stands — no pull request, worktree kept, git's own message reported verbatim.
+
+  The accepted cost is recorded rather than solved: this version is always one wave, so a three-issue batch holds the first-finished sub-lane's pull request until the slowest one ends.
+
+  Underneath it was a hazard worth naming. The old rule kept an ended lane's worktree for review while pushing only on the approved path, so an ended lane could hold the only copy of its work on a local branch that never reached the remote. **One invariant replaces the two-case treatment:** a sub-lane's worktree is removed when, and only when, its work has reached the remote _and_ no human is expected to resume in it. Two rules make it safe, and neither is negotiable. **Push succeeds first, remove second** — after removal the remote branch is the only copy, so a push that did not succeed keeps the worktree. **A dirty worktree keeps itself** — `git worktree remove` without `--force` already refuses on tracked modifications or untracked non-ignored files, and that refusal _is_ the guard, which is why the pipeline never passes `--force` and can never talk its way past one.
+
+  The invariant's second condition is what splits the modes: under `gated` a human is present and is expected to pick the branch up in that checkout, so an ended sub-lane keeps its worktree; under `unattended` nobody is there to resume, the condition is vacuous, and removal proceeds. This **reverses** the previous rule under `unattended` only. A held sub-lane falls out of the first condition rather than needing a rule of its own: it has pushed nothing, so removing it would destroy work that exists nowhere else. The main worktree is never a candidate under any condition.
+
+  The skill's closing guarantee is restated, because the old one is no longer true: an `unattended` run ends with only the main worktree remaining unless a removal was refused or a push failed, and a `gated` run additionally keeps every worktree its human was offered and did not take.
+
+- [#69](https://github.com/ieuanign/skills/pull/69) [`5ef38c1`](https://github.com/ieuanign/skills/commit/5ef38c1a0f7a7def6643ac117e32e4af77b5903a) Thanks [@ieuanign](https://github.com/ieuanign)! - `dev-loop`: `cleanup` lists the worktrees it cannot prove are done, instead of deleting them.
+
+  Cleanup mode scanned every worktree and removed the ones whose branch was merged. That predicate was never the right one: a branch merges the moment its pull request lands, which says nothing about whether the run holding that checkout has finished with it — so cleanup could delete an active worktree out from under a batch still in flight, and the failure looked exactly like the scan working correctly.
+
+  Now that every normal path removes its own worktree the moment its work reaches the remote, the scan is also unnecessary. Cleanup **removes no worktree at all**. It lists every one still standing with what can actually be observed about it — uncommitted or untracked work, meaning a removal that was refused; nothing on the remote, meaning a lane held at a gate or a session that died mid-run; or pushed with its pull request still open — and hands the human the removal command rather than running it for them. None of those states has an exact done-signal, and none of them distinguishes a live run's worktree from an abandoned one.
+
+  Merged lanes' local branches and plan files are still reaped: those have an exact signal, and reaping them is why cleanup exists. Which signal, though, now says what it actually does. A repository that merges by **squash** or by **rebase** replays the work under new shas, so the branch's own commits are never ancestors of the default branch: `git branch --merged origin/<DEFAULT>` never lists it, and that arm of the done-check silently never fires. The merged-PR check is the load-bearing one and the git arm is the fallback, which is the opposite of how it read.
+
+  Branch deletion states git's real rule rather than assuming one. `git branch -d` succeeds whenever the branch is merged into the default branch **or** still matches its upstream, so a pushed branch reaps cleanly under either merge style. It refuses one combination, which squash and rebase both produce: a merge that rewrote the commits, whose remote branch was then deleted — GitHub's default on merge. Only when `-d` refuses _and_ the merged check passed does cleanup re-run it as `git branch -D`; that check is the proof git can no longer see for itself, and without the fallback cleanup would reap nothing at all in either of the two commonest GitHub configurations. A branch a surviving worktree still holds cannot be deleted at all, and is listed alongside it.
+
+  The report keeps **reaped** and **needs attention** apart, so the difference between what was cleaned up and what a human has to look at is visible rather than merged into one table. An empty second table is the good outcome.
+
+- [#69](https://github.com/ieuanign/skills/pull/69) [`5ef38c1`](https://github.com/ieuanign/skills/commit/5ef38c1a0f7a7def6643ac117e32e4af77b5903a) Thanks [@ieuanign](https://github.com/ieuanign)! - `dev-loop`: a sub-lane's ending decides whether its pull request opens ready, draft, or not at all.
+
+  Under supervision a human at Gate 2 decides what a sub-lane's ending means: they read the commit list, the findings ledger and the criterion verdicts, and arbitrate anything contested. Remove that human and nothing decided it — a sub-lane with open findings, a red suite or an unmet acceptance criterion would open exactly the pull request a clean one opens. One table in `contracts.md`'s **Lane conclusion** decides it instead, read under `unattended` only: under `gated` every one of these outcomes still goes in front of the human.
+
+  **The ready predicate is one expression**: the sub-lane concluded clean, and its findings are resolved, and the suite passed or did not run, and every acceptance criterion is met. Anything else drafts. It is written as that four-way conjunction and deliberately not reduced to the shortest expression equivalent to it today — an ending already implies the middle two, so the reduction would be correct now and silently wrong after any change that let a red suite through without ending the sub-lane, with no line to have got wrong.
+
+  A **partial** criterion drafts alongside a **not-met** one. Nobody watched the run, so "not demonstrably done" defaults to draft, exactly as the findings ledger and the suite gate already behave; a half-implemented criterion presenting as a ready pull request would reduce the signal to one line of ledger prose the merger may skim. An **ended** sub-lane is never ready whatever its ledger says, because the pipeline stopped before it could finish judging it.
+
+  Work that exists stays reviewable: open findings, a red suite, or an ending mid-pipeline all open a **draft** rather than stranding the branch, and the body carries a **Why this is a draft** line naming which of the four triggers fired. Work that does not exist opens nothing — a narrow case now that the give-up path commits abandoned work as a `wip:` commit, leaving only the sub-lane whose writer stopped before changing a file.
+
+  Every row is decided **per sub-lane**, from that sub-lane's own inputs: each is its own branch and its own pull request, so one sub-lane's draft never drafts another's. Mode W's per-sub-lane result carries a `terminal` of `{pr, push, reasons}`, and Gate 2 opens what it names rather than deciding again. **Git is the authority on the push column** — the row is a proposal, and the host's ahead-of-base read settles it, which is what lets a resumed sub-lane whose commits were already in the log still be owed a real pull request. The pipeline sets draft state only on pull requests it created and never converts one a human opened, per the append-only invariant.
+
+  Two collection bugs fell out of building it, both in `phase-execute.js`. A writer that committed and _then_ returned `BLOCKED` dropped its commits from the sub-lane record, which the table's last two rows would have read as "nothing landed"; the commits a fix cycle or a suite fix landed before stopping were lost the same way. Absorption now happens before the result is read, on every path.
+
+### Patch Changes
+
+- [#69](https://github.com/ieuanign/skills/pull/69) [`8617f2c`](https://github.com/ieuanign/skills/commit/8617f2c9bc8ac76d664467c9a9c4b6dd5d72844c) Thanks [@ieuanign](https://github.com/ieuanign)! - Repo tooling: pin `human-id` so the `changeset` CLI runs again.
+
+  `human-id@4.2.0` shipped `"type": "module"` in a **minor** bump, so every CommonJS consumer broke on install. `@changesets/write@0.4.0` `require()`s it and floats into it through `^4.1.1`, which made every `changeset` command — `status`, `version`, and the `changeset` command this repo's own contribution checklist tells maintainers to run — die with `ERR_REQUIRE_ESM` before reading a single changeset file.
+
+  An npm `overrides` entry pins it to `4.1.3`, the last CommonJS release, with the reason recorded beside it in `package.json` and a note on when to drop it. Nothing about the package's own contents changes.
+
 ## 0.5.0
 
 ### Minor Changes
