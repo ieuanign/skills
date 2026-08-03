@@ -1,5 +1,87 @@
 # ieuanign-skills
 
+## 0.9.0
+
+### Minor Changes
+
+- [`075772a`](https://github.com/ieuanign/skills/commit/075772ab346c98cd6d3606fe6ec5d97aeb44de73) Thanks [@ieuanign](https://github.com/ieuanign)! - `dev-loop`: a stacked batch now ends with a real stack on GitHub, not a sentence in a pull request body.
+
+  The pipeline already sequenced dependent work — it chained the bases, it wrote "Stacked on #\<A\>'s PR" into the body — but GitHub was never told those pull requests form a chain. So a reviewer reconstructed the ordering from base branches, nothing kept the chain rebased, and the ordering was prose rather than data.
+
+  Gate 2 gains a fifth step. Once the batch's last layer has pushed and opened its pull requests, the host walks the base relation, collects each maximal chain, and hands that chain's PR **numbers** — bottom to top — to a new bundled `stack-link.sh`. A reviewer gets a real stack in the GitHub UI, each pull request showing only its own layer's diff, plus the tool's own rebase, view and merge commands over the chain.
+
+  The link is purely additive and fires after the pull requests already exist, so `Closes #<n>`, the plan's summary bullets, the findings ledger and every draft-versus-ready decision survive it untouched. Three refusals are what keep it that way, and each is enforced in the script rather than asserted in prose:
+
+  - **numbers, never branch names** — given a branch the tool pushes it and opens a pull request of its own, overwriting what the run just authored, so a non-numeric argument is refused before any call is made;
+  - **never the ready-for-review flag** — draft-versus-ready is the terminal-state table's, decided per sub-lane, and a batch-wide flag here would override every one of those from the wrong place;
+  - **`link` and nothing else** — `init`, `add` and `submit` all keep tracking state under the common git directory every linked worktree shares, so concurrent lanes would race over the same files. `link` writes none, which is also what lets it run while lane worktrees still hold those branches checked out.
+
+  **A machine without the extension behaves exactly as it does today.** The script probes for it, exits having called nothing, and the batch keeps its branch-name base chaining and its stacked note. No gate checks for the extension, no precondition asks about it, and no run fails or prompts for want of it — the skill stays copyable to any machine.
+
+  A failed link is reported with the tool's own message and then left alone: every pull request is already open and untouched, and losing the stack never costs the run the work.
+
+  Two correctness points the design needed and now states.
+
+  **A batch is not necessarily one stack.** A layer holding two independent lanes with a third stacked on one of them is one chain of two and one chain of one, so the host links per chain rather than per batch — handing all three to one call would tell reviewers the independent lane is what the top layer builds on. A chain of one is not a stack, which is why an ordinary unstacked batch reaches the step and calls nothing.
+
+  **A gap in a chain is shown, never closed up.** A sub-lane that ends with nothing ahead of its base opens no pull request, while the sub-lane above it is still based on its branch — so a naive walk would hand the link the two pull requests either side of the hole and stack the upper on the lower. The walk stops at a sub-lane with no pull request: the runs either side are separate chains, and the gap is reported naming the sub-lane that produced none. Whether such a layer should run at all is a separate, still-open question and nothing here decides it.
+
+- [`8608647`](https://github.com/ieuanign/skills/commit/860864706166904815da7f5fb6a8bdd010eb25e2) Thanks [@ieuanign](https://github.com/ieuanign)! - `dev-loop`: two lanes editing the same lines are now sequenced, not declared dependent.
+
+  Gate 1's touchpoint intersection sorted every overlap into two outcomes: an additive shared file, where both lanes append to a registry and stay parallel, and a real dependency, where B consumes what A creates and gets stacked on it. A third case exists in practice and had no home — two lanes editing the same _region_ of a file, which is not a dependency at all but still cannot run concurrently without a textual conflict. It lived in a footnote a human had to remember.
+
+  It is now one of three outcomes the host applies:
+
+  - **additive co-touch** → stay in the same layer, note it, accept the trivial rebase
+  - **same-region co-touch** → the later lane drops to the next layer, based on the branch below, with **no dependency claimed**
+  - **real dependency** → B is stacked on A, and the discovered-blocker comment is posted to B's issue
+
+  The last two produce the same branch shape and differ only in what they assert. That is the whole point: only a real dependency posts the comment, and only a real dependency asks the human anything. Collapsing same-region into dependency would tell a reviewer that B builds on A when it does not, and leave a permanent, wrong comment on B's issue; collapsing it into additive would send two lanes at the same lines concurrently and hand someone an avoidable conflict.
+
+  This matters more now that a stack is a real object on GitHub rather than a sentence in a body — the claim gets published.
+
+  The classification stays the host's own work in plain reading, and the contract now says why no agent can take it: one architect runs per issue, in parallel, and none can see another lane's plan, so the intersection is inherently cross-lane. It is not a cost decision that a better agent could revisit.
+
+  Sequencing is what _avoids_ the conflict rather than deferring it — the later lane branches from the earlier one, so its writer opens the file with the earlier edit already in it. A next layer based on the trunk instead would hit the same conflict one layer later.
+
+- [#83](https://github.com/ieuanign/skills/pull/83) [`1ebab7a`](https://github.com/ieuanign/skills/commit/1ebab7a03a5eb638b725bda90cf7631087099c5b) Thanks [@ieuanign](https://github.com/ieuanign)! - `dev-loop`: an unattended run now stacks the way a supervised one does, with nobody there to be asked.
+
+  This is smaller than it sounds, because the supervised path never asked a human to _classify_ an overlap. The host does the intersection and the classification itself, in plain reading, with no agent and no prompt; the human is handed only the **remedy**, and only in the dependency case, choosing between stacking B on A — already marked recommended — and deferring B out of the batch.
+
+  So the unattended path needs no new judgement stage and no extra agent. It runs the identical intersection, applies the identical three outcomes, and takes the recommended remedy. Previously the suppression table answered that question with _defer it out of the batch_, deferred to a spec that did not exist yet; it now answers **stack B on A**.
+
+  **Defer drops out, and the contract says why rather than leaving it implied.** It is a human's "not this batch" — a scheduling judgement made from context the pipeline does not hold, about work someone wants to review this afternoon. Unattended there is nobody whose afternoon it is, and taking it would silently return less work than was asked for.
+
+  The discovered-blocker comment was already a machine action and carries over unchanged, so the reason a lane was stacked is still recorded on the issue. The same-region outcome still posts nothing, exactly as under supervision. At the end, the unattended conclusion links the batch's pull requests through the same bundled script with the same absent-extension fallback — that step asks nothing, so gate suppression never touches it and it has no row in the suppression table.
+
+  **Two costs are accepted and recorded rather than engineered around**, each with the failure it produces named, so neither is later mistaken for an oversight:
+
+  - A **misclassification is unattended**: a real dependency read as additive puts both lanes in the same layer, and B's worktree never contains A's code. That surfaces as a red suite gate or a failed writer in B's lane — an attributable, bounded failure the existing debugger path already handles, not a silent bad merge.
+  - A **same-region co-touch read as additive still conflicts when someone merges**. The run's job ends at the pull request, so that conflict lands on the human doing the merge, exactly where it lands today.
+
+### Patch Changes
+
+- [#80](https://github.com/ieuanign/skills/pull/80) [`fb28265`](https://github.com/ieuanign/skills/commit/fb282657db5c2175a1f52c6f062d34020eed2d4d) Thanks [@ieuanign](https://github.com/ieuanign)! - `dev-loop`: the pipeline gains a word for the chain, and stops using one word for two shapes.
+
+  It said **wave** for a set of lanes that run concurrently and had nothing at all for a chain of branches each based on the one below. Those are different shapes — a wave holding three independent lanes is not a chain of anything — so every sentence about ordering was ambiguous, and none of it lined up with the vocabulary a developer meets in `gh stack --help`.
+
+  The horizontal thing is now a **layer** and the vertical thing a **stack**, with a **trunk** at the bottom and a **top**. The rename is exhaustive across the skill, the contract and the phase scripts, and `CONTEXT.md` gains both terms — it defined neither before, so these are additions rather than rewrites.
+
+  Renaming wave → _stack_ was the original proposal and would have been wrong: it turns "wave 2 runs after wave 1" into "stack 2 runs after stack 1", which asserts the opposite of the truth. Those are two layers of one stack.
+
+  Nothing behaves differently. The layer rule reads exactly as the wave rule did — anything based on the trunk runs in layer 1, anything based on a branch that receives its commits in layer N runs in layer N+1.
+
+- [#86](https://github.com/ieuanign/skills/pull/86) [`6224482`](https://github.com/ieuanign/skills/commit/622448232798cfad44b48555e70418b463e7b882) Thanks [@ieuanign](https://github.com/ieuanign)! - `npm run check` now verifies the shell scripts, including the two the pipeline executes.
+
+  The repo's whole verification surface checked the plugin manifest, the phase scripts, the cost-stage vocabulary and version sync — and no shell script at all, though there are six. Two of them the pipeline invokes **by path at runtime**: `notify.sh` for every message under an unattended run, and `stack-link.sh` for Gate 2's stack linking. A syntax error in either was discovered when a lane tried to run it, mid-run, with no shell available to diagnose it. The phase scripts have had exactly this protection all along.
+
+  Two checks, in the shape the file already uses:
+
+  - **Syntax** — `bash -n` over every tracked `*.sh`.
+  - **Executable bit** — every `*.sh` under `skills/` must be recorded `100755` in git's index. The skill runs these by path, so one committed `644` is unrunnable while `bash -n` still passes. The index is the authority rather than the working tree, because that is what a consumer's install checks out and a local `chmod` that was never staged is precisely the case worth catching.
+
+  `shellcheck` is deliberately **not** adopted. It is a hard dependency nobody here has, and its findings on the six existing scripts are unverified — adding a check whose result has never been seen could only turn this suite red for a contributor who happens to have the tool. This is the **Full-suite command** `/dev-loop`'s suite gate runs, and `contracts.md` is explicit that a red result meaning nothing is worse than no result. It is worth proposing separately, once the existing scripts are known clean.
+
 ## 0.8.0
 
 ### Minor Changes
