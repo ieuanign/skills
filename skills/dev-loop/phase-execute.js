@@ -90,14 +90,15 @@ const ROLE_OF = { HALT: 'awaiting-human', FAILED: 'failed' }
 // transcripts afterwards, cares.
 //
 // The stage is the workflow phase the call is dispatched under, named in the cost baseline's own
-// vocabulary: Implement is `write`, Review is `review`, Suite is `suite`, Notify is `notify`. A
-// recovery is charged to the stage that needed it — a debugger called on a red suite is suite
-// cost, not a stage of its own — because the split exists to say which dial to turn, and the dial
-// for a red suite is the suite gate's.
+// vocabulary: Implement is `write`, Review is `review`, Suite is `suite`, Notify is `notify`.
+// These are COST stages, deliberately coarser than the Per-stage context contract's, which names
+// each role's turn: a recovery is charged to the stage that needed it, so a debugger called on a
+// red suite is suite cost rather than a stage of its own. The split exists to say which dial to
+// turn, and the dial for a red suite is the suite gate's.
 //
-// The vocabulary is shared with phase-plan.js and with cost-report.js, and each copy is written
+// The vocabulary is shared with phase-plan.js and with cost-report.mjs, and each copy is written
 // out in full: a phase script imports nothing, being compiled as one function over the runner's
-// globals. Add a stage in one and add it in all three.
+// globals. Add a stage in one and add it in all three — `npm run check` compares them.
 const STAGE = { PLAN: 'plan', WRITE: 'write', REVIEW: 'review', SUITE: 'suite', NOTIFY: 'notify' }
 const mark = (issue, stage) => `[dev-loop lane=${issue} stage=${stage}]\n`
 

@@ -108,10 +108,12 @@ every lane, whatever its ending, because improvement data collected only on the 
 exactly the lanes worth looking at. Nothing is posted to the issue or the PR, and a supervised run
 writes none.
 
-The same report runs by hand against any finished run's transcripts:
+The same report runs by hand against any finished run's transcripts. `cost-report.mjs` travels with
+the skill, so its folder is `skills/dev-loop/` in a checkout of this repo and the plugin's installed
+copy under `~/.claude/plugins/` otherwise:
 
 ```bash
-node skills/dev-loop/cost-report.mjs --issues 28,30 <transcriptDir>...
+node <skill-dir>/cost-report.mjs --issues 28,30 <transcriptDir>...
 ```
 
 ```

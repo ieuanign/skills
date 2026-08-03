@@ -35,9 +35,12 @@ const agentType = 'architecture-engineer'
 // identifies a lane in every OTHER stage's prompt, but planning runs before a plan file exists, so
 // the architect's prompt has no path to read — and planning is roughly three tenths of a lane.
 //
-// The vocabulary is shared with phase-execute.js and with cost-report.js, and each copy is written
-// out in full: a phase script imports nothing, being compiled as one function over the runner's
-// globals. Add a stage in one and add it in all three.
+// These are COST stages, coarser than the Per-stage context contract's, which names each role's
+// turn: a debugger's turn has no cost stage of its own and is charged to the stage that needed it.
+//
+// The vocabulary is shared with phase-execute.js and with cost-report.mjs, and each copy is
+// written out in full: a phase script imports nothing, being compiled as one function over the
+// runner's globals. Add a stage in one and add it in all three — `npm run check` compares them.
 const STAGE = { PLAN: 'plan', WRITE: 'write', REVIEW: 'review', SUITE: 'suite', NOTIFY: 'notify' }
 const mark = (issue, stage) => `[dev-loop lane=${issue} stage=${stage}]\n`
 
