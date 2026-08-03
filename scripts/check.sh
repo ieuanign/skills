@@ -49,6 +49,21 @@ while IFS= read -r script; do
   fi
 done < <(find "$REPO/skills" -name 'phase-*.js' -not -path '*/node_modules/*' | sort)
 
+# --- bundled ES modules ------------------------------------------------------
+# Supporting files a skill ships as real, importable modules — unlike the phase
+# scripts above, which parse only under the Workflow globals. `node --check` reads
+# the .mjs extension and parses them as modules, top-level await included.
+while IFS= read -r mod; do
+  rel="${mod#"$REPO/"}"
+  if out="$(node --check "$mod" 2>&1)"; then
+    echo "ok    syntax $rel"
+  else
+    echo "FAIL  syntax $rel" >&2
+    echo "$out" >&2
+    failed=1
+  fi
+done < <(find "$REPO/skills" -name '*.mjs' -not -path '*/node_modules/*' | sort)
+
 # --- version sync ------------------------------------------------------------
 # `claude plugin validate --strict` passes when these two drift apart.
 pkg_version="$(node -p "require('$REPO/package.json').version" 2>/dev/null)" || pkg_version=""
