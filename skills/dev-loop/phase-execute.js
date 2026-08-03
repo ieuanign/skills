@@ -133,7 +133,11 @@ function suitePrompt(sub) {
 
 // The give-up path's abandoned work: evidence, not work. Listed so the human sees it, never
 // counted — counting it would report `1 planned, 2 made` for a sub-lane that made one.
-const isWip = line => /^(\S+\s+)?wip[(:]/i.test(line.trim())
+// A commit line is free text the writer composed to the schema's "sha + message" description, so
+// the sha and whatever separator it chose are stripped before the prefix is read: `ddd1234 - wip(…)`
+// is the same commit as `ddd1234 wip(…)`, and a miscount here is the one thing the exclusion exists
+// to prevent.
+const isWip = line => /^\W*(?:[0-9a-f]{7,40}\b\W*)?wip[(:]/i.test(line)
 
 function absorb(rec, writerResult) {
   rec.commits.push(...(writerResult.commits || []))
