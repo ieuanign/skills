@@ -217,10 +217,13 @@ The pipeline's claim is that it is cheap enough to run on every issue; this is t
 
 Run `node <this-skill-dir>/cost-log.mjs` with the request piped in from a **quoted** heredoc (`<<'JSON'`), for the same reason every other payload in this skill is: it carries agent-generated free text — ending reasons, diagnoses — which a composed shell string mangles or executes. The request is one JSON object:
 
+- **`outDir`** — `<MAIN>/.scratch/<project>/cost`, ABSOLUTE, `<project>` being the same slug the run's plan paths use. One directory for the whole batch. You pass it because you are the one who knows where your scratch directory is and which slug this run used; omit it and it is derived from the first lane carrying a plan, which is the same place. A batch where no lane ever got a plan has nothing to derive from, and you get told nothing was written rather than a project slug being invented.
 - **`runs`** — the `transcriptDir` of EVERY Workflow call this batch made: Act 1's, plus each wave's Act 3. Miss one and the stages that ran in it are simply absent from every lane's split, with no line saying so.
 - **`lanes`** — the lane objects you already passed `phase-execute.js`, handed over rather than rebuilt (extra keys are ignored). **Every lane the run touched**, including one that ended, one that `crashed`, and one that got no further than Act 0 — a log only for the lanes that went well would hide exactly the lanes worth reading. Add each lane's `ending` from the phase-script result, which the log prints beside the cost.
 
-It writes `.scratch/<project>/cost/<issue>.md` — one file per lane, beside that lane's own plan, in the directory Act 0 has already guaranteed is gitignored. Not the issue: the per-lane comment is specified as an extremely concise summary plus open questions, and a cost table would bury it. It prints one summary line per lane on stdout; put those in your closing report, and leave the per-stage table in the file.
+There is deliberately **no key for the target**: this file's configuration rule refuses a per-run override of cost behaviour, and a target that can be passed in is one.
+
+It writes `<outDir>/<issue>.md`, one file per lane, in the directory Act 0 has already guaranteed is gitignored. Not the issue: the per-lane comment is specified as an extremely concise summary plus open questions, and a cost table would bury it. It prints one summary line per lane on stdout; put those in your closing report, and leave the per-stage table in the file.
 
 ## Cleanup mode (`/dev-loop cleanup`)
 

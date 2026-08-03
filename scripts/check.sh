@@ -64,6 +64,30 @@ while IFS= read -r mod; do
   fi
 done < <(find "$REPO/skills" -name '*.mjs' -not -path '*/node_modules/*' | sort)
 
+# --- the suite gate's prompt opening -----------------------------------------
+# The suite gate is dispatched with deliberately no agent type, so cost-log.mjs
+# names that stage from the opening sentence of phase-execute.js's suitePrompt().
+# A phase script imports nothing, so the two cannot share a constant, and without
+# this a reworded sentence would move the gate's spend into `other` in silence.
+if out="$(REPO="$REPO" node --input-type=module -e '
+const { readFile } = await import("node:fs/promises")
+const repo = process.env.REPO
+const { SUITE_OPENING } = await import(repo + "/skills/dev-loop/cost-log.mjs")
+const src = await readFile(repo + "/skills/dev-loop/phase-execute.js", "utf8")
+const body = src.split("function suitePrompt")[1] || ""
+const opening = (body.match(/return `([^\n`]*)/) || [])[1] || ""
+if (!opening) throw new Error("no suitePrompt() template literal found in phase-execute.js")
+if (!SUITE_OPENING.test(opening)) {
+  throw new Error("suitePrompt() opens with " + JSON.stringify(opening) + ", which SUITE_OPENING in cost-log.mjs does not match")
+}
+' 2>&1)"; then
+  echo "ok    suite-gate prompt opening"
+else
+  echo "FAIL  suite-gate prompt opening" >&2
+  echo "$out" >&2
+  failed=1
+fi
+
 # --- version sync ------------------------------------------------------------
 # `claude plugin validate --strict` passes when these two drift apart.
 pkg_version="$(node -p "require('$REPO/package.json').version" 2>/dev/null)" || pkg_version=""
