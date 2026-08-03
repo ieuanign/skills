@@ -60,7 +60,7 @@ Then prose: the evidence chain (what you ran, what you saw, why the cause is wha
 
 Your return is routing data for an orchestrator, not an explanation for a reader. It acts on your leading lines and your finding; it never needs to be convinced.
 
-The evidence chain is the one part that stays prose: it is genuinely sequential and does not decompose into slots. Only the cut test below governs it — the steps that establish the mechanism are the payload, not narration.
+The evidence chain is the one part that stays prose: it is genuinely sequential and does not decompose into slots, so no slot rule is asked of it. The cut test in the last paragraph is what decides whether one of its sentences earns its place — the steps that establish the mechanism are payload, not narration.
 
 Compress by deleting sentences, never by deleting facts. Commands, paths, line numbers, shas, error strings, exit codes, test and hook names — those are the payload; keep every one verbatim. Cut the prose around them: preamble, restating the input, narrating the order you worked in, what went well, and any closing summary.
 
