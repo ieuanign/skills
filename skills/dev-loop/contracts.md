@@ -166,12 +166,47 @@ An ended sub-lane's disposition is decided by mode, and decided per sub-lane. Th
 |---|---|---|
 | Push | at Gate 2, on the human's approval | yes |
 | Pull request | none by default — Gate 2 offers "open a draft PR anyway?" | draft |
-| Worktree | kept, for review or resume | removed |
 | Explanation | the CLI response | the pull request body |
 
-The explanation is identical in both: what stopped or what broke, its stage, the diagnosis if a debugger produced one, and the attempt log in order. Mode changes where it is written, never what it says.
+The explanation is identical in both: what stopped or what broke, its stage, the diagnosis if a debugger produced one, and the attempt log in order. Mode changes where it is written, never what it says. The worktree row this table used to carry is now one row of the worktree invariant below, which covers every sub-lane state rather than only an ended one.
 
 **One exception, and only one.** A sub-lane where nothing landed at all — the writer stopped before changing a file, so there is not even a `wip:` commit — has no branch ahead of its base: nothing to push, and no pull request to open. Whether the branch is ahead is read from git, never inferred from a reported commit list. Under unattended its explanation is commented on the issue instead, which the append-only invariant permits. This is the only ending in the pipeline that opens no pull request.
+
+### Push — once per sub-lane, at the end of its wave
+
+A sub-lane's branch reaches the remote exactly once, and never before its own work is finished. A sub-lane that concluded clean pushes immediately before its pull request is created; one that ended performs that same single push, and what follows it is the mode table above. A lane with one sub-lane — the common case — therefore pushes once.
+
+**The push is guarded on the branch being ahead of its base, read from git.** A sub-lane that ended before it committed anything has nothing to push, and a push attempted anyway is an error the run does not need. This is the same read the exception above rests on, made once and used for both decisions.
+
+**Never a force-push, in either mode.** Fix cycles append commits and a resumed lane derives its already-done commits from the git log, so every push this pipeline makes is a fast-forward. There is consequently no case in which forcing is the fix, and no ceiling, ending or absent human that unlocks it. A rejected push stops that sub-lane's conclusion where it stands: no pull request is created, the worktree is **kept**, and git's own message is reported verbatim. It is reported **FAILED** — the pipeline's own assumption broke, which is a break and not a verdict about the code.
+
+**Per-commit push is not implementable, and is not to be re-proposed.** The whole commit loop runs inside a single workflow call and a workflow script has no shell, so the host's first control point is that call returning. Reaching it otherwise would mean either changing the writer's contract — it never pushes — or spending an agent invocation on one git command, which the skill's hard rules forbid in terms. Nothing consumes an intermediate push either: no workflow in these repositories triggers on a feature-branch push, and the reviewer diffs local refs.
+
+**Accepted cost, recorded rather than solved.** This version is always one wave, so the end of a wave is the end of the run: a three-issue batch holds the first-finished sub-lane's pull request until the slowest one ends. Rejected: one workflow call per lane launched in the background, which buys per-lane immediacy at the cost of the host juggling several background tasks, each carrying its own concurrency cap independently.
+
+### The worktree invariant
+
+> A sub-lane's worktree is removed when, and only when, its work has reached the remote **and no human is expected to resume in it**.
+
+| Sub-lane state | Remote | Worktree |
+|---|---|---|
+| Concluded clean | pushed, pull request opened | removed |
+| Ended, unattended | pushed, draft pull request | removed |
+| Ended, gated | pushed, no pull request | **kept** |
+| Held at Gate 2 | nothing pushed | kept |
+| Removal refused | pushed | kept, reported |
+
+Two rules make this safe, and neither is negotiable.
+
+**Push succeeds first, remove second.** After removal the remote branch is the only copy, so a push that did not succeed keeps the worktree. Nothing removes a worktree it did not just watch a push succeed for.
+
+**A dirty worktree keeps itself.** A writer that failed may have left uncommitted work, and a push carries only commits. `git worktree remove` without `--force` already refuses on tracked modifications or on untracked non-ignored files, and that refusal *is* the guard — the pipeline never passes `--force`, so it can never talk its way past one. Ignored files, such as the configuration and dependency directories provisioning copies in, do not trip it.
+
+The invariant's **second** condition is what keeps a `gated` ended sub-lane's worktree: a human is present and is expected to pick that branch up in that checkout, and re-provisioning a worktree that already exists on their machine buys nothing and costs them a step. Under `unattended` nobody is there to resume, so the condition is vacuous and removal proceeds. The held row falls out of the **first** condition rather than needing a rule of its own: a held sub-lane has pushed nothing, so removing it would destroy work that exists nowhere else.
+
+**The main worktree is never a removal candidate** — not under any state above, in either mode, and not in cleanup mode either. It is the first entry of `git worktree list`, and every removal path confirms the path it is about to remove is not that entry before running anything.
+
+A removed worktree is not lost work: a resumed lane re-provisions from the branch, which the provisioning step already documents for exactly this case.
 
 **gated** — the default: a human concludes the lane.
 
