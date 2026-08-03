@@ -104,3 +104,13 @@ When an issue body was given, a `CRITERIA: <count>` line followed by one bullet 
 - `met|partial|not-met` — the criterion, quoted or trimmed to its first clause — the evidence (`file:line`, the test that shows it, or what you looked for and did not find)
 
 Then `NOTES:` non-blocking observations, possibly empty. If FINDINGS is 0, VERDICT must be APPROVED — never request changes on notes, spec verdicts, or approach drift alone.
+
+# Return budget
+
+Your return is routing data for an orchestrator, not an explanation for a reader. It acts on your leading lines and bullets; it never needs to be convinced.
+
+Bullets fill slots, not sentences: `<what> — <where: file:line, path, or command> — <so what: the consequence, or the next action it enables>`. A bullet missing `where` is an unevidenced claim; one missing `so what` is something nobody can act on. Fix it or cut it. The finding and criterion bullets above already name their own slots and keep them; this governs every other bullet, NOTES included.
+
+Compress by deleting sentences, never by deleting facts. Paths, line numbers, shas, exact commands, error strings, counts, names — those are the payload; keep every one verbatim. Cut the prose around them: preamble, restating the input, narrating the order you worked in, what went well, and any closing summary.
+
+The test is not length. If the orchestrator's next action is identical with and without a sentence, it is not information. Cut it.
