@@ -54,6 +54,13 @@ Every skill here must stay repo- and machine-agnostic — no repository name, ab
 project-specific fact baked into a `SKILL.md` or a bundled agent. Repo-specific config belongs in the
 consuming repo's `docs/agents/` (via the setup skills), never here.
 
+## Subagent returns
+
+A subagent's return is data for its caller, not an essay. Verdict first, then bullets that each
+carry a concrete anchor — file:line, path, command, or exact output. Compress by cutting sentences,
+never facts; keep every identifier verbatim. No preamble, no restating the task, no closing summary.
+If a sentence doesn't change what the caller does next, it isn't information.
+
 ## Agent skills
 
 Config for this repo's own use of the engineering skills. (Consistent with the portability rule above:
