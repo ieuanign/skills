@@ -49,6 +49,51 @@ while IFS= read -r script; do
   fi
 done < <(find "$REPO/skills" -name 'phase-*.js' -not -path '*/node_modules/*' | sort)
 
+# --- shell script syntax -----------------------------------------------------
+# `bash -n` parses without executing. It covers the repo's own scripts and, more
+# to the point, the two the PIPELINE executes by path at runtime —
+# skills/dev-loop/notify.sh and stack-link.sh. A syntax error in either used to
+# surface when a lane tried to run it, mid-run, with no shell there to diagnose
+# it; the phase scripts above have had this protection all along.
+#
+# Deliberately NOT shellcheck. It is a hard dependency nobody here has, and its
+# findings on the existing scripts are unverified — a check whose result has
+# never been seen can only turn this suite red for the contributor unlucky
+# enough to have the tool. This IS the repo's full-suite command, and a red
+# result that means nothing is worse than no result. Propose it separately, once
+# the existing scripts are known clean.
+#
+# `git ls-files` rather than `find`: only tracked scripts are the repo's problem,
+# which keeps a scratch script in a working tree from failing everyone's run.
+while IFS= read -r script; do
+  if out="$(bash -n "$REPO/$script" 2>&1)"; then
+    echo "ok    syntax $script"
+  else
+    echo "FAIL  syntax $script" >&2
+    echo "$out" >&2
+    failed=1
+  fi
+done < <(git -C "$REPO" ls-files '*.sh' | sort)
+
+# --- bundled script executability --------------------------------------------
+# The skill invokes its bundled scripts BY PATH, so one committed 644 is
+# unrunnable while `bash -n` still passes — a different failure with the same
+# blast radius, and invisible to every other check here.
+#
+# The index is the authority, not the working tree: git records the executable
+# bit and that is what a consumer's `/plugin install` checks out. A local chmod
+# that was never staged is exactly the case this must still catch.
+while IFS= read -r entry; do
+  mode="${entry%% *}"
+  path="${entry#* }"
+  if [ "$mode" = "100755" ]; then
+    echo "ok    executable $path"
+  else
+    echo "FAIL  executable $path: recorded $mode, expected 100755 — the skill runs it by path" >&2
+    failed=1
+  fi
+done < <(git -C "$REPO" ls-files -s -- 'skills/*.sh' | awk '{print $1, $4}' | sort -k2)
+
 # --- bundled module syntax ---------------------------------------------------
 # Ordinary ESM a host runs with node, unlike the phase scripts above — so plain
 # `node --check` is the right tool and the AsyncFunction shim is not.
