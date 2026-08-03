@@ -101,6 +101,30 @@ Outbound sending is safe to run concurrently with anything else using the same b
 Without step 1 you get messages but no labels; without step 2, labels but no messages; without
 either, a run that works in silence. No notification failure ever changes a lane's outcome.
 
+#### Reading what a run cost
+
+`skills/dev-loop/cost-report.mjs` says what a lane cost and which stage spent it, reading the
+per-agent transcripts a finished run left behind:
+
+```bash
+node skills/dev-loop/cost-report.mjs --issues 28,30 <transcriptDir>...
+```
+
+```
+#28
+Cost: 641K excluding cache reads (target 608K, +5%)
+  write 44% · plan 29% · review 27% · suite 0.4%
+```
+
+Pass every transcript directory the run produced — planning and execution are separate workflow
+invocations with a directory each, and a lane's records are spread across them. Give it the issue
+numbers the run was asked to work; a lane with no records says it was not measured rather than
+reporting a total of zero.
+
+The target is the median measured across 63 supervised lanes and is a constant in the script — it
+exists so the report can print a signed percentage, and it gates nothing. **Nothing halts, warns,
+or behaves differently because of what a lane costs.** The report reads and prints; that is all.
+
 You are the orchestrator; the agent roster does the work:
 
 | Agent | Role |

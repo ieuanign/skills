@@ -49,6 +49,20 @@ while IFS= read -r script; do
   fi
 done < <(find "$REPO/skills" -name 'phase-*.js' -not -path '*/node_modules/*' | sort)
 
+# --- bundled module syntax ---------------------------------------------------
+# Ordinary ESM a host runs with node, unlike the phase scripts above — so plain
+# `node --check` is the right tool and the AsyncFunction shim is not.
+while IFS= read -r module; do
+  rel="${module#"$REPO/"}"
+  if out="$(node --check "$module" 2>&1)"; then
+    echo "ok    syntax $rel"
+  else
+    echo "FAIL  syntax $rel" >&2
+    echo "$out" >&2
+    failed=1
+  fi
+done < <(find "$REPO/skills" -name '*.mjs' -not -path '*/node_modules/*' | sort)
+
 # --- version sync ------------------------------------------------------------
 # `claude plugin validate --strict` passes when these two drift apart.
 pkg_version="$(node -p "require('$REPO/package.json').version" 2>/dev/null)" || pkg_version=""
