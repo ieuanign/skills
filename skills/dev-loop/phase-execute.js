@@ -33,9 +33,10 @@ export const meta = {
 // ended the sub-lane. 'not-run' is a state of its own and is never reported as passed.
 // attempts: [{stage, trigger, debugger, outcome}] — the ledger's attempt log, recorded on every
 // sub-lane and rendered only on one that ended. A wip: commit is listed but never counted.
-// terminal: {pr: 'ready'|'draft'|'none', push: bool, reasons: [why it is not ready]} — the
-// terminal-state table's row for this sub-lane, read under unattended mode. It is a PROPOSAL:
-// the host runs the ahead-of-base read and git is the authority on the push column.
+// terminal: {pr: 'ready'|'draft'|'none', reasons: [why it is not ready]} — the terminal-state
+// table's row for this sub-lane, read under unattended mode only; under gated the human at
+// Gate 2 decides and this is not consulted. The push column is absent on purpose: git alone
+// decides it, and the host's ahead-of-base read overrides `pr` when the two disagree.
 
 // The harness may deliver args as a JSON string; normalize to an object.
 const input = typeof args === 'string' ? JSON.parse(args) : args
@@ -215,12 +216,13 @@ function terminalState(rec) {
     // partial and not-met both land here: nobody watched, so "not demonstrably done" drafts.
     reasons.push(`${unmet.length} acceptance criterion(s) not met — ${unmet.map(v => `${v.verdict}: ${v.criterion}`).join('; ')}`)
   }
-  if (!reasons.length) return { pr: 'ready', push: true, reasons }
+  if (!reasons.length) return { pr: 'ready', reasons }
   // Only an ENDED sub-lane can propose the no-PR row. A clean sub-lane that reported no commits
   // is a resume whose commits were already in the log, so its branch is ahead of its base and it
-  // is owed a real pull request. Either way git decides the push; this is the proposal.
-  if (rec.ending && !rec.commits.length) return { pr: 'none', push: false, reasons }
-  return { pr: 'draft', push: true, reasons }
+  // is owed a real pull request. The push column is not proposed at all: git alone decides it,
+  // and the host's ahead-of-base read overrides this row when the two disagree.
+  if (rec.ending && !rec.commits.length) return { pr: 'none', reasons }
+  return { pr: 'draft', reasons }
 }
 
 const laneResults = await parallel(input.lanes.map(lane => async () => {
@@ -294,16 +296,21 @@ const laneResults = await parallel(input.lanes.map(lane => async () => {
       // last review's verdicts win. Read nowhere else in this file — the spec axis is
       // reported, never blocking, so nothing branches on them.
       rec.criterionVerdicts = review.criterionVerdicts || []
-      if (review.contestedFindings && review.contestedFindings.length) {
-        return halt(rec, `contested findings — reviewer still confirms ${review.contestedFindings.length} finding(s) the writer disputed`,
-          { contested: review.contestedFindings, disputes, openFindings: review.contestedFindings })
+      const contested = review.contestedFindings || []
+      // Everything this review leaves open, recorded the moment it is known rather than at each
+      // ending that reads it. One assignment per review, so an exit added to this loop later
+      // cannot forget to record it and quietly report the findings as resolved.
+      rec.openFindings = contested.length ? contested
+        : review.verdict === 'APPROVED' ? [] : (review.findings || [])
+      if (contested.length) {
+        return halt(rec, `contested findings — reviewer still confirms ${contested.length} finding(s) the writer disputed`,
+          { contested, disputes })
       }
       if (disputes.length) rec.wontFix.push(...disputes) // reviewer retracted them — documented won't-fix
       disputes = []
       if (review.verdict === 'APPROVED') break
       if (cycles >= MAX_FIX) {
-        return halt(rec, `still CHANGES_REQUESTED after ${MAX_FIX} fix cycles — the findings are still open`,
-          { review, openFindings: review.findings })
+        return halt(rec, `still CHANGES_REQUESTED after ${MAX_FIX} fix cycles — the findings are still open`, { review })
       }
       cycles++
       const attempt = attemptOf(rec, 'Review', `CHANGES_REQUESTED — ${review.findings.length} finding(s), fix cycle ${cycles} of ${MAX_FIX}`)
@@ -316,8 +323,7 @@ const laneResults = await parallel(input.lanes.map(lane => async () => {
         if (fix) absorb(rec, fix) // it may have committed some of them before stopping
         const reason = `fix cycle ${cycles} returned ${fix ? fix.result : 'nothing'}${fix && fix.disputed ? ` (DISPUTED: ${fix.disputed})` : ''}`
         const stopped = fix && fix.result === 'BLOCKED' // a reasoned refusal, not a break
-        // The cycle never completed, so none of this review's findings is resolved.
-        return (stopped ? halt : failed)(rec, reason, { review, fix, openFindings: review.findings })
+        return (stopped ? halt : failed)(rec, reason, { review, fix })
       }
       absorb(rec, fix)
       disputes = fix.disputedFindings || []

@@ -35,7 +35,7 @@ One question selects the role: **did the run reach a reasoned conclusion, or did
 
 The first two rows overlap, because a break now opens a draft pull request too. **failed wins**: a break is a break whatever it produced, and the question that role answers is the one a dead reviewer leaves open.
 
-The in-progress role is removed in every one of the three, including the one that applies nothing. Which endings open a ready pull request rather than a draft one is the terminal-state table's, specified separately over `contracts.md`'s endings — never over their labels, which decide nothing.
+The in-progress role is removed in every one of the three, including the one that applies nothing. Which endings open a ready pull request rather than a draft one is `contracts.md`'s **terminal-state table**, which reads a sub-lane's ending — never its label, which decides nothing.
 
 Two properties fall out of that question rather than being designed in:
 

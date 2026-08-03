@@ -192,7 +192,7 @@ A sub-lane's branch reaches the remote exactly once, and never before its own wo
 
 **Never a force-push, in either mode.** Fix cycles append commits and a resumed lane derives its already-done commits from the git log, so every push this pipeline makes is a fast-forward. There is consequently no case in which forcing is the fix, and no ceiling, ending or absent human that unlocks it. A rejected push stops that sub-lane's conclusion where it stands: no pull request is created, the worktree is **kept**, and git's own message is reported verbatim. It is reported **FAILED** — the pipeline's own assumption broke, which is a break and not a verdict about the code.
 
-**Per-commit push is not implementable, and is not to be re-proposed.** The whole commit loop runs inside a single workflow call and a workflow script has no shell, so the host's first control point is that call returning. Reaching it otherwise would mean either changing the writer's contract — it never pushes — or spending an agent invocation on one git command, which the skill's hard rules forbid in terms. Nothing consumes an intermediate push either: no workflow in these repositories triggers on a feature-branch push, and the reviewer diffs local refs.
+**Per-commit push is not implementable, and is not to be re-proposed.** The whole commit loop runs inside a single workflow call and a workflow script has no shell, so the host's first control point is that call returning. Reaching it otherwise would mean either changing the writer's contract — it never pushes — or spending an agent invocation on one git command, which the skill's hard rules forbid in terms. Nothing in this pipeline consumes an intermediate push either — the reviewer diffs local refs — so the only thing one could feed is a repository's own push-triggered CI, which gains nothing from being run against a branch the pipeline is still committing to.
 
 **Accepted cost, recorded rather than solved.** This version is always one wave, so the end of a wave is the end of the run: a three-issue batch holds the first-finished sub-lane's pull request until the slowest one ends. Rejected: one workflow call per lane launched in the background, which buys per-lane immediacy at the cost of the host juggling several background tasks, each carrying its own concurrency cap independently.
 
@@ -204,7 +204,7 @@ A sub-lane's branch reaches the remote exactly once, and never before its own wo
 |---|---|---|
 | Concluded clean | pushed, pull request opened | removed |
 | Ended, unattended | pushed, draft pull request | removed |
-| Ended, gated | pushed, no pull request | **kept** |
+| Ended, gated | pushed, no pull request by default | **kept** |
 | Held at Gate 2 | nothing pushed | kept |
 | Removal refused | pushed | kept, reported |
 
