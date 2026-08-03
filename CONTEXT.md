@@ -16,7 +16,7 @@ The issue-to-PR pipeline. An **orchestrator** skill that stays in the main workt
 
 ## Agent roster
 
-The four subagents this plugin ships from `agents/` at its root: `architecture-engineer`, `code-writer`, `reviewer`, and `debugger`. They install with the plugin and are dispatched by name; nothing is copied into the consuming repo.
+The five subagents this plugin ships from `agents/` at its root: `architecture-engineer`, `code-writer`, `reviewer`, `debugger`, and `notifier`. They install with the plugin and are dispatched by name; nothing is copied into the consuming repo. The first four are dispatched by the orchestrator or a phase script for the work they do; `notifier` alone is dispatched only from inside a running phase script, and only under an unattended run, because that is the one moment the orchestrator has no shell.
 
 ## Coding standards
 

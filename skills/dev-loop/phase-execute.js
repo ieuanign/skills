@@ -11,7 +11,9 @@ export const meta = {
 }
 
 // args: {
-//   lanes: [{ issue, issueBody, planPath, subLanes: [{ branch, worktree, base, area?, commits: [{ordinal, message}] }] }],
+//   lanes: [{ issue, issueBody, planPath, notified?, subLanes: [{ branch, worktree, base, area?, commits: [{ordinal, message}] }] }],
+//     notified: true when an EARLIER wave already dispatched the notifier for this lane. A lane's
+//     ending is written once per run, not once per wave; the host carries the flag forward.
 //   mode: 'gated' | 'unattended',
 //   maxFixCycles: number,  // the profile's Fix cycles key; absent ⇒ the profile's default of 2
 //   suiteCommand: string,  // the profile's Full-suite command; 'none' or absent ⇒ every suite is not-run
@@ -128,6 +130,20 @@ const SUITE_SCHEMA = {
     output: { type: 'string', description: "the command's output, trimmed to the failing portion if it is long" },
   },
   required: ['state', 'failing', 'output'],
+}
+// Mirrors the notifier's return contract. `label` is the only key anything reads: the host's
+// conclusion leaves a label standing ONLY when one was actually applied, so a notifier that
+// failed — or that skipped, the repository having no string for that role — must not be able to
+// report success. Getting this wrong removes in-progress and replaces it with nothing.
+const NOTIFY_SCHEMA = {
+  type: 'object',
+  properties: {
+    label: { type: 'string', enum: ['applied', 'skipped', 'failed'], description: 'skipped = the repository documents no label string for this role' },
+    comment: { type: 'string', enum: ['posted', 'failed'] },
+    message: { type: 'string', enum: ['sent', 'silent', 'failed'], description: 'silent = the channel is not configured, which is a supported state' },
+    detail: { type: 'string', description: 'the label string applied, or what went wrong' },
+  },
+  required: ['label'],
 }
 const DEBUG_SCHEMA = {
   type: 'object',
@@ -250,6 +266,8 @@ function terminalState(rec) {
 // What a throw leaves behind, said honestly. A genuinely dead agent often throws a bare value
 // carrying neither a message nor a stack, so this promises a trace only where one exists: a
 // reason reading "stack trace: undefined" sends a human looking for something that never existed.
+// phase-plan.js carries the same shape and cannot share this one — a phase script imports
+// nothing, being compiled as a single function over the runner's globals.
 function crashReason(err) {
   const stack = err && typeof err.stack === 'string' ? err.stack.trim() : ''
   const message = err && typeof err.message === 'string' ? err.message.trim() : ''
@@ -283,9 +301,15 @@ async function notify(lane, ending) {
       `<<<<ENDING\n${ending.reason}\nENDING>>>>\n` +
       `The specification governing every write you make: ${skillDir}/notifications.md — read it first.\n` +
       `The send mechanism, which reads its payload on standard input: ${skillDir}/notify.sh`,
-      { agentType: 'notifier', label: `notify:#${lane.issue}`, phase: 'Notify', model: 'haiku', effort: 'low' }
+      { agentType: 'notifier', label: `notify:#${lane.issue}`, phase: 'Notify', model: 'haiku', effort: 'low', schema: NOTIFY_SCHEMA }
     )
-    return Boolean(notified)
+    // Dispatched is not written. Only an APPLIED label makes the host stand back — a notifier
+    // that died, failed its edit, or found no string for the role leaves the label to the host,
+    // which is the difference between one verdict and none at all.
+    if (notified && notified.label !== 'applied') {
+      log(`#${lane.issue}: the notifier did not apply a label (${notified.label}) — the host will`)
+    }
+    return Boolean(notified && notified.label === 'applied')
   } catch {
     // Best-effort by specification: a lane's ending stands whatever happened to the writes
     // reporting it, and a notification that threw must never be attributed as a lane crash.
@@ -512,7 +536,14 @@ const laneThunk = lane => async () => {
     // Here, and not at any of the ending sites above: one dispatch per lane, because the label is
     // per issue. It fires as THIS lane returns, so a lane that ends at minute three is written up
     // then rather than waiting on a sibling that runs for another forty.
-    if (result.ending) result.notified = await notify(lane, result.ending)
+    //
+    // Once per RUN, not once per wave. A lane whose sub-lanes span waves reaches this script
+    // again in the next wave; without lane.notified it would post a second ending comment,
+    // against the specification's one-comment-per-kind rule, and would then report notified:false
+    // to a host that had already been told true — earning the ended lane a second, contradicting
+    // label. The host carries the flag forward between waves; this honours it.
+    if (result.ending && !lane.notified) result.notified = await notify(lane, result.ending)
+    else if (lane.notified) result.notified = true
     return result
   } catch (err) {
     const reason = crashReason(err)

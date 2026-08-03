@@ -42,12 +42,11 @@ A gate's `PushNotification` goes with its question — it exists to summon someo
 
 ### How you write a ⟨notify⟩ event — the mechanism only
 
-`notifications.md` decides what each event says and which label role it takes. This says only how to run it, and applies to every ⟨notify⟩ boundary below.
+Read `notifications.md` before you emit anything. It decides what each event says, which label role it takes, in what order, and what happens when a write fails — and this section adds none of that. What follows is the command for each, and nothing else.
 
-- **Labels are `gh issue edit <n> --add-label/--remove-label`.** Resolve the three roles — in-progress, awaiting-human, failed — to label strings ONCE at Act 0, through the repo's own `docs/agents/triage-labels.md`. Roles never appear as strings in this skill: a repository keeps its own vocabulary. **A role that file gives no string for is skipped silently** for the whole run — seeding labels is that repository's setup work, and inventing one creates a label nobody's tooling knows.
-- **Comments are `gh issue comment <n> --body-file -`**, with the body piped in from a **quoted** heredoc (`<<'BODY'`). Never `--body "<text>"`: the bodies carry agent-generated free text — reasons, diagnoses, stack traces — full of backticks, dollar signs and quotes, which a composed shell string mangles or executes.
-- **Messages are `<this-skill-dir>/notify.sh`**, which reads its payload on standard input for the same reason. Feed it the same way: `<this-skill-dir>/notify.sh <<'MSG' … MSG`. It is silent, and exits 0, when the channel is not configured — that is a supported state, so never check for it, never ask about it, and never add a profile key for it.
-- **Labels are crash-safe; messaging is best-effort.** Neither costs tokens. A label write goes before the tokens it guards, so a session that dies still leaves the marker. A `gh` or messaging failure is reported and never stops, fails, or changes a lane.
+- **A label is `gh issue edit <n> --add-label/--remove-label`.** Resolve its three roles to strings ONCE at Act 0, through the repo's own `docs/agents/triage-labels.md`, per that file's roles-never-strings rule. No label string is ever written into this skill.
+- **A comment is `gh issue comment <n> --body-file -`**, with the body piped in from a **quoted** heredoc (`<<'BODY'`). Never `--body "<text>"`: the bodies carry agent-generated free text — reasons, diagnoses, stack traces — full of backticks, dollar signs and quotes, which a composed shell string mangles or executes.
+- **A message is `<this-skill-dir>/notify.sh <<'MSG' … MSG`**, which reads its payload on standard input for that same reason. It implements the specification's channel contract, so an unconfigured channel is already handled inside it: never check for one, never ask about it, and never add a profile key for it.
 
 Touchpoint intersection, sub-lane splitting, the profile's Constraints, the push and the PR itself are gate *work*, and happen identically under both modes. The one-time ask-then-persist preconditions are not gates and fire under both. What a sub-lane's *ending* means for its PR's state — ready, draft, or none — is contracts.md's **terminal-state table**, which the phase script has already applied: every sub-lane result carries a `terminal` of `{pr, push, reasons}`, so under `unattended` you open what it names rather than deciding it here.
 
@@ -163,7 +162,7 @@ Build each sub-lane's `commits` from the plan's `## Commit / PR breakdown`: the 
 
 Per lane (lanes parallel; sub-lanes and commits sequential): writer Mode 1 per commit → on FAILED the debugger diagnoses and routes → reviewer on the sub-lane's range, with the issue body in for its Spec axis → fix cycles with dispute/arbitration handling → the suite gate on the sub-lane's worktree, a red suite diagnosed by the debugger before any writer fix and re-run under its own bounds → commit-breakdown check. The Spec axis's per-criterion verdicts are reported and never blocking — like the commit-breakdown counts, they ride out to Gate 2 and the PR body without ever triggering a fix cycle or halting a lane. Every loop is bounded and every bound, route, and ending is in contracts.md — enforce them exactly. Each sub-lane finishes clean or ends carrying one of contracts.md's two labels: **HALT** (something deliberately stopped) or **FAILED** (something broke). Report the ending in those words, with its stage and its attempt log; the label explains and **decides nothing** — Gate 2 disposes of an ended sub-lane the same way whichever label it carries. An ending ends its own sub-lane, so the lane's later sub-lanes still run and no ending kills the batch.
 
-Mode W's per-LANE result carries two flags Gate 2's step 4 reads and nothing else does: `crashed`, true when that lane's closure threw, and `notified`, true when the notifier already wrote that lane's label at its ending. Together they say which of the conclusion's label rows applies without your having to reconstruct it from prose. Under `gated` both are always false — nothing writes a label there.
+Mode W's per-LANE result carries two flags Gate 2's step 4 reads and nothing else does: `crashed`, true when that lane's closure threw, and `notified`, true when the notifier **applied** that lane's label at its ending — never merely attempted it. Under `gated` both are always false, nothing writing a label there. Each lane's arg accepts `notified` back, so a lane whose sub-lanes span waves is not notified twice; carry it from the previous wave's result.
 
 Mode W's per-sub-lane result carries a `terminal` of `{pr: 'ready'|'draft'|'none', reasons}` — contracts.md's terminal-state table, already applied to that sub-lane's own inputs. Carry it to Gate 2 unchanged: under `unattended` it is what step 2 below opens, and `reasons` is what a draft PR body explains itself with. It carries no push column, because git decides that and you ask git in step 1. Mode A needs no equivalent, and neither does a `gated` run: there the human at Gate 2 decides, and the table is not read.
 
@@ -191,16 +190,18 @@ Gate 2 fires at the end of EVERY wave, for every sub-lane that wave finished —
 
 4. **⟨notify⟩ Lane conclusion.** Once every sub-lane of a lane has been through steps 1–3, close that lane. Per lane, not per sub-lane — the label is per issue — and at the lane's LAST wave, so a lane whose sub-lanes span waves closes once rather than once a wave.
 
-   **Remove the in-progress label, without exception**: finished, ended or thrown, the lane is no longer in progress. Then exactly one rule decides what replaces it, and the phase-script result already holds every input it needs:
+   **Remove the in-progress label, without exception**: finished, ended or thrown, the lane is no longer in progress. What replaces it — if anything — is `notifications.md`'s label rule, which is stated there and not here. Your job is to know which of its cases this lane is in, and the phase-script result already says, so nothing is inferred from prose:
 
-   | The lane | Label |
+   | The result says | Which case you are in |
    |---|---|
-   | `crashed: true` — its closure threw | **failed**; its attributed ending names the issue and carries the error, so the label has something to point at. This is the case that used to leave no trace at all. |
-   | `notified: true` — the notifier already labelled it at its ending | **leave it standing.** Remove in-progress if it is somehow still there and write nothing else — a second verdict over the first is how the two writers disagree in public. |
-   | neither, and any sub-lane's PR opened `--draft` | **awaiting-human.** With no ending there was no notifier, so this is the host's to write; the only draft that reaches here is one an unmet acceptance criterion produced on an otherwise clean sub-lane. |
-   | neither, and every PR opened ready | **none.** Nothing needs a human beyond the merge. |
+   | `notified: true` | the notifier already applied this lane's label at its ending. **Write nothing else** — a second verdict over the first is how two writers come to disagree in public. It is true only when a label actually landed, so `false` on an ended lane means the write did not happen and the case below applies. |
+   | `crashed: true` | the lane's closure threw. Its attributed ending names the issue and carries the error, so the rule's break arm has something to point at. |
+   | neither, and any sub-lane's `terminal.pr` was `draft` | a draft with no ending behind it — the rule names this one explicitly, and it is the host's precisely because no notifier ran. |
+   | neither, and every PR opened ready | the rule's no-label case. |
 
    Then **send exactly one closing message**, carrying each PR's link and whether it opened ready or draft. Unconditional, including for a lane with no PR at all: paired with Act 0's started message it is the run's dead-session signal, since a start with no close — plus an issue still wearing in-progress — is a run that died where no code could catch it. A message that says nothing interesting still says the lane is over.
+
+   A lane whose sub-lanes span waves reaches this step once, at its last. Carry its `notified` forward into the next wave's args so its ending is written once per run rather than once per wave.
 
    **What this cannot cover** is the session itself stopping: a rate limit, a closed terminal, a sleeping machine. No code runs, so nothing is caught, and only what already reached GitHub survives — which is why Act 0 writes the label before it spends a token. A watchdog is deliberately out of scope; the human typed this command and can see their own terminal.
 
