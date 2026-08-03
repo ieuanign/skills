@@ -179,11 +179,16 @@ Ended sub-lanes: report the label (**HALT** — something deliberately stopped; 
 
 ## Cleanup mode (`/dev-loop cleanup`)
 
+Cleanup reaps what has an exact done-signal and **lists** what does not. It is safe to run at any time, including while another batch is mid-wave, and that is the property to preserve.
+
+**It removes no worktree.** Every normal path now removes its own the moment its work reaches the remote (contracts.md's **worktree invariant**), so a worktree still standing is one nothing proved done. The old scan proved it with "the branch is merged", which is not the same claim: a branch merges the moment its PR lands, which says nothing about whether the run holding that checkout has finished with it — so the scan could delete an active worktree out from under a run still in flight, and would look like it was working correctly while doing it.
+
 1. `git fetch origin <DEFAULT>`.
-2. For every worktree under `<WORKTREES>`: if its branch's PR is merged (`gh pr view <branch> --json state,mergedAt`) or the branch is fully merged into origin/<DEFAULT>: `git worktree remove <path>`, delete the local branch, and delete the lane's plan file `.scratch/*/plans/<n>-*.md` (plans are temporary artifacts).
-3. NEVER remove a worktree with uncommitted changes — list it instead.
-4. NEVER touch MAIN (the first entry of `git worktree list`) — it is not a candidate under any condition; only worktrees under `<WORKTREES>` are.
-5. Report a table: removed / kept / why.
+2. **Reap, by the exact signal.** A lane is done when its PR is merged (`gh pr view <branch> --json state,mergedAt`) or its branch is fully merged into `origin/<DEFAULT>`. For each: delete the local branch and delete the lane's plan file `.scratch/*/plans/<n>-*.md` (plans are temporary artifacts). Reaping these is why cleanup exists. Delete with `git branch -d`, which succeeds whenever the branch is merged into the default branch **or** still matches its upstream — the ordinary case, since every branch that got a PR was pushed. It refuses exactly one real combination: a **squash**-merged PR whose remote branch was then deleted (GitHub's default on merge), where the commits are not ancestors of the default branch and the remote-tracking ref that held the proof is gone. That proof is the merged check above, so `git branch -D` is correct there — and only there. Never reach for `-D` on a branch that check did not pass.
+3. **A branch checked out in a surviving worktree cannot be deleted**, and git refuses — correctly, since something still holds it. List it alongside that worktree instead of working around it; the plan file still goes.
+4. **List every worktree under `<WORKTREES>`; remove none.** Per worktree, say why it is still here, from what you can observe: uncommitted or untracked work (`git -C <wt> status --porcelain` non-empty — a removal that was refused), nothing on the remote (no upstream, or `git -C <wt> rev-list --count @{u}..HEAD` unreadable — held at a gate, or a session that died mid-run), or pushed with its PR still open. None of these has an exact done-signal and none distinguishes a live run's worktree from an abandoned one, so the human decides — give them the `git worktree remove <path>` line to run if they agree, and never run it for them.
+5. NEVER touch MAIN (the first entry of `git worktree list`) — it is not a candidate under any condition, and only worktrees under `<WORKTREES>` are listed at all.
+6. Report the two apart, so the difference is visible: **reaped** (branch, plan file) and **needs attention** (worktree, why it is lingering, the removal command). An empty second table is the good outcome.
 
 ## Hard rules
 
