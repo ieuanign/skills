@@ -182,6 +182,10 @@ function specClause(lane, sub) {
 
 // No agent type and no persona: loading a role definition — merge-base rules, blocking bars,
 // dispute handling — to run one command is waste. The command is quoted, never described.
+//
+// Having no agent type makes this the one stage cost-log.mjs cannot name from a transcript's meta
+// file, so it names this stage from the OPENING SENTENCE below instead. The two must stay in step:
+// reword that sentence and the suite's row silently becomes `other` in every cost log.
 function suitePrompt(sub) {
   return `Run this repository's full test suite once and report what it did. Nothing else: fix nothing, commit nothing, modify no file.\ncd ${sub.worktree} (branch ${sub.branch}) and run exactly this command:\n${suiteCommand}\nReturn state 'passed' when it exits 0, 'failed' when it does not, and 'not-run' when the command cannot run at all (no such script, no such runner) — never 'passed' for a suite you did not actually run. When it failed, put every failing test in failing using the runner's own identifier for it (file path plus test name), and the command's output in output.`
 }
