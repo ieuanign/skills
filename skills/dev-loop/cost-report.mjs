@@ -79,6 +79,7 @@ const roleOf = rec => (rec.type === 'user' || rec.type === 'assistant' ? rec.typ
 export function readTranscript(text) {
   let lane = null
   let stage = null
+  let dispatched = false // the first assistant record: everything after it is the agent's own work
   const byMessage = new Map()
 
   for (const line of text.split('\n')) {
@@ -91,12 +92,19 @@ export function readTranscript(text) {
     if (!rec || typeof rec !== 'object') continue
 
     const role = roleOf(rec)
-    if (role === 'user' && lane === null) {
+    // Only the records BEFORE the first assistant reply — the dispatched prompt and whatever was
+    // injected with it. A tool result is a user record too, so an unbounded scan would attribute
+    // any agent that happened to READ a marker: this repository's own agents open the phase
+    // scripts and the cost logs routinely, and one of those would land on a lane it never worked.
+    // First match inside that window wins, which also settles the reviewer's prompt — it embeds an
+    // issue body verbatim, and an issue discussing this feature can quote a marker of its own.
+    if (role === 'user' && !dispatched && lane === null) {
       const m = MARKER.exec(textOf(rec.message?.content))
       if (m) { lane = Number(m[1]); stage = m[2].toLowerCase() }
       continue
     }
     if (role !== 'assistant') continue
+    dispatched = true
     const message = rec.message
     if (!message || !message.usage) continue
     // A record with no id cannot be deduped against anything, so it keys on itself.
@@ -111,9 +119,15 @@ export function readTranscript(text) {
 }
 
 /**
- * Every `agent-*.jsonl` under the given paths, read. Directories are walked recursively, so a
- * transcript directory holding its agents directly and one nesting them under a subdirectory both
- * work. A path that is itself a transcript file is taken as given.
+ * Every `.jsonl` under the given paths, read. Directories are walked recursively, so a transcript
+ * directory holding its agents directly and one nesting them under a subdirectory both work. A
+ * path that is itself a transcript file is taken as given.
+ *
+ * Deliberately not `agent-*.jsonl`, though that is what the runner names them today: **the marker
+ * is the filter**, so a file without one costs a parse and is then skipped, while a filename this
+ * script guessed wrong costs every lane in the run. That failure mode is invisible — a report
+ * reading `not measured` for all of them looks exactly like a run whose markers were missing —
+ * which is also why a path contributing nothing says so.
  *
  * Symlinked directories are not followed — `Dirent.isDirectory()` is false for a symlink — which
  * is what keeps a walk over an unknown directory from looping.
@@ -143,15 +157,20 @@ export function collect(paths, onWarn = () => {}) {
     try { entries = readdirSync(dir, { withFileTypes: true }) } catch (err) { return onWarn(`cannot read ${dir}: ${err.message}`) }
     for (const e of entries) {
       if (e.isDirectory()) walk(join(dir, e.name))
-      else if (e.isFile() && /^agent-.*\.jsonl$/.test(e.name)) readOne(join(dir, e.name))
+      else if (e.isFile() && e.name.endsWith('.jsonl')) readOne(join(dir, e.name))
     }
   }
 
   for (const p of paths) {
     let st
     try { st = statSync(p) } catch (err) { onWarn(`cannot read ${p}: ${err.message}`); continue }
+    const before = found.length
     if (st.isDirectory()) walk(p)
     else readOne(p)
+    // Said out loud, because the alternative is a report that quietly calls every lane unmeasured.
+    // A run whose transcripts moved and a run whose lanes were not the ones asked about produce
+    // the same report otherwise, and only one of them is a bug worth chasing.
+    if (found.length === before) onWarn(`no marked transcripts under ${p}`)
   }
   return found
 }
@@ -204,12 +223,23 @@ const thousands = n => (n >= 1000 ? `${Math.round(n / 1000)}K` : `${n}`)
 // A stage under one percent is still worth a digit — the baseline's suite stage was 0.4% — and one
 // above it is not: nobody tunes on a decimal place of 44. A stage that spent something never
 // renders as 0%, which would read as a stage that did not run.
+//
+// Rounded BEFORE the branch is chosen, not after: 0.999% belongs to the whole-number case it
+// rounds into, and testing the raw value first sends it down the decimal path to print `1.0%` —
+// a decimal place on the one row whose whole reason for a decimal place is being under one.
 const percent = p => {
-  if (p >= 1) return `${Math.round(p)}%`
+  const whole = Math.round(p)
+  if (whole >= 1) return `${whole}%`
   if (p < 0.05) return '<0.1%'
   return `${p.toFixed(1)}%`
 }
-const signed = p => `${p >= 0 ? '+' : '-'}${Math.abs(Math.round(p))}%`
+// `on target` rather than a signed zero: `-0%` is a sign claiming a direction the number does not
+// have, and `+0%` reads as a rounding artefact rather than as the good outcome it is.
+const signed = p => {
+  const whole = Math.round(p)
+  if (whole === 0) return 'on target'
+  return `${whole > 0 ? '+' : '-'}${Math.abs(whole)}%`
+}
 
 /** One lane's report, as the text a developer reads. */
 export function render(lane) {
@@ -229,8 +259,12 @@ export function parseArgs(argv) {
       const next = argv[++i]
       if (next === undefined) throw new Error('--issues needs a value')
       for (const tok of next.split(/[,\s]+/).filter(Boolean)) {
-        const n = Number(tok.replace(/^#/, ''))
-        if (!Number.isInteger(n)) throw new Error(`not an issue number: ${tok}`)
+        // Digits only, so `-5` and `1e3` are rejected rather than accepted as issues 5 and 1000 —
+        // both of which `Number.isInteger` waves through, and both of which then report a
+        // perfectly well-formed "not measured" for a lane nobody asked about.
+        const digits = tok.replace(/^#/, '')
+        if (!/^\d+$/.test(digits) || Number(digits) === 0) throw new Error(`not an issue number: ${tok}`)
+        const n = Number(digits)
         if (!issues.includes(n)) issues.push(n)
       }
     } else if (argv[i] === '--help' || argv[i] === '-h') {

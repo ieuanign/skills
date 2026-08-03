@@ -133,7 +133,7 @@ Profile keys:
 
 Mode W: run the Workflow tool with `scriptPath: <this-skill-dir>/phase-plan.js` and `args: { issues: [{number, title, project, answers?}] }`. Mode A: the equivalent parallel architect runs per contracts.md. One architect per issue, parallel. Each returns `{status, planPath, summary, openQuestions}`. A lane returning `status: DIED` means its architect crashed — report it at Gate 1 and offer a re-run; never silently drop a requested issue.
 
-**KEEP the transcript directory this invocation reports** (Mode W only — Mode A has none), alongside every later one. Act 4 feeds them all to the cost report, and planning is the invocation whose cost is easiest to lose: it is roughly three tenths of a lane and it lands in a different directory from execution's.
+**KEEP the transcript directory this invocation reports** (Mode W only — Mode A has none), alongside every later one, **including any re-run** — a Gate 1 re-run of a BLOCKED lane's architect is another invocation with a directory of its own, and the first attempt's cost is real whether or not its plan was usable. Act 4 feeds them all to the cost report, and planning is the cost easiest to lose: it is roughly three tenths of a lane and it lands in a different directory from execution's.
 
 KEEP each lane's `summary` bullets for the rest of the run. They are the architect's orientation, and Gate 2 puts them in the PR body's Context section — so they must survive whether or not Gate 1 fires, and are not consumed by presenting them there.
 

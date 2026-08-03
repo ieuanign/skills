@@ -63,6 +63,33 @@ while IFS= read -r module; do
   fi
 done < <(find "$REPO/skills" -name '*.mjs' -not -path '*/node_modules/*' | sort)
 
+# --- cost stage vocabulary ---------------------------------------------------
+# The lane-and-stage marker's vocabulary is written out in all three files that
+# touch it, because a phase script imports nothing. That triplication is only
+# safe if something compares the copies: drift silently mis-buckets the split
+# the cost report exists to produce, and no run goes red over it. Each file
+# declares it on one line, values quoted and keys not, so the quoted words on
+# that line ARE the vocabulary.
+stage_vocab() {
+  grep -m1 -E '^(export )?const STAGES? = ' "$1" \
+    | grep -o "'[a-z]*'" | tr -d "'" | sort | tr '\n' ' '
+}
+vocab_plan="$(stage_vocab "$REPO/skills/dev-loop/phase-plan.js")"
+vocab_exec="$(stage_vocab "$REPO/skills/dev-loop/phase-execute.js")"
+vocab_report="$(stage_vocab "$REPO/skills/dev-loop/cost-report.mjs")"
+if [ -z "$vocab_plan" ]; then
+  echo "FAIL  cost stage vocabulary: no declaration found in phase-plan.js" >&2
+  failed=1
+elif [ "$vocab_plan" = "$vocab_exec" ] && [ "$vocab_plan" = "$vocab_report" ]; then
+  echo "ok    cost stage vocabulary ($vocab_plan)"
+else
+  echo "FAIL  cost stage vocabulary drifted" >&2
+  echo "      phase-plan.js:    $vocab_plan" >&2
+  echo "      phase-execute.js: $vocab_exec" >&2
+  echo "      cost-report.mjs:  $vocab_report" >&2
+  failed=1
+fi
+
 # --- version sync ------------------------------------------------------------
 # `claude plugin validate --strict` passes when these two drift apart.
 pkg_version="$(node -p "require('$REPO/package.json').version" 2>/dev/null)" || pkg_version=""
