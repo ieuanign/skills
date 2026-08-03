@@ -1,0 +1,17 @@
+---
+"ieuanign-skills": minor
+---
+
+`dev-loop`: one push per sub-lane, and a worktree removed only once its work reached the remote.
+
+The push cadence recorded as the standing default — the host pushes after each plan commit — was never implementable. The whole commit loop runs inside a single workflow call and a workflow script has no shell, so the host's first control point is that call returning; reaching it otherwise would mean changing the writer's contract, which never pushes, or spending an agent invocation on one git command, which the skill's hard rules forbid in terms. Nothing consumed an intermediate push either: no workflow in these repositories triggers on a feature-branch push, and the reviewer diffs local refs. `contracts.md` now records **why** it is dead, so it is not re-proposed.
+
+What replaces it is one rule: **a sub-lane's branch reaches the remote exactly once**, at the end of its wave — a sub-lane that concluded clean pushes immediately before its pull request is created, and one that ended performs that same single push. The push is guarded on the branch being ahead of its base, read from git rather than inferred from the commit list the writers reported, so a sub-lane that ended before it committed anything attempts nothing. It is **never a force-push, in either mode**: every push the pipeline makes is a fast-forward by construction, so forcing is never the fix, and there is no ceiling, ending or absent human that unlocks it. A rejected push stops that sub-lane's conclusion where it stands — no pull request, worktree kept, git's own message reported verbatim.
+
+The accepted cost is recorded rather than solved: this version is always one wave, so a three-issue batch holds the first-finished sub-lane's pull request until the slowest one ends.
+
+Underneath it was a hazard worth naming. The old rule kept an ended lane's worktree for review while pushing only on the approved path, so an ended lane could hold the only copy of its work on a local branch that never reached the remote. **One invariant replaces the two-case treatment:** a sub-lane's worktree is removed when, and only when, its work has reached the remote *and* no human is expected to resume in it. Two rules make it safe, and neither is negotiable. **Push succeeds first, remove second** — after removal the remote branch is the only copy, so a push that did not succeed keeps the worktree. **A dirty worktree keeps itself** — `git worktree remove` without `--force` already refuses on tracked modifications or untracked non-ignored files, and that refusal *is* the guard, which is why the pipeline never passes `--force` and can never talk its way past one.
+
+The invariant's second condition is what splits the modes: under `gated` a human is present and is expected to pick the branch up in that checkout, so an ended sub-lane keeps its worktree; under `unattended` nobody is there to resume, the condition is vacuous, and removal proceeds. This **reverses** the previous rule under `unattended` only. A held sub-lane falls out of the first condition rather than needing a rule of its own: it has pushed nothing, so removing it would destroy work that exists nowhere else. The main worktree is never a candidate under any condition.
+
+The skill's closing guarantee is restated, because the old one is no longer true: an `unattended` run ends with only the main worktree remaining unless a removal was refused or a push failed, and a `gated` run additionally keeps every worktree its human was offered and did not take.
