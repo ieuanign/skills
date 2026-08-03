@@ -68,8 +68,38 @@ each in its own git worktree, with parallel lanes and human gates only at plan a
 from filed to pushed PR without supervision. Suppression removes the questions, not the work — and
 since nobody is watching, the run reports itself instead: it labels each issue in progress before it
 spends a token, comments the plan, labels and comments any lane that ends the moment it ends, and
-messages you at each lane's start and finish. The messaging channel is a bundled script that stays
-silent unless you set two environment variables, so it costs nothing to skip.
+messages you at each lane's start and finish.
+
+#### Setting up unattended reporting
+
+Both channels are **optional and silent when absent** — a run works without either, it just tells
+you nothing. Nothing here applies to a supervised `/dev-loop`, whose touchpoints are its two gates.
+
+**1. Three labels, so GitHub shows you where each run got to.** Create them in your tracker:
+
+```bash
+gh label create in-progress    --color 1D76DB --description "An unattended /dev-loop run is working this issue"
+gh label create awaiting-human --color D93F0B --description "The run reached a conclusion someone must act on"
+gh label create failed         --color B60205 --description "A stage broke — a crash, not a verdict; a retry may work"
+```
+
+Then map them in `docs/agents/triage-labels.md` under a **Workflow roles** heading, so the pipeline
+can resolve its three *roles* to your *strings* — rename them freely, the skill hardcodes none.
+A role you leave unmapped is skipped silently. `/mattpocock-skills:setup-matt-pocock-skills` creates
+that file, but only if you also installed Matt's `triage` skill; without it, create it yourself.
+
+**2. Two environment variables, so a halt reaches your phone.** `skills/dev-loop/notify.sh` sends
+via Telegram and stays silent — exit 0, no output — unless both are set:
+
+```bash
+export TELEGRAM_BOT_TOKEN=...   # from @BotFather
+export TELEGRAM_CHAT_ID=...     # the chat to send to
+```
+
+Outbound sending is safe to run concurrently with anything else using the same bot.
+
+Without step 1 you get messages but no labels; without step 2, labels but no messages; without
+either, a run that works in silence. No notification failure ever changes a lane's outcome.
 
 You are the orchestrator; the agent roster does the work:
 
