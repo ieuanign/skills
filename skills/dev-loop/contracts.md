@@ -302,6 +302,28 @@ Lanes run in parallel. Within a lane: sub-lanes sequential, and within a sub-lan
 
 **The layer rule**: anything based on the trunk runs in **layer 1**; anything based on a branch that receives its commits in **layer N** runs in **layer N+1**.
 
+### Touchpoint overlap — three outcomes, and only one of them is a dependency
+
+What puts a sub-lane in a layer above the bottom is this classification, so it belongs here. The host intersects the plans' File touchpoints across lanes and sorts each overlap into exactly one of three outcomes:
+
+| Outcome | What it is | Layer | Based on | Dependency claimed |
+|---|---|---|---|---|
+| **additive co-touch** | both lanes append to the same registry, route table or barrel file, at different places in it | same layer — both stay parallel | the trunk | no |
+| **same-region co-touch** | both lanes edit the same *region* of the same file | the later lane drops to the next layer | the earlier lane's branch | **no** |
+| **real dependency** | B consumes what A creates | B drops to the next layer | A's branch | **yes** |
+
+**The classification is the host's own work, in plain reading, and no agent is dispatched to do it.** One architect runs per issue, in parallel, and none can see another lane's plan — so the intersection is inherently cross-lane and inherently the host's. This is not a cost decision that could be revisited by paying for a better agent; there is no agent in this pipeline that holds the inputs.
+
+**Additive co-touch stays parallel and accepts the rebase.** Two lanes appending to the same registry do not conflict semantically and usually do not conflict textually; where they do, it is the trivial kind git resolves or a human fixes in a minute. Serialising them would cost a whole layer of wall-clock to avoid that.
+
+**The last two outcomes are physically identical and differ in what they claim.** Both put the later lane in the next layer, based on the branch below, so both produce the same branch shape and the same pull request base — and both therefore reach the same stack. What separates them is the assertion: a **real dependency** posts the discovered-blocker comment to the dependent issue, recording *why* the lane was stacked where the work is tracked; a **same-region co-touch** posts nothing, because there is no blocker to discover. B does not need A. It merely cannot edit the same lines at the same time.
+
+That distinction is the point of having three outcomes rather than two. Collapsing same-region into dependency would tell a reviewer that B builds on A when it does not, and would leave a permanent, wrong comment on B's issue. Collapsing it into additive would send two lanes at the same lines concurrently and hand someone a conflict the pipeline could have avoided for free.
+
+**A same-region co-touch says so where a human can see it.** The reason it was sequenced is stated at Gate 1 alongside the layer assignment — sequenced to avoid a textual conflict, not because one lane needs the other — so nobody reading the batch's shape infers a dependency the pipeline never found.
+
+Sequencing a same-region co-touch is what *avoids* the conflict rather than merely deferring it: the later lane branches from the earlier one, so its writer opens the file with the earlier edit already in it and edits the text as it will actually land. A later layer based on the trunk instead would hit the same conflict at merge time, one layer later.
+
 ## Mode implementations
 
 - **Mode W**: `phase-plan.js` (Phase A) and `phase-execute.js` (Phase B) run on the Workflow tool with the args documented in SKILL.md; their embedded JSON schemas mirror the return contracts above.

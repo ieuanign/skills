@@ -145,7 +145,13 @@ KEEP each lane's `summary` bullets for the rest of the run. They are the archite
 Present every lane: summary, plan path (invite the user to edit the file before approving), open questions. Then:
 
 - **BLOCKED plans**: relay the open questions via AskUserQuestion, re-run only those lanes' architects with `answers` filled in, re-present.
-- **Touchpoint overlap**: intersect the plans' File touchpoints across lanes yourself (plain reading, no agent). Additive shared file (both append to a registry/route file) → note it, keep parallel. Real dependency (B consumes what A creates) → AskUserQuestion per case with **"stack B on A's branch" as the first/recommended option** and "defer B out of this batch" as the alternative. Post the discovery back to the dependent GitHub issue: `gh issue comment <B> --body "Discovered blocker: depends on #<A> — overlapping files: ..."`.
+- **Touchpoint overlap**: intersect the plans' File touchpoints across lanes yourself (plain reading, no agent — one architect runs per issue and none can see another lane's plan, so this is inherently yours). Sort each overlap into one of contracts.md's **three outcomes**, which is normative and not restated here:
+
+  1. **additive co-touch** — both lanes append to the same registry/route/barrel file at different places. Note it, keep both in the same layer, accept the trivial rebase.
+  2. **same-region co-touch** — both lanes edit the same region of the same file. Drop the later lane into the next layer, based on the earlier lane's branch. **Claim no dependency**: post no discovered-blocker comment, and say plainly in this gate's presentation that it was *sequenced to avoid a textual conflict, not because one lane needs the other* — otherwise a reader infers a dependency you did not find.
+  3. **real dependency** — B consumes what A creates. AskUserQuestion per case with **"stack B on A's branch" as the first/recommended option** and "defer B out of this batch" as the alternative. On stacking, post the discovery back to the dependent GitHub issue: `gh issue comment <B> --body "Discovered blocker: depends on #<A> — overlapping files: ..."`.
+
+  Outcomes 2 and 3 produce the same branch shape — next layer, based on the branch below — and differ only in what is asserted about it. Only 3 posts the comment, and only 3 asks anything.
 - **Profile Constraints**: apply them now — lanes a constraint forbids from running concurrently go into separate layers (or one is deferred), and say so.
 - **Multi-PR plans**: the lane splits into sub-lanes, sequential, in the plan's order (e.g. migration → backend → frontend). First sub-lane branch from the branch template, later ones with the `-<area>` suffix, each based on the previous sub-lane's branch when the plan says the code depends on it, else `origin/<DEFAULT>`.
 
