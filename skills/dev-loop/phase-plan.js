@@ -22,6 +22,21 @@ const PLAN_SCHEMA = {
 
 const agentType = 'architecture-engineer'
 
+// One shape for both ways an architect can fail to produce a plan. A requested issue is never
+// silently dropped, so every path out of a thunk below produces one of these.
+const died = (number, why) => ({ issue: number, status: 'DIED', planPath: '', summary: why, openQuestions: [] })
+
+// Honest about what a throw actually carried: a dead agent often throws a bare value with neither
+// a message nor a stack, and a summary promising a trace that is empty helps nobody.
+function crashLine(err) {
+  const message = err && typeof err.message === 'string' ? err.message.trim() : ''
+  if (message) return message
+  if (err === null || err === undefined) return `it threw ${String(err)}, carrying no message`
+  let shown
+  try { shown = typeof err === 'symbol' ? err.toString() : String(err) } catch { shown = '(unprintable)' }
+  return `it threw a ${typeof err} value (${shown || 'empty'}), carrying no message`
+}
+
 const results = await parallel(input.issues.map(iss => () =>
   agent(
     `Mode 1 — implementation plan for GitHub issue #${iss.number} ("${iss.title}") in this repository.` +
@@ -31,9 +46,14 @@ const results = await parallel(input.issues.map(iss => () =>
     { agentType, label: `plan:#${iss.number}`, phase: 'Plan', schema: PLAN_SCHEMA }
   ).then(r => (r
     ? { issue: iss.number, ...r }
-    : { issue: iss.number, status: 'DIED', planPath: '', summary: 'architect died — re-run this lane', openQuestions: [] }))
+    : died(iss.number, 'architect died — re-run this lane')))
+   // A throw is the same outcome as a dead architect and takes the same entry: without this the
+   // runner resolves the thunk to nothing and the issue disappears from the batch entirely.
+   .catch(err => died(iss.number, `architect threw — re-run this lane: ${crashLine(err)}`))
 ))
 
-const ok = results.filter(Boolean)
+// No filter: every requested issue leaves this script with an entry. The thunks cannot throw, so
+// a null here is the runner itself dropping one, which is the same unattributable loss.
+const ok = results.map((r, i) => r || died(input.issues[i].number, 'the workflow runner returned nothing for this issue — re-run this lane'))
 log(`${ok.length}/${input.issues.length} plans returned (${ok.filter(r => r.status === 'READY').length} READY, ${ok.filter(r => r.status === 'BLOCKED').length} BLOCKED, ${ok.filter(r => r.status === 'DIED').length} DIED)`)
 return ok
