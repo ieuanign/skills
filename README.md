@@ -61,7 +61,7 @@ not to.
 
 ### [`/dev-loop`](./skills/dev-loop/SKILL.md) — issue-to-PR pipeline
 
-`/dev-loop <issues>` drives one or more GitHub issues end-to-end — plan → implement → review —
+`/dev-loop <issues>` drives one or more GitHub issues end-to-end — plan → implement → review → full-suite gate —
 each in its own git worktree, with parallel lanes and human gates only at plan approval and push/PR.
 
 `/dev-loop auto <issues>` runs the same pipeline **unattended**: neither gate asks, so an issue goes

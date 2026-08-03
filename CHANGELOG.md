@@ -1,5 +1,45 @@
 # ieuanign-skills
 
+## 0.4.0
+
+### Minor Changes
+
+- [#44](https://github.com/ieuanign/skills/pull/44) [`7e6e8d7`](https://github.com/ieuanign/skills/commit/7e6e8d72338aa579e9708393846fb657b6575968) Thanks [@ieuanign](https://github.com/ieuanign)! - `dev-loop`: `notifications.md` — one normative specification for everything an unattended run writes to the outside world, implemented by both writers that emit it.
+
+  An unattended run has two of them: the host, at its own boundaries, and a notifier subagent, from inside a running phase script — and nothing kept the two in step. `contracts.md` had left the space open ("Both are specified separately; this is the section they fill"). It is now filled by a document rather than a copy: the event table with the writer owning each event, the label roles and the one question that selects one, the message and comment formats, the channel contract, the ordering guarantees, and the hazards recorded rather than solved. Nothing in it fires in gated mode, stated once and nowhere repeated.
+
+  The scoping rule behind the writer column is recorded so nobody re-derives it — the notifier owns only what the host cannot see. A workflow script has no shell, so the host is blind while one runs and a mid-lane event has no other writer; everything at a host boundary is a host command. Routing every event through the notifier was rejected: it spends an agent to run one command.
+
+  Label roles only, never label strings — each resolves through the consuming repository's triage-label documentation, so a repository keeps its own vocabulary. Two properties fall out of the selecting question rather than being designed in: failed is always a crash and never a verdict, which is what makes it answer _is this worth retrying?_, and every draft-PR case is host-applied while every halt case is notifier-applied.
+
+  `contracts.md`'s unattended paragraph now points at the new file and states which of the two documents governs what, and its append-only invariant records why writing labels to an issue a human filed is inside it: a label add or remove is additive and reversible, and human intent is what the invariant guards. No behaviour ships — every event in the table is implemented by a later change.
+
+- [#44](https://github.com/ieuanign/skills/pull/44) [`7e6e8d7`](https://github.com/ieuanign/skills/commit/7e6e8d72338aa579e9708393846fb657b6575968) Thanks [@ieuanign](https://github.com/ieuanign)! - `dev-loop`: the reviewer now checks the work against the issue, not just against the plan.
+
+  Nothing in the pipeline had ever compared the diff to the request. The reviewer saw only the plan — a faithful distillation is still a proxy — and its own text justified skipping a spec check on the grounds that a later conformance sign-off covered it. That sign-off never read the issue either, and it no longer runs.
+
+  The reviewer now receives the originating issue's body in its arguments, fenced, and returns a `met` / `partial` / `not-met` verdict per acceptance criterion with the evidence for each. It is passed the body rather than an issue number, so its Bash stays read-only and git-only. The spec report brief is inlined in the agent definition, the same way the standards one is.
+
+  A review's range is one sub-lane while the criteria belong to the whole issue, so the reviewer is told which sub-lane it is judging: a criterion the plan delivers in a different sub-lane is `partial`, naming that sub-lane, never `not-met`. Otherwise every early PR of a multi-PR plan would read as failing work that was not yet due.
+
+  **Spec verdicts never block, by construction.** They stay out of `FINDINGS`, never change the `VERDICT`, never trigger a fix cycle and never end a lane — a review with zero blocking findings and a not-met criterion is `APPROVED`. The writer is plan-bound and returns BLOCKED rather than improvise, and the architect, the only agent that could re-decide a plan, does not run again in the lane; a blocking spec finding would demand a fix nobody available could make. The verdicts route to the findings ledger, then to the per-lane report at Gate 2 and an **Acceptance criteria** section in the PR body, in front of the human who merges.
+
+  `contracts.md` gains the per-stage context contract — what each stage receives, what it is permitted to read, and what it returns — with the reviewer's row stating the issue body in and the criterion verdicts out.
+
+### Patch Changes
+
+- [#44](https://github.com/ieuanign/skills/pull/44) [`7e6e8d7`](https://github.com/ieuanign/skills/commit/7e6e8d72338aa579e9708393846fb657b6575968) Thanks [@ieuanign](https://github.com/ieuanign)! - `dev-loop`: the plan's summary bullets reach the PR body's Context section, and the run is explicitly append-only.
+
+  The architect's summary bullets had exactly one consumer — the plan-approval gate. Suppress that gate and the orientation it produced was thrown away. Phase A is now told to keep them for the rest of the run, and Gate 2 places them in the PR body's **Context** section beside the planned-versus-made commit counts already there.
+
+  The second half fixes what the run is allowed to write, now that per-criterion verdicts exist to tempt it. Stated in `SKILL.md` and in `contracts.md` where it governs both execution modes: the run appends to issues and pull requests, adds and removes only its own workflow labels, and sets state only on artifacts it created. It never edits an issue body, never ticks an acceptance-criteria checkbox, and never converts a pull request a human opened. Verdicts are reported — at the lane's conclusion and in the PR body — and never written back to the issue's checklist: the closing keyword closes the issue on merge regardless, and the aggregate verdict belongs to the pull request's own state.
+
+- [#44](https://github.com/ieuanign/skills/pull/44) [`7e6e8d7`](https://github.com/ieuanign/skills/commit/7e6e8d72338aa579e9708393846fb657b6575968) Thanks [@ieuanign](https://github.com/ieuanign)! - `dev-loop` roster: the `code-writer` no longer looks for stack gotchas or lint/test commands in `docs/agents/*`, and the architect is told its Hard constraints section is the writer's only channel to project rules.
+
+  `docs/agents/` holds the issue-tracker workflow, triage labels, domain docs, the dev-loop repo profile, and the coding-standards rubric — none of which is a stack gotcha or a module's test command. The writer was told otherwise in three places: its repo-facts rule, its verification-command resolution order, and its Stack notes section. All three now name the real sources — the repo's CLAUDE.md layer, the plan's Test expectations and Hard constraints, and the touched module's own manifests.
+
+  That leaves the plan as the writer's only channel to project rules, with no fallback: context documents and decision records are swept by the architect alone, and neither the writer nor the reviewer ever opens them. The plan template's Hard constraints section now says so, so the architect states a rule rather than citing a document the writer cannot read.
+
 ## 0.3.0
 
 ### Minor Changes
