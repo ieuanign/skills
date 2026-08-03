@@ -1,7 +1,7 @@
 export const meta = {
   name: 'dev-loop-execute',
   description: 'Phase B of /dev-loop — per-lane implement, review, and fix cycles',
-  whenToUse: 'Invoked by the /dev-loop skill per wave; not standalone.',
+  whenToUse: 'Invoked by the /dev-loop skill per layer; not standalone.',
   phases: [
     { title: 'Implement', detail: 'code-writer per plan commit, sequential within a lane' },
     { title: 'Review', detail: 'reviewer + fix cycles (capped)' },
@@ -12,8 +12,8 @@ export const meta = {
 
 // args: {
 //   lanes: [{ issue, issueBody, planPath, notified?, subLanes: [{ branch, worktree, base, area?, commits: [{ordinal, message}] }] }],
-//     notified: true when an EARLIER wave already dispatched the notifier for this lane. A lane's
-//     ending is written once per run, not once per wave; the host carries the flag forward.
+//     notified: true when an EARLIER layer already dispatched the notifier for this lane. A lane's
+//     ending is written once per run, not once per layer; the host carries the flag forward.
 //   mode: 'gated' | 'unattended',
 //   maxFixCycles: number,  // the profile's Fix cycles key; absent ⇒ the profile's default of 2
 //   suiteCommand: string,  // the profile's Full-suite command; 'none' or absent ⇒ every suite is not-run
@@ -22,7 +22,7 @@ export const meta = {
 //                          // Absent ⇒ no notifier is dispatched: one with no specification to
 //                          // read would write worse than nothing.
 // }
-// subLanes contains only the CURRENT wave's sub-lanes; worktree is absolute.
+// subLanes contains only the CURRENT layer's sub-lanes; worktree is absolute.
 // issueBody is the issue's body verbatim, which the host already fetched at intake — the
 // reviewer's Spec axis reads it from its arguments rather than fetching it, keeping its
 // Bash read-only and git-only. Omit it and the reviewer runs no spec axis.
@@ -565,11 +565,11 @@ const laneThunk = lane => async () => {
     // per issue. It fires as THIS lane returns, so a lane that ends at minute three is written up
     // then rather than waiting on a sibling that runs for another forty.
     //
-    // Once per RUN, not once per wave. A lane whose sub-lanes span waves reaches this script
-    // again in the next wave; without lane.notified it would post a second ending comment,
+    // Once per RUN, not once per layer. A lane whose sub-lanes span layers reaches this script
+    // again in the next layer; without lane.notified it would post a second ending comment,
     // against the specification's one-comment-per-kind rule, and would then report notified:false
     // to a host that had already been told true — earning the ended lane a second, contradicting
-    // label. The host carries the flag forward between waves; this honours it.
+    // label. The host carries the flag forward between layers; this honours it.
     if (result.ending && !lane.notified) result.notified = await notify(lane, result.ending)
     else if (lane.notified) result.notified = true
     return result

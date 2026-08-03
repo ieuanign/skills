@@ -90,7 +90,7 @@ The `CRITERIA` verdicts pass straight through this loop untouched — the spec a
 
 The writer runs lint and tests **scoped to the module it touched**, and nothing else in this pipeline runs the repository's own suite. So once a sub-lane's review loop settles, the lane runs that suite once, inside that sub-lane's worktree, before it concludes: a commit that reddened a module it never touched is caught here or nowhere. It runs in **both** modes.
 
-**Once per sub-lane, not once per lane.** Sub-lanes are separate branches, worktrees and pull requests and can span waves, so every PR carries its own suite result. A lane with one sub-lane — the common case — runs it exactly once.
+**Once per sub-lane, not once per lane.** Sub-lanes are separate branches, worktrees and pull requests and can span layers, so every PR carries its own suite result. A lane with one sub-lane — the common case — runs it exactly once.
 
 **The command is configuration, never discovery.** It comes from the repo profile's full-suite key under the profile's ask-then-persist rule, and a persisted `none` is a real answer: a repository whose suite needs infrastructure this pipeline does not stand up would otherwise get a red result that means nothing. With no command the gate reports **not run** and dispatches nothing to say so — `not run` is a state of its own, never reported as passed, per the convention that a check which never ran must say so rather than show an empty result. A gate that finds the command unrunnable returns the same state for itself.
 
@@ -186,7 +186,7 @@ The explanation is identical in both: what stopped or what broke, its stage, the
 
 - A clean sub-lane reaches Gate 2 for push/PR approval. Nothing is pushed without it, and an ended sub-lane is *offered* there rather than pushed around it. The suite result is on it, so the human approving a push sees a green suite rather than assuming one.
 - An ended sub-lane carries what is still open to that gate. On contested findings the human arbitrates: uphold → targeted writer fix and resume the lane; accept → documented won't-fix. Either ruling lands in the ledger's **arbitrated** category. On an exhausted fix-cycle bound the human reads the open findings and decides whether to push anyway.
-- Gate 2 for a wave fires before the next wave is provisioned, so a dependent wave is never built on a base the human has not vetted.
+- Gate 2 for a layer fires before the next layer is provisioned, so a dependent layer is never built on a base the human has not vetted.
 
 **unattended** — there is no human to conclude the lane, so the table above happens unprompted and notifications fire. Read `notifications.md` before emitting any notification: it governs every one of them, and nothing here restates it. Which endings open a **ready** pull request rather than a **draft** one is the terminal-state table below.
 
@@ -194,7 +194,7 @@ The explanation is identical in both: what stopped or what broke, its stage, the
 
 The three subsections that follow are not part of that branch. Push and the worktree invariant are single-version and bind both modes; the terminal-state table is read only where the unattended half sends it.
 
-### Push — once per sub-lane, at the end of its wave
+### Push — once per sub-lane, at the end of its layer
 
 A sub-lane's branch reaches the remote exactly once, and never before its own work is finished. A sub-lane that concluded clean pushes immediately before its pull request is created; one that ended performs that same single push, and what follows it is the mode table above. A lane with one sub-lane — the common case — therefore pushes once.
 
@@ -204,7 +204,7 @@ A sub-lane's branch reaches the remote exactly once, and never before its own wo
 
 **Per-commit push is not implementable, and is not to be re-proposed.** The whole commit loop runs inside a single workflow call and a workflow script has no shell, so the host's first control point is that call returning. Reaching it otherwise would mean either changing the writer's contract — it never pushes — or spending an agent invocation on one git command, which the skill's hard rules forbid in terms. Nothing in this pipeline consumes an intermediate push either — the reviewer diffs local refs — so the only thing one could feed is a repository's own push-triggered CI, which gains nothing from being run against a branch the pipeline is still committing to.
 
-**Accepted cost, recorded rather than solved.** This version is always one wave, so the end of a wave is the end of the run: a three-issue batch holds the first-finished sub-lane's pull request until the slowest one ends. Rejected: one workflow call per lane launched in the background, which buys per-lane immediacy at the cost of the host juggling several background tasks, each carrying its own concurrency cap independently.
+**Accepted cost, recorded rather than solved.** This version is always one layer, so the end of a layer is the end of the run: a three-issue batch holds the first-finished sub-lane's pull request until the slowest one ends. Rejected: one workflow call per lane launched in the background, which buys per-lane immediacy at the cost of the host juggling several background tasks, each carrying its own concurrency cap independently.
 
 ### The worktree invariant
 
@@ -274,7 +274,11 @@ A draft is the honest signal that the pipeline could not finish its own job, and
 
 ## Sequencing
 
-Lanes run in parallel. Within a lane: sub-lanes sequential, and within a sub-lane: plan commits sequential → review loop → suite gate → commit-breakdown check, then the lane conclusion. The breakdown check stays last so that it counts whatever the gate appended. Waves: a sub-lane based on a branch that receives its commits in wave N runs in wave N+1.
+Lanes run in parallel. Within a lane: sub-lanes sequential, and within a sub-lane: plan commits sequential → review loop → suite gate → commit-breakdown check, then the lane conclusion. The breakdown check stays last so that it counts whatever the gate appended.
+
+**Layers and stacks are different shapes, and the pipeline has both.** A **layer** is horizontal: the set of sub-lanes that run concurrently, all of them based on branches that already hold their commits. A **stack** is vertical: a chain of branches each based on the one below, sitting on a **trunk** — the default branch — with a **bottom** layer directly on that trunk and a **top** layer nothing is based on. A layer holding three independent sub-lanes is not a stack at all, which is why one word cannot serve for both: "layer 2 runs after layer 1" says two levels of one stack, where "stack 2 runs after stack 1" would say the opposite.
+
+**The layer rule**: anything based on the trunk runs in **layer 1**; anything based on a branch that receives its commits in **layer N** runs in **layer N+1**.
 
 ## Mode implementations
 
