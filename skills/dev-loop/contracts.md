@@ -172,6 +172,18 @@ The explanation is identical in both: what stopped or what broke, its stage, the
 
 **One exception, and only one.** A sub-lane where nothing landed at all — the writer stopped before changing a file, so there is not even a `wip:` commit — has no branch ahead of its base: nothing to push, and no pull request to open. Whether the branch is ahead is read from git, never inferred from a reported commit list. Under unattended its explanation is commented on the issue instead, which the append-only invariant permits. This is the only ending in the pipeline that opens no pull request.
 
+**gated** — the default: a human concludes the lane.
+
+- A clean sub-lane reaches Gate 2 for push/PR approval. Nothing is pushed without it, and an ended sub-lane is *offered* there rather than pushed around it. The suite result is on it, so the human approving a push sees a green suite rather than assuming one.
+- An ended sub-lane carries what is still open to that gate. On contested findings the human arbitrates: uphold → targeted writer fix and resume the lane; accept → documented won't-fix. Either ruling lands in the ledger's **arbitrated** category. On an exhausted fix-cycle bound the human reads the open findings and decides whether to push anyway.
+- Gate 2 for a wave fires before the next wave is provisioned, so a dependent wave is never built on a base the human has not vetted.
+
+**unattended** — there is no human to conclude the lane, so the table above happens unprompted and notifications fire. Read `notifications.md` before emitting any notification: it governs every one of them, and nothing here restates it. Which endings open a **ready** pull request rather than a **draft** one is the terminal-state table below.
+
+**Mode A implements the gated half only, and never the unattended half.** The unattended half therefore has exactly one implementation, which is what keeps this file's rule — a behaviour change edits the contract first, then both implementations in the same change — cheap to honour.
+
+The three subsections that follow are not part of that branch. Push and the worktree invariant are single-version and bind both modes; the terminal-state table is read only where the unattended half sends it.
+
 ### Push — once per sub-lane, at the end of its wave
 
 A sub-lane's branch reaches the remote exactly once, and never before its own work is finished. A sub-lane that concluded clean pushes immediately before its pull request is created; one that ended performs that same single push, and what follows it is the mode table above. A lane with one sub-lane — the common case — therefore pushes once.
@@ -208,15 +220,37 @@ The invariant's **second** condition is what keeps a `gated` ended sub-lane's wo
 
 A removed worktree is not lost work: a resumed lane re-provisions from the branch, which the provisioning step already documents for exactly this case.
 
-**gated** — the default: a human concludes the lane.
+### The terminal-state table — ready, draft, or no pull request
 
-- A clean sub-lane reaches Gate 2 for push/PR approval. Nothing is pushed without it, and an ended sub-lane is *offered* there rather than pushed around it. The suite result is on it, so the human approving a push sees a green suite rather than assuming one.
-- An ended sub-lane carries what is still open to that gate. On contested findings the human arbitrates: uphold → targeted writer fix and resume the lane; accept → documented won't-fix. Either ruling lands in the ledger's **arbitrated** category. On an exhausted fix-cycle bound the human reads the open findings and decides whether to push anyway.
-- Gate 2 for a wave fires before the next wave is provisioned, so a dependent wave is never built on a base the human has not vetted.
+Under supervision a human at Gate 2 decides what a sub-lane's ending means: they read the commit list, the findings ledger and the criterion verdicts, and arbitrate anything contested. Remove that human and nothing decides it — a sub-lane with open findings, a red suite or an unmet criterion would open exactly the pull request a clean one opens. This table decides it instead, and it is read under **unattended** only: under `gated` every one of these outcomes goes in front of the human, who decides.
 
-**unattended** — there is no human to conclude the lane, so the table above happens unprompted and notifications fire. Read `notifications.md` before emitting any notification: it governs every one of them, and nothing here restates it. Which endings open a ready pull request rather than a draft one is the terminal-state table's, specified separately.
+| A sub-lane ends | Push | Pull request |
+|---|---|---|
+| Clean | yes | **ready** |
+| Suite not-run, no open findings, all criteria met | yes | **ready**, the ledger recording not-run |
+| Open findings after the fix-cycle bound | yes | **draft** + the ledger |
+| Suite still red at the gate's ceiling | yes | **draft** + the ledger |
+| Any acceptance criterion `partial` or `not-met` | yes | **draft** + the verdicts |
+| Ended `HALT` or `FAILED`, with commits | yes | **draft** + the ledger + the attempt log |
+| Ended with nothing landed | no — nothing is ahead of the base | **none**; the explanation is commented on the issue |
 
-**Mode A implements the gated half only, and never the unattended half.** The unattended half therefore has exactly one implementation, which is what keeps this file's rule — a behaviour change edits the contract first, then both implementations in the same change — cheap to honour.
+**The ready predicate is one expression**: the sub-lane **concluded clean**, and its **findings are resolved**, and the **suite passed or did not run**, and **every acceptance criterion is met**. Anything else drafts.
+
+It is written as that four-way conjunction and not reduced to the shortest expression equivalent to it today. An ending currently implies the middle two, so the reduction would be correct now and silently wrong later: a change that let a red suite through without ending the sub-lane would start producing ready pull requests, with no line to have got wrong.
+
+**An ended sub-lane is never ready**, whatever its ledger says. The pipeline stopped before it could finish judging it, so it has nothing to be confident about.
+
+**A `partial` criterion drafts alongside a `not-met` one.** Nobody watched the run, so "not demonstrably done" defaults to draft — exactly as the findings ledger and the suite gate already behave. A half-implemented criterion presenting as a ready pull request would reduce the signal to one line of ledger prose the merger may skim.
+
+A draft is the honest signal that the pipeline could not finish its own job, and one rule covers all four exhaustion paths — same signal, same handling, one branch in the implementation. A human landing on a draft can see which trigger fired without opening anything else, because the pull request body already carries the findings ledger, the suite result, the per-criterion verdicts, and an ended sub-lane's explanation and attempt log.
+
+**Work that exists stays reviewable.** Open findings, a red suite, or an ending mid-pipeline all open a draft rather than stranding the branch. Work that does not exist opens nothing — the last row, and a narrow case: the give-up path commits abandoned work as a `wip:` commit, so an ended sub-lane almost always has something ahead of its base. Only a sub-lane whose writer stopped before changing a file lands nothing.
+
+**Every row is decided per sub-lane, from that sub-lane's own inputs.** Each is its own branch and its own pull request, so one sub-lane's draft never drafts another's.
+
+**The pipeline sets state only on pull requests it created**, per the append-only invariant — it never converts one a human opened. The PR-comment input therefore needs no rule of its own here: with no issue there are no acceptance criteria, so no spec axis and no verdicts. It pushes, comments the ledger, and stops.
+
+**Git is the authority on the Push column.** Whichever implementation computes a row proposes it from what the stages returned; the host then runs the ahead-of-base read above and defers to it. Nothing ahead ⇒ the last row, whatever was proposed. Something ahead of a sub-lane that reported no commits ⇒ a **draft** — only an ended sub-lane can propose the last row, and an ended sub-lane is never ready.
 
 ## Findings ledger (per lane; surfaced at the lane's conclusion and in the PR body)
 
