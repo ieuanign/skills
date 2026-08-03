@@ -40,7 +40,12 @@ The in-progress role is removed in every one of the three, including the one tha
 Two properties fall out of that question rather than being designed in:
 
 - **failed is always a crash and never a verdict.** A lane that reasoned its way to an ending takes awaiting-human however bad the ending was, so failed answers exactly one question: *is this worth retrying?*
-- **An ending's role is applied by the notifier, at the ending** — straight out of the scoping rule, since an ending happens mid-script. The draft pull request the host opens afterwards selects nothing: the ending that produced it already did.
+- **An ending's role is applied by the notifier, at the ending** — straight out of the scoping rule, since an ending happens mid-script. The draft pull request the host opens afterwards selects nothing *for that lane*: the ending that produced it already did, and the host leaves the notifier's verdict standing rather than writing a second one.
+
+Two drafts have no ending behind them, and those the **host** labels awaiting-human when the script returns, because no notifier ever ran for them:
+
+- a sub-lane that concluded **clean** and drafts on an unmet acceptance criterion alone — nothing ended, so nothing was written mid-script;
+- a lane that **threw**, which takes failed rather than awaiting-human — a throw is a break, and it unwinds past the point a notifier fires from, which is the latency the event table's crash row records.
 
 ## Messages and comments
 
