@@ -27,11 +27,15 @@ export const meta = {
 // any sub-lane ended FAILED, else HALT if any did, else null. The label decides nothing — the
 // conclusion mode alone decides the push, the PR and the worktree.
 // subResults: [{branch, area, ending, commits, plannedCommits, madeCommits, deviations, disputed,
-//               criterionVerdicts, reviewNotes, fixedFindings, wontFix, suite, attempts}]
+//               criterionVerdicts, reviewNotes, fixedFindings, wontFix, openFindings, suite,
+//               attempts, terminal}]
 // suite: {state: 'passed'|'failed'|'not-run', failing: [ids], output} — always present, whatever
 // ended the sub-lane. 'not-run' is a state of its own and is never reported as passed.
 // attempts: [{stage, trigger, debugger, outcome}] — the ledger's attempt log, recorded on every
 // sub-lane and rendered only on one that ended. A wip: commit is listed but never counted.
+// terminal: {pr: 'ready'|'draft'|'none', push: bool, reasons: [why it is not ready]} — the
+// terminal-state table's row for this sub-lane, read under unattended mode. It is a PROPOSAL:
+// the host runs the ahead-of-base read and git is the authority on the push column.
 
 // The harness may deliver args as a JSON string; normalize to an object.
 const input = typeof args === 'string' ? JSON.parse(args) : args
@@ -184,6 +188,41 @@ const end = (rec, category, reason, payload) => {
 const halt = (rec, reason, payload) => end(rec, 'HALT', reason, payload)
 const failed = (rec, reason, payload) => end(rec, 'FAILED', reason, payload)
 
+// The terminal-state table: what a sub-lane's ending makes of its pull request.
+//
+// The ready predicate is the four-way conjunction the contract states — concluded clean, AND
+// findings resolved, AND the suite passed or did not run, AND every criterion met — written out
+// rather than reduced to the shortest expression equivalent to it today. An ending already
+// implies the middle two, so the reduction would be correct now and silently wrong after any
+// change that let a red suite through without ending the sub-lane: ready pull requests would
+// start appearing with no line here to have got wrong.
+//
+// Each trigger names itself, because the draft IS the signal and a human landing on one should
+// see which of the four fired without opening anything else.
+function terminalState(rec) {
+  const reasons = []
+  if (rec.ending) reasons.push(`ended ${rec.ending.category} — ${rec.ending.reason}`)
+  if (rec.openFindings.length) {
+    reasons.push(`${rec.openFindings.length} reviewer finding(s) still open: ${rec.openFindings.join('; ')}`)
+  }
+  if (rec.suite.state === 'failed') {
+    reasons.push(`the repository's full suite is red: ${rec.suite.failing.join(', ') || 'see the suite output'}`)
+  }
+  // Empty when no issue body was passed, so a run with no issue is vacuously met — which is
+  // exactly what the PR-comment input needs, and why it costs no code of its own.
+  const unmet = rec.criterionVerdicts.filter(v => v.verdict !== 'met')
+  if (unmet.length) {
+    // partial and not-met both land here: nobody watched, so "not demonstrably done" drafts.
+    reasons.push(`${unmet.length} acceptance criterion(s) not met — ${unmet.map(v => `${v.verdict}: ${v.criterion}`).join('; ')}`)
+  }
+  if (!reasons.length) return { pr: 'ready', push: true, reasons }
+  // Only an ENDED sub-lane can propose the no-PR row. A clean sub-lane that reported no commits
+  // is a resume whose commits were already in the log, so its branch is ahead of its base and it
+  // is owed a real pull request. Either way git decides the push; this is the proposal.
+  if (rec.ending && !rec.commits.length) return { pr: 'none', push: false, reasons }
+  return { pr: 'draft', push: true, reasons }
+}
+
 const laneResults = await parallel(input.lanes.map(lane => async () => {
   const subResults = []
 
@@ -223,13 +262,16 @@ const laneResults = await parallel(input.lanes.map(lane => async () => {
         }
       }
       if (!res) return failed(rec, `writer died on commit ${c.ordinal}`)
+      // Absorbed before the result is read, so a writer that committed and THEN stopped still
+      // reports what it landed: the terminal-state table's last two rows split on whether
+      // anything exists, and a BLOCKED return that dropped its commits would misreport as
+      // "nothing landed". The FAILED path's evidence commit arrives the same way.
+      absorb(rec, res)
       if (res.result === 'FAILED') {
-        absorb(rec, res) // the final attempt was told to commit what exists — pick that evidence up
         return halt(rec, `commit ${c.ordinal} still FAILED after 2 debug+fix attempts — the commit was never produced`)
       }
       if (res.result === 'BLOCKED') return halt(rec, `writer BLOCKED on commit ${c.ordinal}: ${res.notes || ''}`)
       if (res.result !== 'COMMITTED') return failed(rec, `commit ${c.ordinal} still ${res.result} after debug routing`)
-      absorb(rec, res)
       log(`#${lane.issue}: commit ${c.ordinal}/${sub.commits.length} of ${sub.branch} done`)
     }
 
@@ -254,13 +296,14 @@ const laneResults = await parallel(input.lanes.map(lane => async () => {
       rec.criterionVerdicts = review.criterionVerdicts || []
       if (review.contestedFindings && review.contestedFindings.length) {
         return halt(rec, `contested findings — reviewer still confirms ${review.contestedFindings.length} finding(s) the writer disputed`,
-          { contested: review.contestedFindings, disputes })
+          { contested: review.contestedFindings, disputes, openFindings: review.contestedFindings })
       }
       if (disputes.length) rec.wontFix.push(...disputes) // reviewer retracted them — documented won't-fix
       disputes = []
       if (review.verdict === 'APPROVED') break
       if (cycles >= MAX_FIX) {
-        return halt(rec, `still CHANGES_REQUESTED after ${MAX_FIX} fix cycles — the findings are still open`, { review })
+        return halt(rec, `still CHANGES_REQUESTED after ${MAX_FIX} fix cycles — the findings are still open`,
+          { review, openFindings: review.findings })
       }
       cycles++
       const attempt = attemptOf(rec, 'Review', `CHANGES_REQUESTED — ${review.findings.length} finding(s), fix cycle ${cycles} of ${MAX_FIX}`)
@@ -270,9 +313,11 @@ const laneResults = await parallel(input.lanes.map(lane => async () => {
       )
       attempt.outcome = `the fix returned ${fix ? fix.result : 'nothing'}`
       if (!fix || fix.result !== 'COMMITTED') {
+        if (fix) absorb(rec, fix) // it may have committed some of them before stopping
         const reason = `fix cycle ${cycles} returned ${fix ? fix.result : 'nothing'}${fix && fix.disputed ? ` (DISPUTED: ${fix.disputed})` : ''}`
         const stopped = fix && fix.result === 'BLOCKED' // a reasoned refusal, not a break
-        return (stopped ? halt : failed)(rec, reason, { review, fix })
+        // The cycle never completed, so none of this review's findings is resolved.
+        return (stopped ? halt : failed)(rec, reason, { review, fix, openFindings: review.findings })
       }
       absorb(rec, fix)
       disputes = fix.disputedFindings || []
@@ -330,6 +375,7 @@ const laneResults = await parallel(input.lanes.map(lane => async () => {
           )
           attempt.outcome = `the fix returned ${fix ? fix.result : 'nothing'}`
           if (!fix || fix.result !== 'COMMITTED') {
+            if (fix) absorb(rec, fix) // whatever it landed before stopping is on the branch
             const reason = `suite fix round ${round} returned ${fix ? fix.result : 'nothing'} — ${redReason}`
             const stopped = fix && fix.result === 'BLOCKED'
             return (stopped ? halt : failed)(rec, reason)
@@ -355,7 +401,9 @@ const laneResults = await parallel(input.lanes.map(lane => async () => {
       // pair still detects a split or an append, it just isn't the plan's grand total.
       commits: [], plannedCommits: sub.commits.length, madeCommits: 0,
       deviations: 0, disputed: 0, criterionVerdicts: [], reviewNotes: '',
-      fixedFindings: [], wontFix: [], attempts: [],
+      // openFindings: reviewer findings the sub-lane finished without applying or retracting —
+      // the predicate's "findings are resolved" conjunct, filled in only where one is left open.
+      fixedFindings: [], wontFix: [], openFindings: [], attempts: [],
       // Never absent: the ledger renders passed / failed / not-run-and-why, and has no rendering
       // for a missing value. A sub-lane an ending stops never reaches the gate, and must still
       // say so — end() fills the why in, since only it knows what stopped it.
@@ -363,6 +411,9 @@ const laneResults = await parallel(input.lanes.map(lane => async () => {
     }
     subResults.push(rec)
     await runSubLane(sub, rec)
+    // Computed per sub-lane, from that sub-lane's own inputs: each is its own branch and its
+    // own pull request, so one sub-lane's draft never drafts another's.
+    rec.terminal = terminalState(rec)
   }
 
   // Reporting only, and FAILED wins — the same precedence notifications.md applies to the
