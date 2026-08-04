@@ -21,6 +21,8 @@ export const meta = {
 //                          // notifications.md and notify.sh are, having no way to derive it.
 //                          // Absent ⇒ no notifier is dispatched: one with no specification to
 //                          // read would write worse than nothing.
+//   agentNamespace: string // the roster's registry namespace, read off the host's own agent list
+//                          // at intake. Absent ⇒ bare names, which is the linked-agents case.
 // }
 // subLanes contains only the CURRENT layer's sub-lanes; worktree is absolute.
 // issueBody is the issue's body verbatim, which the host already fetched at intake — the
@@ -55,7 +57,20 @@ export const meta = {
 // The harness may deliver args as a JSON string; normalize to an object.
 const input = typeof args === 'string' ? JSON.parse(args) : args
 
-const writerType = 'code-writer'
+// A role is resolved, never named — contracts.md's Roles section is normative for why. The same
+// definition registers bare when it is linked into a repo's `.claude/agents/` and namespaced
+// `<plugin>:<name>` when the plugin is installed, and a workflow script sees neither registry, so
+// the host reads the namespace off its own roster and passes it. A trailing colon is tolerated
+// because writing one is a plausible reading of "namespace" and the failure it would otherwise
+// cause is total: every dispatch in the phase dies on an unresolvable type, so no lane gets past
+// its first commit. Absent ⇒ bare, the linked case and the pre-plugin behaviour.
+//
+// The suite gate is dispatched with no agentType at all and is deliberately absent below:
+// contracts.md gives it no role definition, so it has no name to resolve.
+const NS = String(input.agentNamespace || '').trim().replace(/:+$/, '')
+const roleAgent = role => (NS ? `${NS}:${role}` : role)
+
+const writerType = roleAgent('code-writer')
 
 // The fix-cycle bound is a repository fact, not a constant: a repository with a flaky suite wants
 // more cycles, and one that would rather read every finding itself answers 0. The host passes the
@@ -321,7 +336,7 @@ async function notify(lane, ending) {
       `<<<<ENDING\n${ending.reason}\nENDING>>>>\n` +
       `The specification governing every write you make: ${skillDir}/notifications.md — read it first.\n` +
       `The send mechanism, which reads its payload on standard input: ${skillDir}/notify.sh`,
-      { agentType: 'notifier', label: `notify:#${lane.issue}`, phase: 'Notify', model: 'haiku', effort: 'low', schema: NOTIFY_SCHEMA }
+      { agentType: roleAgent('notifier'), label: `notify:#${lane.issue}`, phase: 'Notify', model: 'haiku', effort: 'low', schema: NOTIFY_SCHEMA }
     )
     // Dispatched is not written. Only an APPLIED label makes the host stand back — a notifier
     // that died, failed its edit, or found no string for the role leaves the label to the host,
@@ -358,7 +373,7 @@ const runLane = async (lane, subResults) => {
         const diag = await agent(
           mark(lane.issue, STAGE.WRITE) +
           `A code-writer returned FAILED while implementing commit ${c.ordinal} ("${c.message}") of plan ${lane.planPath}. This is debug+fix attempt ${tries} of 2 — after 2 the sub-lane ends.\nIts return: ${JSON.stringify(res)}\nReproduce inside the checkout at ${sub.worktree} (branch ${sub.branch}) and diagnose. When owner=code-writer, phrase the handoff as a finding (file:line — defect — failure scenario).`,
-          { agentType: 'debugger', label: `debug:#${lane.issue}:c${c.ordinal}:t${tries}`, phase: 'Implement', schema: DEBUG_SCHEMA }
+          { agentType: roleAgent('debugger'), label: `debug:#${lane.issue}:c${c.ordinal}:t${tries}`, phase: 'Implement', schema: DEBUG_SCHEMA }
         )
         if (!diag) return failed(rec, `debugger died after FAILED commit ${c.ordinal}`)
         attempt.debugger = `${diag.owner}: ${diag.rootCause}`
@@ -404,7 +419,7 @@ const runLane = async (lane, subResults) => {
       const review = await agent(
         mark(lane.issue, STAGE.REVIEW) +
         `Review branch ${sub.branch} against the plan at ${lane.planPath} (absolute path; read it with the Read tool).\nDiff exactly the range ${sub.base}..${sub.branch} — the base may itself be a stacked feature branch; never review the base's own commits.${disputeClause}${specClause(lane, sub)}`,
-        { agentType: 'reviewer', label: `review:${tag}${cycles ? ':r' + cycles : ''}`, phase: 'Review', schema: REVIEW_SCHEMA }
+        { agentType: roleAgent('reviewer'), label: `review:${tag}${cycles ? ':r' + cycles : ''}`, phase: 'Review', schema: REVIEW_SCHEMA }
       )
       // Both are returns the loop cannot use, not verdicts about the code.
       if (!review) return failed(rec, 'reviewer died')
@@ -490,7 +505,7 @@ const runLane = async (lane, subResults) => {
         const diag = await agent(
           mark(lane.issue, STAGE.SUITE) +
           `The repository's full test suite is red on branch ${sub.branch}, after its review loop settled. This is round ${round} of at most ${SUITE_CEILING} for this sub-lane.\nThe suite gate ran \`${suiteCommand}\` inside ${sub.worktree} and returned: ${JSON.stringify(rec.suite)}\nReproduce inside that checkout and diagnose. The breakage is often outside the commit scope of the work on this branch — say so if it is. When owner=code-writer, phrase the handoff as a finding (file:line — defect — failure scenario).`,
-          { agentType: 'debugger', label: `suitedebug:${tag}:r${round}`, phase: 'Suite', schema: DEBUG_SCHEMA }
+          { agentType: roleAgent('debugger'), label: `suitedebug:${tag}:r${round}`, phase: 'Suite', schema: DEBUG_SCHEMA }
         )
         if (!diag) return failed(rec, `debugger died on a red suite on ${sub.branch}: ${redReason}`)
         attempt.debugger = `${diag.owner}: ${diag.rootCause}`

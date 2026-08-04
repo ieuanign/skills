@@ -5,7 +5,11 @@ export const meta = {
   phases: [{ title: 'Plan', detail: 'one architecture-engineer per issue, parallel' }],
 }
 
-// args: { issues: [{ number, title, project?, answers? }] }
+// args: {
+//   issues: [{ number, title, project?, answers? }],
+//   agentNamespace: string  // the roster's registry namespace, read off the host's own agent list
+//                           // at intake. Absent ⇒ bare names, which is the linked-agents case.
+// }
 // The harness may deliver args as a JSON string; normalize to an object.
 const input = typeof args === 'string' ? JSON.parse(args) : args
 
@@ -20,7 +24,17 @@ const PLAN_SCHEMA = {
   required: ['status', 'planPath', 'summary', 'openQuestions'],
 }
 
-const agentType = 'architecture-engineer'
+// A role is resolved, never named — contracts.md's Roles section is normative for why. The same
+// definition registers bare when it is linked into a repo's `.claude/agents/` and namespaced
+// `<plugin>:<name>` when the plugin is installed, and a workflow script sees neither registry, so
+// the host reads the namespace off its own roster and passes it. A trailing colon is tolerated
+// because writing one is a plausible reading of "namespace" and the failure it would otherwise
+// cause is total: every dispatch in the phase dies on an unresolvable type, so no plan is written
+// and every lane comes back DIED. Absent ⇒ bare, the linked case and the pre-plugin behaviour.
+const NS = String(input.agentNamespace || '').trim().replace(/:+$/, '')
+const roleAgent = role => (NS ? `${NS}:${role}` : role)
+
+const agentType = roleAgent('architecture-engineer')
 
 // The lane-and-stage marker every dispatched prompt leads with. It says which lane (the issue
 // number) and which stage an agent belongs to, so its own transcript identifies it without anyone

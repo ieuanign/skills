@@ -135,6 +135,30 @@ else
   failed=1
 fi
 
+# --- agent types are resolved, never literal ---------------------------------
+# A phase script dispatches roster agents by name, and the SAME definition is
+# registered bare when it is linked into `.claude/agents/` and namespaced
+# `<plugin>:<name>` when the plugin is installed. A bare literal therefore works
+# for the maintainer — who links them — and dies on the FIRST dispatch for every
+# consumer, which is the supported install path. Nothing else here can see that:
+# the syntax check compiles a bare literal happily, and no check runs a phase
+# script, because running one dispatches agents.
+#
+# So the rule is structural rather than a list of names: an agent type must come
+# from the script's roleAgent() resolver and never from a quoted string. Two
+# shapes to catch — the option written inline (`agentType: 'reviewer'`) and the
+# hoisted alias an option is built from (`const writerType = 'code-writer'`).
+while IFS= read -r script; do
+  rel="${script#"$REPO/"}"
+  if out="$(grep -nE "agentType[[:space:]]*[:=][[:space:]]*['\"\`]|^const [A-Za-z]*[Tt]ype[[:space:]]*=[[:space:]]*['\"\`]" "$script")"; then
+    echo "FAIL  literal agent type in $rel — resolve it through roleAgent(); see contracts.md Roles" >&2
+    echo "$out" >&2
+    failed=1
+  else
+    echo "ok    agent types resolved $rel"
+  fi
+done < <(find "$REPO/skills" -name 'phase-*.js' -not -path '*/node_modules/*' | sort)
+
 # --- version sync ------------------------------------------------------------
 # `claude plugin validate --strict` passes when these two drift apart.
 pkg_version="$(node -p "require('$REPO/package.json').version" 2>/dev/null)" || pkg_version=""
