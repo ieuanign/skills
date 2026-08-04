@@ -12,7 +12,7 @@ Both axes run as **parallel sub-agents** so they don't pollute each other's cont
 
 The issue tracker should have been provided to you — run `/setup-matt-pocock-skills` if `docs/agents/issue-tracker.md` is missing.
 
-Coding standards should have been provided to you too — run `/setup-ieuanign-skills` if `docs/agents/coding-standards.md` is missing.
+The repo's coding standards are CLAUDE.md's and `.claude/rules/`, which you already have — nothing to set up and nothing to ask for.
 
 ## Process
 
@@ -35,7 +35,9 @@ Look for the originating spec, in this order:
 
 ### 3. Identify the standards sources
 
-Check `docs/agents/coding-standards.md` first — the repo-tailored rubric `/setup-ieuanign-skills` distills from CLAUDE.md, including which baseline smells this repo's own patterns override. Then anything else in the repo that documents how code should be written, such as `CODING_STANDARDS.md` or `CONTRIBUTING.md`.
+**CLAUDE.md and the repo's `.claude/rules/` are the standards**, and both are already in your context — every level of the CLAUDE.md hierarchy and every project rule arrive at startup. Treat them as binding hard rules rather than suggestions, and read any nested CLAUDE.md covering the touched areas that you don't already have. A near-empty root CLAUDE.md is not a repo without conventions; check `.claude/rules/` before concluding it documents nothing. Then anything else in the repo that documents how code should be written, such as `CODING_STANDARDS.md` or `CONTRIBUTING.md`.
+
+Then `docs/agents/smell-overrides.md`, which works in the opposite direction: it only ever *subtracts* from the baseline below, recording patterns this repo uses deliberately that would otherwise be flagged. **An absent file is the ordinary state** — entries are added only when a finding has actually been rejected — so never ask for it and never report it missing.
 
 On top of whatever the repo documents, the Standards axis always carries the **smell baseline** below — a fixed set of Fowler code smells (_Refactoring_, ch.3) that applies even when a repo documents nothing. Two rules bind it:
 
