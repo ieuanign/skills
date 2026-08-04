@@ -60,6 +60,8 @@ Numbered. Every codebase rule that applies to THIS issue, each with a one-line "
 
 Real, verified paths. Mark each create vs modify.
 
+A path the repo **gitignores** is working material that does not outlive the lane: the worktree it is written in is removed once the branch is pushed, and that takes it. Name it here if the work touches it — the conclusion reads this section to say what the removal destroys — but never write a plan that expects it to still be there afterwards. Anything a later reader, a reviewer or an acceptance criterion must be able to open is committed, which is what makes it survive. Check rather than assume (`git check-ignore -q <path>`); a repo's scratch, fixture, log and coverage directories are the usual ones.
+
 ## Commit / PR breakdown
 
 Ordered list. For each commit: conventional message (with issue number), repo area, and which PR it belongs to, per the repo's PR separation policy.

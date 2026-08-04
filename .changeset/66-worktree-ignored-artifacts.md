@@ -1,0 +1,13 @@
+---
+"ieuanign-skills": minor
+---
+
+`/dev-loop`: Gate 2's worktree removal now names the gitignored artifacts it destroys before destroying them, and the architect no longer plans work that expects one to survive.
+
+Removing a lane's worktree takes its gitignored files with it. The dirty-work guard does not cover them — `git worktree remove` without `--force` refuses on tracked modifications and untracked non-ignored files, deletes ignored ones without a word, and `git status --porcelain`, the signal every refusal path reads, does not list them either. So a lane could be instructed to produce an artifact at a path the pipeline was about to delete, be graded on it, and report clean. Observed for real: a lane's plan named a gitignored scratch directory in its File touchpoints and required runnable checks there; the reviewer ran and passed them, Gate 2 pushed, opened the PR and removed the worktree, and the checks then existed on no machine.
+
+**The destruction stays, and it is the intended behaviour rather than an oversight.** A lane's gitignored output — scratch checks, generated fixtures, captured logs, coverage — is working material, and cleaning it up once the branch is pushed is a reason to remove the worktree rather than a cost of doing so. The alternatives were weighed and rejected in `contracts.md` so they are not re-derived: keeping the worktree strands one per lane that writes anything, and cleanup mode removes none of them; copying the files back writes a lane's throwaway output into the main checkout, where nothing ever reaps it.
+
+**What changes is that the loss is announced.** Before removing, the conclusion reports every File touchpoint the plan named that `git check-ignore` calls ignored and that exists in the worktree, as paths going with the removal. It is a targeted list and never `--ignored=matching`, whose every line would be the `node_modules` and copied-in config that provisioning put there on purpose. Nothing is copied out and nothing is kept, so the durable-artifact rule follows from the report rather than from a mechanism: a path that must outlive its lane is committed, which is what makes it survive and also what takes it off this list.
+
+**The architect applies the same rule in advance.** Its File touchpoints section now says that a gitignored path is working material that does not outlive the lane — name it if the work touches it, since the conclusion reads that section to say what the removal destroys, but never write a plan that expects it to still be there, and check rather than assume. That closes the upstream cause: the pipeline can no longer require a file at a path it is about to delete.
