@@ -250,7 +250,15 @@ The invariant's **second** condition is what keeps a `gated` ended sub-lane's wo
 
 **The main worktree is never a removal candidate** — not under any state above, in either mode, and not in cleanup mode either. It is the first entry of `git worktree list`, and every removal path confirms the path it is about to remove is not that entry before running anything.
 
-A removed worktree is not lost work: a resumed lane re-provisions from the branch, which the provisioning step already documents for exactly this case.
+A removed worktree is not lost work **for anything tracked**: a resumed lane re-provisions from the branch, which the provisioning step already documents for exactly this case. Its ignored files are another matter, and the next rule is the whole of what this invariant says about them.
+
+**Removal destroys the worktree's ignored files, deliberately — and says which ones first.** The dirty-worktree rule above is a guard against losing *tracked* work, and it has nothing to say here: `git worktree remove` deletes ignored files without complaint and `git status --porcelain`, the signal every refusal path reads, does not list them either. So a lane's gitignored output — scratch checks, generated fixtures, captured logs, coverage — is destroyed the moment its branch is pushed, and that is the intent rather than an oversight. It is working material. Cleaning it up is a reason to remove the worktree, not a cost of doing so, and the alternatives were weighed and rejected: keeping the worktree strands one per lane that writes anything and cleanup mode removes none of them, and copying the files back writes a lane's throwaway output into the main checkout, where nothing ever reaps it.
+
+What was wrong was only that the loss was **silent**, including when the plan's own acceptance criteria asked for the artifact — the pipeline could require a file at a path it was about to delete, then report the lane clean. So the conclusion **names what it destroys before destroying it**, from the plan's File touchpoints, and the durable-artifact rule follows from that report rather than from a mechanism:
+
+> A path that must outlive its lane is committed. Being tracked is what makes it survive, and it is also what takes it off this list.
+
+An architect writing a plan applies the same rule in advance — a gitignored touchpoint is named as work the lane does, never as a deliverable something later expects to find.
 
 ### The terminal-state table — ready, draft, or no pull request
 
