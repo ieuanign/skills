@@ -12,6 +12,10 @@ This file is the single source of truth for the pipeline's role contracts, bound
 | debugger | debugger | root cause + owner routing | never |
 | suite gate | none — a plain subagent | the repo's full-suite result for one sub-lane | never |
 
+**The Agent column names each role's definition, not the string that dispatches it.** The same definition is registered under two different names depending on how it arrived: bare (`code-writer`) when it is linked into a repo's own `.claude/agents/`, and namespaced `<plugin>:<name>` (`ieuanign-skills:code-writer`) when the plugin is installed — which is the supported install path, so the namespaced form is the ordinary one and the bare form is the maintainer's. **A role is therefore always resolved against a namespace and never written as a literal.** The namespace is discovered once, at intake, by reading the roster the host already has in front of it; nothing derives it from a path, a package name or a manifest, so renaming the plugin or the marketplace needs no edit here.
+
+Mode A resolves it implicitly — the host dispatches by the name its own roster lists, which is already correct, and there is nothing to pass. Mode W cannot: a workflow script sees no registry. The host passes the discovered namespace in the phase scripts' args, for the same reason it passes `skillDir` — both are facts the host can see and a script cannot. A phase script carrying a bare literal **runs only for the maintainer** and dies on its first dispatch for everyone who installed the plugin.
+
 ## Append-only invariant
 
 What the pipeline may write outside its own worktrees and `.scratch/`. It binds the host and every agent, identically in both modes — there is no ending, no ceiling and no absent human that relaxes it.
