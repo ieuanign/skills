@@ -25,7 +25,7 @@ either order:
 
 ```bash
 /mattpocock-skills:setup-matt-pocock-skills   # issue tracker, triage labels, docs/agents/* layout
-/setup-ieuanign-skills                        # the coding-standards rubric
+/setup-ieuanign-skills                        # the coding-standards rubric + the workflow labels
 ```
 
 To pick up new releases, either run `/plugin marketplace update ieuanign` when you want them, or turn
@@ -75,7 +75,10 @@ messages you at each lane's start and finish.
 Both channels are **optional and silent when absent** — a run works without either, it just tells
 you nothing. Nothing here applies to a supervised `/dev-loop`, whose touchpoints are its two gates.
 
-**1. Three labels, so GitHub shows you where each run got to.** Create them in your tracker:
+**1. Three labels, so GitHub shows you where each run got to.**
+[`/setup-ieuanign-skills`](./skills/setup-ieuanign-skills/SKILL.md) does this whole step for you —
+it agrees the strings with you, writes the mapping, and offers the `gh` commands below. The manual
+version, for anyone who would rather do it by hand: create them in your tracker,
 
 ```bash
 gh label create in-progress    --color 1D76DB --description "An unattended /dev-loop run is working this issue"
@@ -83,10 +86,11 @@ gh label create awaiting-human --color D93F0B --description "The run reached a c
 gh label create failed         --color B60205 --description "A stage broke — a crash, not a verdict; a retry may work"
 ```
 
-Then map them in `docs/agents/triage-labels.md` under a **Workflow roles** heading, so the pipeline
+then map them in `docs/agents/triage-labels.md` under a **Workflow roles** heading, so the pipeline
 can resolve its three *roles* to your *strings* — rename them freely, the skill hardcodes none.
 A role you leave unmapped is skipped silently. `/mattpocock-skills:setup-matt-pocock-skills` creates
-that file, but only if you also installed Matt's `triage` skill; without it, create it yourself.
+that file, but only if you also installed Matt's `triage` skill; without it, either setup command
+above writes it, or you create it yourself.
 
 **2. Two environment variables, so a halt reaches your phone.** `skills/dev-loop/notify.sh` sends
 via Telegram and stays silent — exit 0, no output — unless both are set:
@@ -156,11 +160,20 @@ Coexists with Matt's `/code-review` — this is the Standards-aware variant that
 `docs/agents/coding-standards.md` (produced by `/setup-ieuanign-skills`). Run `/setup-matt-pocock-skills`
 and `/setup-ieuanign-skills` first so it has the issue tracker and coding-standards rubric to draw on.
 
-### [`/setup-ieuanign-skills`](./skills/setup-ieuanign-skills/SKILL.md) — coding-standards rubric
+### [`/setup-ieuanign-skills`](./skills/setup-ieuanign-skills/SKILL.md) — per-repo config
 
-Distills your repo's `CLAUDE.md` files into `docs/agents/coding-standards.md`, the review rubric the
-`reviewer` agent and the `/code-review` Standards axis read instead of re-discovering conventions each
-run. Run it once per repo (re-run by hand if `CLAUDE.md` changes materially).
+Two independent parts; run either or both, once per repo.
+
+**The coding-standards rubric.** Distills your repo's `CLAUDE.md` files into
+`docs/agents/coding-standards.md`, the review rubric the `reviewer` agent and the `/code-review`
+Standards axis read instead of re-discovering conventions each run. Re-run by hand if `CLAUDE.md`
+changes materially.
+
+**The workflow label vocabulary.** Writes the **Workflow roles** section of
+`docs/agents/triage-labels.md` — step 1 of unattended reporting above, done for you. It agrees the
+three strings with you first, leaves any existing triage table alone, creates the file when
+`setup-matt-pocock-skills` didn't, and offers the `gh label create` commands rather than running
+them unasked. Nothing here matters to a supervised `/dev-loop`, which writes no labels at all.
 
 ## For maintainers
 
