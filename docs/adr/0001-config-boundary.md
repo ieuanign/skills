@@ -11,7 +11,7 @@ judgement call" — so a drifted copy could silently contradict its own source.
 
 ## Decision
 
-Four homes, discriminated by the **uninstall test**: _would this still bind if the plugin were gone?_
+Four homes, discriminated by **the uninstall test**: _would this still bind if the plugin were gone?_
 
 | Home | Holds | Examples |
 |---|---|---|
@@ -26,10 +26,12 @@ subagent, so the choice between them is organisation and path-scoping — never 
 
 Two corollaries, each of which deleted something real:
 
-1. **Nothing under `docs/agents/` restates a fact stated elsewhere in the repo.** A derived file is a
-   cache with no invalidation, and every reader that would consult it can read the source instead.
-2. **A machine fact never enters a committed file.** A teammate whose machine differs must get a
-   silent no-op, not a broken run — so tool availability is probed, never declared.
+1. **No derived copies** — nothing under `docs/agents/` restates a fact stated elsewhere in the repo.
+   A derived file is a cache with no invalidation, and every reader that would consult it can read
+   the source instead.
+2. **No machine facts in git** — nothing that varies by machine enters a committed file. A teammate
+   whose machine differs must get a silent no-op, not a broken run, so tool availability is probed
+   rather than declared.
 
 This sits under `/dev-loop`'s own **argument / profile / constant** rule rather than replacing it.
 That rule sorts values the pipeline consumes; this one sorts where a repo's facts live at all.

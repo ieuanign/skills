@@ -117,31 +117,24 @@ longer exists is worse than no comment — a reader trusts it, then cannot find 
 
 ## Where your next rule goes
 
-You will want a sixth convention. The rule for placing it is one question:
+You will want a sixth convention. Placing it is one question — **the uninstall test**:
 
 > **Would this still bind if this plugin were uninstalled?**
 
 **Yes** → `CLAUDE.md` or `.claude/rules/`. Project rules load at launch with the same priority as
-`.claude/CLAUDE.md` and reach every custom subagent, so the choice between the two files is
-organisation and path-scoping, never how binding the rule is. Prefer `.claude/rules/` once `CLAUDE.md`
-starts getting long.
+`.claude/CLAUDE.md` and reach every custom subagent, so choosing between the two files is organisation
+and path-scoping, never how binding the rule is. Prefer `.claude/rules/` once `CLAUDE.md` gets long.
 
-**No — it's meaningless without the plugin** → `docs/agents/`. Per-repo config only these skills read:
-the `/dev-loop` profile, the label vocabulary, the smell overrides.
+**No** → `docs/agents/`, if it is per-repo config only these skills read. **Same in every repo** → it
+belongs in the skill and you should not be writing it. **Varies by machine** → nowhere; it gets probed
+at runtime, because a committed file naming one machine's setup breaks the next person's checkout.
 
-**It's the same in every repo** → it belongs in the skill, and you should not be writing it at all.
+Two corollaries do the enforcing, and both are load-bearing: **no derived copies** — nothing under
+`docs/agents/` restates a fact the repo states elsewhere, which is the mistake that produced and then
+retired the old `coding-standards.md` — and **no machine facts in git**.
 
-**It varies by machine** → nowhere. It gets detected at runtime, because a committed file that names
-one machine's setup breaks the next person's checkout.
-
-Two things follow, and both are load-bearing:
-
-1. **Never restate under `docs/agents/` something the repo already says elsewhere.** A derived file is
-   a cache with no invalidation. This is the mistake that produced — and then retired — the old
-   `coding-standards.md`.
-2. **Never write a machine fact into a committed file.** Probe for it instead.
-
-[ADR-0001](./adr/0001-config-boundary.md) has the reasoning and the alternatives that were rejected.
+[ADR-0001](./adr/0001-config-boundary.md) is the authority here, with the reasoning and the rejected
+alternatives.
 
 ## Running it
 

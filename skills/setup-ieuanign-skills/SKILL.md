@@ -1,33 +1,32 @@
 ---
 name: setup-ieuanign-skills
-description: Configure a repo for these skills — record a rejected review finding as a smell override, seed the workflow label vocabulary an unattended /dev-loop run reports through, and propose the .claude/rules/ conventions the pipeline reads. Run before first use of /dev-loop auto, and again whenever a review finding is worth suppressing for good.
+description: Configure a repo for these skills — smell overrides, the workflow label vocabulary, and the .claude/rules/ conventions.
 disable-model-invocation: true
 ---
 
 # Setup Ieuan's Skills
 
-Three independent deliverables. Do any one alone if that is what the user asks for — no part depends
-on another, and none depends on `/mattpocock-skills:setup-matt-pocock-skills` having run.
+Three independent parts. Run any one alone — no part depends on another, and none depends on
+`/mattpocock-skills:setup-matt-pocock-skills` having run.
 
-- **`docs/agents/smell-overrides.md`** — the exceptions the `reviewer` agent and `/code-review-mp`'s
-  Standards axis carry, so a finding the user has already rejected twice stops being filed. Written
-  on demand from a real rejection, never at setup time.
-- **the Workflow roles section of `docs/agents/triage-labels.md`** — the label strings an unattended
-  `/dev-loop auto` run resolves its three self-reporting roles through. Without them the run works
-  and reports nothing, because a role with no string is skipped silently by design.
-- **the `.claude/rules/` conventions** — the binding rules `/dev-loop` reads through the hooks it
-  already has: how pull requests are separated, how stacked branches are rebased, and the comment and
-  scratch habits every session in the repo obeys.
+1. **Smell overrides** — the exceptions the `reviewer` agent and `/code-review-mp`'s Standards axis
+   carry, so a finding the user rejected stops being filed.
+2. **Workflow labels** — the strings an unattended `/dev-loop auto` run reports itself through.
+3. **The `.claude/rules/` conventions** — how pull requests are separated, how stacked branches are
+   rebased, and the comment and scratch habits every session in the repo obeys.
 
-One rule places all three, and places anything added later: **would this still bind if the plugin were
-uninstalled?** Yes → `CLAUDE.md` and `.claude/rules/`. No, because it is meaningless without the
+**Every part explores, proposes, and writes only on an explicit yes.** All three mutate files the user
+owns, so this holds without restatement below: a step that says "write" means write what was accepted.
+
+## Where each thing goes — the uninstall test
+
+One question places all three, and places anything added later: **would this still bind if the plugin
+were uninstalled?** Yes → `CLAUDE.md` and `.claude/rules/`. No, because it is meaningless without the
 plugin → `docs/agents/`. The same in every repo → the skill itself. Varies by machine → nowhere; probe
-for it. Two corollaries, cited below where they bite: nothing under `docs/agents/` may restate a fact
-the repo states elsewhere, and no machine fact may enter a committed file.
+for it. Two corollaries follow, cited below where they bite:
 
-This is a prompt-driven skill, not a deterministic script. Explore, propose, stress-test with the
-user, then write. **Nothing here is written without an explicit yes** — every part of this skill
-mutates files the user owns.
+- **No derived copies** — nothing under `docs/agents/` restates a fact the repo states elsewhere.
+- **No machine facts in git** — nothing that varies by machine enters a committed file.
 
 ## Part 1 — recording a smell override
 
@@ -55,9 +54,10 @@ Two questions, and both must survive:
   in two places because one is an agent contract and one is a skill" is a pattern. "This particular
   function is fine" is not, and is not recordable.
 
-Then check it does not belong in `CLAUDE.md` or `.claude/rules/` instead. A rule the repo wants to
-*state* is a rule; only an exception to the baseline belongs here. Per the first corollary above,
-nothing in this file may restate something already written elsewhere in the repo.
+Then check it belongs here at all. A rule the repo wants to *state* is a rule and goes to `CLAUDE.md`
+or `.claude/rules/`; only an exception to the baseline belongs in this file. **No derived copies**
+binds it: an entry that restates something the repo already says elsewhere is a copy, whatever it is
+filed as.
 
 ### 3. Write
 
@@ -88,7 +88,7 @@ neither restated here nor copied into the file this writes.
   one: `setup-matt-pocock-skills` writes that file, and per that skill only when Matt's `triage` skill
   is installed. Never assume either ran.
 - **An existing Workflow roles section**, if the file is there. If it has one, report it and leave it
-  alone unless the user asks to regenerate — the same treatment Part 1 gives an existing rubric.
+  alone unless the user asks to regenerate.
 - **The issue tracker** — from `docs/agents/issue-tracker.md` if it exists, else `git remote -v`.
   This decides step 4 and nothing else.
 
@@ -143,16 +143,14 @@ create the equivalents in whatever tracker it is; the mapping file is already wr
 
 ## Part 3 — the `.claude/rules/` conventions
 
-Four rules, each with a template in this folder. Propose them one at a time, in the order below, and
-write only what the user accepts. A declined rule is a real answer: say nothing more about it.
+Four rules, each with a template in this folder. Propose them one at a time, in the order below. A
+declined rule is a real answer: say nothing more about it.
 
-**These are binding rules in the user's own governance files, so they are proposed, never assumed.**
-Show the full text before writing. `.claude/rules/*.md` loads at launch with the same priority as
-`.claude/CLAUDE.md` and reaches every custom subagent, so a rule written here binds exactly as one
-written in `CLAUDE.md` — which is the point, and why it is worth asking first.
+Show each rule's full text before writing it. `.claude/rules/*.md` loads at launch with the same
+priority as `.claude/CLAUDE.md` and reaches every custom subagent, so a rule written here binds
+exactly as one written in `CLAUDE.md` — which is the point, and why the user reads it first.
 
-Check what is already there before proposing anything: an existing file with the same name is
-reported and left alone unless the user asks to regenerate, the same treatment Parts 1 and 2 give.
+An existing file with the same name is reported and left alone unless the user asks to regenerate.
 
 ### `pr-separation.md` — always propose
 
@@ -178,12 +176,11 @@ configuring — both find it in context.
 installed and 1 when not, needs no authentication and makes no network call.
 
 - **Present** → propose the rule.
-- **Absent** → **print one line and persist nothing**: that stacked batches will chain their pull
-  request bases by branch name and note it in the body regardless, and that
-  `gh extension install <the gh-stack extension>` adds the recorded stack. Do not ask, do not write a
-  key anywhere, and do not offer to install it. Whether a machine has an extension is a per-machine
-  fact, and the second corollary above keeps those out of committed files entirely — a teammate
-  without it must get a silent no-op, which is already what `/dev-loop` gives them.
+- **Absent** → **print one line, persist nothing, move to the next rule**: that stacked batches chain
+  their pull request bases by branch name and note it in the body regardless, and that
+  `gh extension install <the gh-stack extension>` adds the recorded stack on top. That line is the
+  whole response — **no machine facts in git** covers this exactly, so a teammate on a bare machine
+  gets the silent no-op `/dev-loop` already gives them, and a committed answer would take it away.
 
 ### `code-comments.md` and `scratch-files.md` — always propose
 
