@@ -89,8 +89,8 @@ gh label create failed         --color B60205 --description "A stage broke — a
 then map them in `docs/agents/triage-labels.md` under a **Workflow roles** heading, so the pipeline
 can resolve its three *roles* to your *strings* — rename them freely, the skill hardcodes none.
 A role you leave unmapped is skipped silently. `/mattpocock-skills:setup-matt-pocock-skills` creates
-that file, but only if you also installed Matt's `triage` skill; without it, either setup command
-above writes it, or you create it yourself.
+that file, but only if you also installed Matt's `triage` skill; without it, `/setup-ieuanign-skills`
+creates it, or you write it yourself.
 
 **2. Two environment variables, so a halt reaches your phone.** `skills/dev-loop/notify.sh` sends
 via Telegram and stays silent — exit 0, no output — unless both are set:

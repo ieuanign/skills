@@ -23,11 +23,7 @@ The roles are fixed — the pipeline names them. The strings are yours: rename t
 left with no string is skipped silently rather than erroring, which is a supported way to opt out of
 one. Labels must exist in the tracker to be applied.
 
-Three properties worth knowing before you hand-apply or hand-remove one:
-
-- **`in-progress` is a claim marker.** Another orchestration system refuses any issue wearing one,
-  so the two get mutual exclusion for free. Removing it by hand mid-run un-claims a live lane.
-- **`failed` is never a judgement about the code.** It means a stage broke, so it answers exactly
-  one question: is this worth retrying? `awaiting-human` is the one that means "read this".
-- **A lane that started and never cleared `in-progress`** — with no closing message — is a run
-  whose session died. That pattern is the intended signal, not a bug to tidy away.
+**Before hand-applying or hand-removing one, read `notifications.md`.** These are pipeline state, and
+each of the three carries a consequence for touching it by hand — what one means, what reads it, and
+what a run does next. That is specified there and deliberately not copied here: a copy in this file
+would be frozen at the version of the pipeline that wrote it and would never re-sync.
