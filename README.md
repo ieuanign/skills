@@ -1,7 +1,7 @@
 # ieuanign/skills
 
 Ieuan's add-on agent skills for Claude Code — an issue-to-PR **dev-loop** over a custom agent roster, a
-two-axis **code review**, and a **coding-standards** setup skill. Straight from my `.claude` directory,
+two-axis **code review**, and a **per-repo setup** skill. Straight from my `.claude` directory,
 packaged as a plugin.
 
 > **Add-on, not standalone.** These lean on [Matt Pocock's skills](https://github.com/mattpocock/skills)
@@ -21,7 +21,7 @@ Then configure each repo once — independent, so either order:
 
 ```bash
 /mattpocock-skills:setup-matt-pocock-skills   # issue tracker, triage labels, docs/agents/* layout
-/setup-ieuanign-skills                        # the coding-standards rubric + the workflow labels
+/setup-ieuanign-skills                        # the workflow labels + your .claude/rules/ conventions
 ```
 
 - **Updates** — run `/plugin marketplace update ieuanign`, or turn on auto-update for the `ieuanign`
@@ -137,30 +137,43 @@ The roster ships as **plugin agents** (`agents/`), installed alongside the skill
 nothing added to your repo. The skill is repo- and machine-agnostic; per-repo settings live in
 `docs/agents/dev-loop.md` (ask-then-persist on first run).
 
+> **[How to improve your `/dev-loop`](./docs/improving-dev-loop.md)** — the pipeline is fixed, so it
+> gets better by what your repo tells it. Five things worth declaring, in the order they pay off:
+> teaching the reviewer what not to flag, sizing and splitting PRs before they exist, standardising
+> your git config for stacked branches, keeping working material out of the repo, and making comments
+> earn their space.
+
 ### [`/code-review-mp`](./skills/code-review-mp/SKILL.md) — two-axis diff review
 
 Reviews the diff since a fixed point along two axes, each in its own parallel sub-agent so they don't
 pollute each other's context, reported side by side.
 
-- **Standards** — does the code follow this repo's documented coding standards + a Fowler smell baseline?
+- **Standards** — does the code follow this repo's `CLAUDE.md` and `.claude/rules/`, plus a Fowler smell baseline?
 - **Spec** — does it match the originating issue/PRD?
 
-Coexists with Matt's `/code-review`; this is the Standards-aware variant reading
-`docs/agents/coding-standards.md`, so run both setup skills first.
+Coexists with Matt's `/code-review`; this is the Standards-aware variant, which also reads any
+exceptions you've recorded in `docs/agents/smell-overrides.md`.
 
 ### [`/setup-ieuanign-skills`](./skills/setup-ieuanign-skills/SKILL.md) — per-repo config
 
-Two independent parts; run either or both, once per repo.
+Three independent parts; run any of them, and nothing is written without an explicit yes.
 
-- **The coding-standards rubric** — distills your repo's `CLAUDE.md` files into
-  `docs/agents/coding-standards.md`, the rubric the `reviewer` agent and the `/code-review` Standards
-  axis read instead of re-discovering conventions each run. Re-run by hand if `CLAUDE.md` changes materially.
+- **Smell overrides** — records a review finding you've rejected twice into
+  `docs/agents/smell-overrides.md`, so the `reviewer` stops filing it. Writes nothing on a first run;
+  come back to it when you have one. An absent file is the correct state, never a missing step.
 - **The workflow label vocabulary** — writes the **Workflow roles** section of
   `docs/agents/triage-labels.md`, step 1 above done for you: it agrees the three strings first, leaves
   any existing triage table alone, creates the file when `setup-matt-pocock-skills` didn't, and offers
   the `gh label create` commands rather than running them unasked.
+- **The `.claude/rules/` conventions** — proposes how this repo separates pull requests (order, size,
+  and what to do about overlapping changes), how stacked branches are rebased, and the comment and
+  scratch habits every session obeys. `pr-separation.md` is read by the architect when it plans and by
+  Gate 1 when it decides which lanes run in parallel.
 
-Neither matters to a supervised `/dev-loop`, which writes no labels at all.
+Only the labels matter to `/dev-loop auto`; a supervised run writes none. The rules bind every session
+in the repo, plugin or no plugin — see
+[**How to improve your `/dev-loop`**](./docs/improving-dev-loop.md) for what each buys you, and
+[ADR-0001](./docs/adr/0001-config-boundary.md) for why each piece of config lives where it does.
 
 ## For maintainers
 
