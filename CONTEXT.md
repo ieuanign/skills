@@ -30,6 +30,8 @@ A stack asserts dependency: the layer above needs what the layer below creates. 
 
 The five subagents this plugin ships from `agents/` at its root: `architecture-engineer`, `code-writer`, `reviewer`, `debugger`, and `notifier`. They install with the plugin and are dispatched by name; nothing is copied into the consuming repo. The first four are dispatched by the orchestrator or a phase script for the work they do; `notifier` alone is dispatched only from inside a running phase script, and only under an unattended run, because that is the one moment the orchestrator has no shell.
 
-## Coding standards
+## Smell override
 
-`docs/agents/coding-standards.md` — a per-repo review rubric distilled from the repo's `CLAUDE.md` files by `/setup-ieuanign-skills`. The `reviewer` agent and the code-review Standards axis read it; `CLAUDE.md` stays the binding source, this file is a derived scan-time rubric.
+A recorded exception to the smell baseline: a pattern this repository uses deliberately that would otherwise be reported as a code smell. Overrides live in `docs/agents/smell-overrides.md`, read by the `reviewer` agent and the code-review Standards axis. They are written from findings a human rejected, never distilled from `CLAUDE.md` — a repository where nothing has recurred yet correctly has no file at all.
+
+Coding standards themselves are not this. They bind whether or not this plugin is installed, so they live in `CLAUDE.md` and `.claude/rules/`, per [ADR-0001](./docs/adr/0001-config-boundary.md).
