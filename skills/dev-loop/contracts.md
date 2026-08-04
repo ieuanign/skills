@@ -328,6 +328,20 @@ What puts a sub-lane in a layer above the bottom is this classification, so it b
 
 **Additive co-touch stays parallel and accepts the rebase.** Two lanes appending to the same registry do not conflict semantically and usually do not conflict textually; where they do, it is the trivial kind git resolves or a human fixes in a minute. Serialising them would cost a whole layer of wall-clock to avoid that.
 
+**The line between the first two outcomes is the repository's to move, and only that line.** A repository whose shared registry files churn constantly serialises lanes it did not need to; one whose overlaps are always semantically real wants the opposite. Both are facts about a repository's file topology, so the repository declares them, in the **Overlapping changes** section of its `.claude/rules/pr-separation.md`:
+
+| Declared | Where the line sits |
+|---|---|
+| `additive` (the default, and what an absent declaration means) | co-touch at different places in a file stays in one layer; same-region drops a layer |
+| `strict` | any co-touch at all drops a layer, without classifying the region |
+| `parallel` | no co-touch drops a layer; the conflict is left for whoever merges |
+
+**A real dependency is never declarable and never moves.** B consuming what A creates puts B in the next layer whatever the repository says, because the alternative is a pull request that does not build against its base. A declaration that reads as covering it is read as covering the first two outcomes only.
+
+`parallel` is the one value that ships a known conflict rather than avoiding one — the same cost this file already accepts under **Two accepted costs** for a misclassified overlap, chosen deliberately there instead of discovered. It is offered because the cost is bounded and lands where a merge conflict always lands, and it is not the default for the same reason it is not free.
+
+The declaration reaches the host ambiently: project rules load at launch, so no step fetches this file and no profile key mirrors it. **The classification stays single-version across both execution modes** — it is the host's plain reading either way, and the declaration changes which outcome an overlap sorts into, never who does the sorting.
+
 **The last two outcomes are physically identical and differ in what they claim.** Both put the later lane in the next layer, based on the branch below, so both produce the same branch shape and the same pull request base — and both therefore reach the same stack. What separates them is the assertion: a **real dependency** posts the discovered-blocker comment to the dependent issue, recording *why* the lane was stacked where the work is tracked; a **same-region co-touch** posts nothing, because there is no blocker to discover. B does not need A. It merely cannot edit the same lines at the same time.
 
 That distinction is the point of having three outcomes rather than two. Collapsing same-region into dependency would tell a reviewer that B builds on A when it does not, and would leave a permanent, wrong comment on B's issue. Collapsing it into additive would send two lanes at the same lines concurrently and hand someone a conflict the pipeline could have avoided for free.
