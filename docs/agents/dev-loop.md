@@ -63,6 +63,15 @@ and this file keeps no second copy of it — one that drifts is worse than none.
 tracked, including the state-machine harness one of them drives, so a provisioned worktree has all
 of them. It needs only node and the `claude` CLI.
 
+## Fix cycles
+
+`2`
+
+The default, kept deliberately rather than by omission. This repository's reviewer findings are
+prose about prose, so two independent invocations rarely word one defect identically: the threshold
+will fire rarely here and the pipeline's hard ceiling will do the ordinary bounding, which is the
+shape the pipeline intends. Raise it only if reviews here start genuinely repeating themselves.
+
 ## Constraints
 
 None recorded.
