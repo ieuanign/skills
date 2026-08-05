@@ -57,9 +57,10 @@ the `claude` CLI.
 npm run check
 ```
 
-The whole verification surface a cold worktree can run: the plugin manifest, every phase script's
-syntax, and the package/plugin version sync. The `.scratch/dev-loop-checks/` state-machine checks
-are deliberately not in it — they are gitignored, so a provisioned worktree does not have them.
+The whole verification surface a cold worktree can run. `scripts/check.sh` is the list of stages
+and this file keeps no second copy of it — one that drifts is worse than none. Every stage is
+tracked, including the state-machine harness one of them drives, so a provisioned worktree has all
+of them. It needs only node and the `claude` CLI.
 
 ## Constraints
 

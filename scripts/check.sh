@@ -26,21 +26,15 @@ fi
 
 # --- phase-script syntax -----------------------------------------------------
 # `node --check` is a silent no-op on these files and `--input-type=module`
-# rejects their top-level return; only this AsyncFunction shape over the Workflow
-# globals parses them. Same mechanism as the gitignored
-# .scratch/dev-loop-checks/harness.mjs — the two must stay in step. Compile only:
-# the function is never called, because running a phase script dispatches agents.
-# Non-global by design: the host assumes one export, so /g would pass scripts it rejects.
-compile='
-const fs = require("node:fs")
-const src = fs.readFileSync(process.argv[1], "utf8").replace(/^export const meta/m, "const meta")
-const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor
-new AsyncFunction("args", "agent", "parallel", "pipeline", "log", "budget", src)
-'
-
+# rejects their top-level return; only an AsyncFunction over the Workflow globals
+# parses them. That shim lives in scripts/lib/phase-script.mjs and is shared with
+# the state-machine harness below, which needs the identical construction and
+# used to hold its own copy with only a comment asking the two to stay in step.
+# Compile only: the CLI mode never calls what it built, because running a phase
+# script dispatches agents.
 while IFS= read -r script; do
   rel="${script#"$REPO/"}"
-  if out="$(node -e "$compile" "$script" 2>&1)"; then
+  if out="$(node "$REPO/scripts/lib/phase-script.mjs" "$script" 2>&1)"; then
     echo "ok    syntax $rel"
   else
     echo "FAIL  syntax $rel" >&2
@@ -48,6 +42,16 @@ while IFS= read -r script; do
     failed=1
   fi
 done < <(find "$REPO/skills" -name 'phase-*.js' -not -path '*/node_modules/*' | sort)
+
+# --- dev-loop state machine --------------------------------------------------
+# The syntax stage above proves phase-execute.js parses. This one proves it
+# BEHAVES: the harness compiles it through the same shim, hands it a scripted
+# fake agent(), and drives every loop, bound and ending with nothing dispatched.
+# It prints its own ok/FAIL line per scenario, so its output is streamed rather
+# than captured, and its exit code is the only thing read here.
+if ! node "$REPO/scripts/state-machine.mjs"; then
+  failed=1
+fi
 
 # --- shell script syntax -----------------------------------------------------
 # `bash -n` parses without executing. It covers the repo's own scripts and, more
