@@ -44,7 +44,7 @@ A gate's `PushNotification` goes with its question — it exists to summon someo
 
 ### How you write a ⟨notify⟩ event — the mechanism only
 
-Read `notifications.md` before you emit anything. It decides what each event says, which label role it takes, in what order, and what happens when a write fails — and this section adds none of that. What follows is the command for each, and nothing else.
+Read `notifications.md` before you emit anything. It decides what each event says, **the format a message takes** — its state token, its shape and its link — which label role it takes, in what order, and what happens when a write fails. This section adds none of that. What follows is the command for each, and nothing else.
 
 - **A label is `gh issue edit <n> --add-label/--remove-label`.** Resolve its three roles to strings ONCE at Act 0, through the repo's own `docs/agents/triage-labels.md`, per that file's roles-never-strings rule. No label string is ever written into this skill.
 - **A comment is `gh issue comment <n> --body-file -`**, with the body piped in from a **quoted** heredoc (`<<'BODY'`). Never `--body "<text>"`: the bodies carry agent-generated free text — reasons, diagnoses, stack traces — full of backticks, dollar signs and quotes, which a composed shell string mangles or executes.
@@ -232,7 +232,7 @@ Gate 2 fires at the end of EVERY layer, for every sub-lane that layer finished �
    | neither, and any sub-lane's `terminal.pr` was `draft` | a draft with no ending behind it — the rule names this one explicitly, and it is the host's precisely because no notifier ran. |
    | neither, and every PR opened ready | the rule's no-label case. |
 
-   Then **send exactly one closing message**, carrying each PR's link and whether it opened ready or draft. Unconditional, including for a lane with no PR at all: paired with Act 0's started message it is the run's dead-session signal, since a start with no close — plus an issue still wearing in-progress — is a run that died where no code could catch it. A message that says nothing interesting still says the lane is over.
+   Then **send exactly one closing message**, in `notifications.md`'s format — that file states the state token, the shape and which link goes on it, and none of it is restated here. Unconditional, including for a lane with no PR at all: paired with Act 0's started message it is the run's dead-session signal, since a start with no close — plus an issue still wearing in-progress — is a run that died where no code could catch it. A message that says nothing interesting still says the lane is over.
 
    A lane whose sub-lanes span layers reaches this step once, at its last. Carry its `notified` forward into the next layer's args so its ending is written once per run rather than once per layer.
 
