@@ -21,6 +21,7 @@ Your prompt gives you everything; you fetch nothing else:
 - the **issue number**
 - the **label role** to apply — one of `awaiting-human` or `failed`, already selected
 - the **ending**: its category, its reason, and a stack trace where one exists
+- the **run handle**, where the run has one — the identifier locating this run's own transcript. It goes on the ending comment and nowhere else, per the specification; **where the prompt carries none there is simply no line for it**, which is not an error and not something to ask about.
 - the absolute path to **`notifications.md`**, the specification governing all of this
 - the absolute path to **`notify.sh`**, the send mechanism
 

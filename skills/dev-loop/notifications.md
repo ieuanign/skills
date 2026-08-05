@@ -13,7 +13,7 @@ This file is the single source of truth for what an unattended run writes to the
 | plan comment | after planning | host |
 | halt or failed: label swap + ending comment | mid-lane | notifier |
 | message: halted or failed, one-line reason | mid-lane | notifier |
-| crash: label swap for a lane that threw | when the script returns | host |
+| crash: label swap **and ending comment** for a lane that threw | when the script returns | host |
 | completion: label removed, PR opened | after the script | host |
 | message: PR link, ready or draft | after the script | host |
 
@@ -52,6 +52,25 @@ Two drafts have no ending behind them, and those the **host** labels awaiting-hu
 An **ending message** says why in one line, so it can be triaged from a phone. A **completion message** carries the PR link and whether it opened ready or draft. Detail belongs on the issue, not in the message.
 
 **At most one comment of each kind per lane** — one plan comment after planning, and, if anything in the lane ends, one ending comment. Each is an extremely concise summary plus open questions, never a transcript: the plan file already survives on disk at tens of kilobytes, and no agent ever reads the comment (the writer and the reviewer both take the plan from disk), so inlining it buries the thread to serve nobody. The ending comment is the *last* one its lane posts, whatever the conclusion goes on to push or open.
+
+## The run handle
+
+An unattended run left no way to read its own record. The resume command every ending carries re-derives from artifacts, which is correct and is not the same thing as being able to see what the reviewer actually said on cycle two — reconstructing that meant reading commit timestamps and inferring where one cycle ended and the next began.
+
+So every unattended ending carries a **run handle**: the identifier that locates the run's own transcript. The host reads it from its environment once, at intake, and passes it into the phase scripts' arguments — the same class of fact as the skill directory and the agent namespace, both of which the host can see and a script cannot, and it needs no new principle, only one more argument.
+
+**It is written in exactly two places**, each reaching a different reader:
+
+| Where | Written by | Why there |
+|---|---|---|
+| the **ending comment** on the issue | the notifier, mid-lane — and the host for a lane that threw, where no notifier ever ran | the thread already explains the ending, so the handle sits with it |
+| the **pull request body** of an ended sub-lane | the host, at the conclusion | the only copy that outlives the run |
+
+**It is deliberately not carried in the message.** That line is one line for triage from a phone, and detail belongs on the issue. A handle in it would crowd out the reason, which is the thing the line exists to carry.
+
+**Where the environment shows no identifier, the handle is omitted silently** — a missing line, never an error, never a question, and no lane's outcome changes. A teammate whose environment differs gets a shorter comment, not a broken run.
+
+**It is a run handle and not a resume identifier**, and the distinction is load-bearing rather than pedantic: an unattended conclusion removes an ended sub-lane's worktree, so the state a session resume would restore is the state the conclusion just deleted. The resume command is unchanged and remains the resume mechanism. The handle sits beside it, for reading the record rather than continuing the work, and nothing anywhere calls it a resume identifier.
 
 ## Channel contract
 

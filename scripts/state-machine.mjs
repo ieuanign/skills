@@ -490,6 +490,44 @@ scenario('every stage that returned nothing says so, and none of them claims the
   }
 })
 
+// --- the notifier and the run handle -----------------------------------------
+
+// The notifier is dispatched only under `unattended`, and only where the host passed the skill
+// directory — one with no specification to read writes worse than nothing.
+const unattended = over => ({ mode: 'unattended', skillDir: '/plugins/ieuanign-skills/skills/dev-loop', ...over })
+
+scenario('the run handle reaches the notifier when the host supplies one', async () => {
+  const { result, calls } = await runPhase(argsFor([lane(1)], unattended({ runHandle: 'session-abc-123' })), {
+    'write:#1:c1': committed(),
+    'review:#1': changes([FINDING]),
+    'fix:#1:r1': committed(),
+    'review:#1:r1': changes([FINDING]),
+    'notify:#1': { label: 'applied', comment: 'posted', message: 'sent', detail: 'awaiting-human' },
+  })
+  const prompt = promptFor(calls, 'notify:#1')
+  assert.match(prompt, /session-abc-123/)
+  // The specification puts it on the ending comment and keeps it out of the one-line message.
+  assert.match(prompt, /never in the message/)
+  // An applied label is what makes the host stand back rather than writing a second verdict.
+  assert.equal(only(result).notified, true)
+})
+
+scenario('an absent run handle omits the line and errors nothing', async () => {
+  const { result, calls } = await runPhase(argsFor([lane(1)], unattended()), {
+    'write:#1:c1': committed(),
+    'review:#1': changes([FINDING]),
+    'fix:#1:r1': committed(),
+    'review:#1:r1': changes([FINDING]),
+    'notify:#1': { label: 'applied', comment: 'posted', message: 'sent', detail: 'awaiting-human' },
+  })
+  assert.doesNotMatch(promptFor(calls, 'notify:#1'), /Run handle/)
+  const l = only(result)
+  // The lane's outcome is exactly what it would have been with a handle.
+  assert.equal(l.notified, true)
+  assert.equal(l.ending.category, 'HALT')
+  assert.equal(l.subResults[0].terminal.pr, 'draft')
+})
+
 // --- terminal state is per sub-lane ------------------------------------------
 
 scenario("one sub-lane's draft does not draft its sibling", async () => {
