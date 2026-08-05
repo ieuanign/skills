@@ -26,6 +26,64 @@ The **vertical** unit: a chain of branches each based on the one below. Its **tr
 
 A stack asserts dependency: the layer above needs what the layer below creates. Two lanes that merely touch the same file are not a stack, whatever ordering they end up in.
 
+## Fix cycle
+
+One round of `/dev-loop`'s review loop: a reviewer verdict, the writer applying its findings, and the
+re-review that judges the result. The unit the review loop's bound counts.
+
+Not the per-commit implement loop's unit, which is a **debug+fix attempt** — a debugger diagnosis plus
+one writer call, bounded separately and differently.
+
+## Ending label
+
+The single word every `/dev-loop` ending carries — `HALT` or `FAILED` — selected by one question: did
+something deliberately stop, or did something break? It decides nothing. What an ending *produces* is
+decided by the conclusion mode and the terminal-state table, neither of which reads it.
+
+`FAILED` is narrower than "bad": it answers only *is this worth retrying?*, which is why a transient
+break takes it and a reasoned refusal does not.
+
+_Avoid_: status, terminal category, severity.
+
+## Attempt reason
+
+Why one attempt inside a bounded loop failed — a failing test identifier, a reviewer finding, a
+debugger's root cause. It recurs, so it can be compared across rounds and counted.
+
+Distinct from an **ending label**, which is terminal and names nothing about the cause. "The halted
+reason" collapses the two and is the phrase this vocabulary exists to replace.
+
+## Progress-sensitive bound
+
+A loop bound that advances only on a round bringing nothing previously unseen, resets when one does,
+and sits under a hard ceiling that applies regardless. It ends a loop that is stuck rather than one
+that is merely slow.
+
+The suite gate and the review loop have one; the per-commit implement loop deliberately does not,
+because its give-up clause must know in advance which attempt is the last.
+
+_Avoid_: max retries, retry limit — both name a flat count, which is the thing this replaces.
+
+## Finding identity
+
+What makes two reviewer findings the same finding: the file and the defect clause, normalised, with
+the line number dropped as the volatile part. Deliberately conservative — it declares sameness only
+on near-repetition, because sameness is what ends the review loop early.
+
+Its counterpart in the suite gate is free: a test runner supplies stable identifiers, where a
+reviewer supplies prose.
+
+## Run handle
+
+The identifier that locates a finished run's own transcript, carried on the ending comment and in the
+pull request body so a run that nobody watched can still be read afterwards.
+
+Not a way to resume anything. An unattended run removes its worktrees as it concludes, so the state a
+session resume would restore is the state the conclusion just deleted; `/dev-loop <n>` re-derives from
+artifacts and is the resume mechanism.
+
+_Avoid_: session resume id, run id.
+
 ## Agent roster
 
 The five subagents this plugin ships from `agents/` at its root: `architecture-engineer`, `code-writer`, `reviewer`, `debugger`, and `notifier`. They install with the plugin and are dispatched by name; nothing is copied into the consuming repo. The first four are dispatched by the orchestrator or a phase script for the work they do; `notifier` alone is dispatched only from inside a running phase script, and only under an unattended run, because that is the one moment the orchestrator has no shell.
