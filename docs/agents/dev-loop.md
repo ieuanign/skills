@@ -34,6 +34,7 @@ Closes #<n>.                       <!-- first sub-lane only; later ones referenc
 
 ## Review findings
 <count> fixed, <count> won't-fix (each with the writer's reason). Reviewer NOTES verbatim.
+<the review trajectory, one line per round — only where the review loop ended on a bound>
 
 ## Suite
 <passed | failed + failing test identifiers | not run + why>

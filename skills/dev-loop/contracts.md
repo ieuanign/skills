@@ -77,7 +77,7 @@ The writer call of the **final permitted** debug+fix attempt, and no earlier one
 
 The instruction does not exempt that commit from the writer's own pre-commit hooks, and no mode may bypass them for it. In a repository whose hook demands a green suite the evidence commit cannot land, the writer returns `FAILED` with the work left dirty in its worktree, and the sub-lane ends exactly as it would have without the instruction — the evidence survives on the machine rather than on the branch. That is a smaller benefit, not a different ending, and it is the reason nothing downstream may assume the commit exists: the push decision asks git whether the branch is ahead of its base, never the reported commit list.
 
-## Review loop — bound: the repo profile's fix-cycle count (default 2)
+## Review loop — bound: progress-sensitive, under a hard ceiling of 5 fix cycles
 
 On the sub-lane's exact range `<base>..<branch>` (the base may itself be a stacked feature branch — never review the base's own commits), with the issue body passed in so the reviewer runs its Spec axis:
 
@@ -86,11 +86,53 @@ On the sub-lane's exact range `<base>..<branch>` (the base may itself be a stack
 3. The re-review receives the disputes and re-verifies each:
    - retracted disputes become documented **won't-fix** entries in the lane's findings ledger;
    - still-confirmed disputes (`CONTESTED`) end the sub-lane **HALT** immediately — no further cycle is spent on an agent stalemate.
-4. At most the profile's **fix-cycle count** cycles, then **HALT** — the findings are still open. The count is a repository fact and reaches both implementations as a value, never as a literal: a repository with a flaky suite raises it, and one that answers `0` spends no fix cycle at all — its first `CHANGES_REQUESTED` ends the sub-lane with the findings open.
+4. Either bound below firing ends the sub-lane **HALT** — the findings are still open. Both are checked after a `CHANGES_REQUESTED` review and **before that cycle's writer is dispatched**, so nothing is spent on a cycle that cannot run.
 5. A fix-cycle writer return other than `COMMITTED` splits like the implement loop's: `BLOCKED` is **HALT**, `FAILED` or a writer that returned nothing is **FAILED**.
 6. `APPROVED` → the review loop is done.
 
 A review's range is one sub-lane, but the acceptance criteria belong to the whole issue, so the reviewer is told which sub-lane it is judging. A criterion the plan delivers in a different sub-lane is outside this range and is recorded `partial` with that stated — never `not-met`, which would make every early PR of a multi-PR plan read as a failure of work not yet due.
+
+### The bound is progress-sensitive, under a hard ceiling
+
+A flat count cannot tell a loop that is stuck from one that is working, and the flat count this replaces abandoned a lane one cycle from green. So the loop takes the shape the suite gate already has.
+
+After a `CHANGES_REQUESTED` review the counter **advances by one unless a previously unseen finding appeared** — a new finding resets it to 1. At the repository profile's **Fix cycles** value the loop stops. That key is the **no-progress threshold**, not a flat cap; its default is `2`, and `0` still spends no fix cycle at all — its first `CHANGES_REQUESTED` ends the sub-lane with the findings open. It is a repository fact and reaches both implementations as a value, never as a literal.
+
+```
+cycle 1: {A, B, C}   all unseen                    → count 1
+cycle 2: {A, B}      subset, nothing new           → count 2 → stop
+
+cycle 1: {A}                                       → count 1
+cycle 2: {B}         B unseen                      → reset to 1
+cycle 3: {C}         C unseen (regression from B)  → reset to 1
+cycle 4: {}          approved                      → done
+```
+
+The second trace is the motivating case: three cycles of genuine work, the third finding a regression the second's fix introduced. The first is the stuck case the threshold exists to cut — and note that it stops **earlier** than the flat bound it replaces. That is the division of labour: the threshold catches a loop repeating itself, and the ceiling does the ordinary bounding.
+
+**The counter starts at 1, not 0** — the first `CHANGES_REQUESTED` round sets it whether or not that round brought anything new, exactly as the suite gate's does. So the threshold is a **position the counter reaches**, not a count of no-progress rounds tolerated: `2` ends the loop on the first round that repeats itself after a productive one. It follows that `1` behaves as `0` does — the counter is 1 the moment the first round returns, so the first `CHANGES_REQUESTED` ends the sub-lane and no fix cycle is spent. Both are supported answers; `0` is the one the ask offers for that intent.
+
+A hard ceiling of 5 fix cycles applies regardless of progress, because a mis-compared finding list would look new every round and reset the counter forever. It is stated here and held as a constant in the phase script, and the two are compared by a drift check — the same hazard the cost-stage vocabulary is already checked for.
+
+**Expect this to behave as a flat bound of 5 on most runs.** Independent reviewer invocations rarely word the same defect identically, so the threshold fires rarely. That is the design rather than a defect, and it is recorded here so that nobody later "fixes" the counter for not advancing.
+
+The ceiling being 5 where the suite gate's is 8 encodes cost: a review cycle dispatches the two dearest agents in the pipeline, where a suite round is one cheap call running one command. **Token spend is reported, never enforced** below rests on a lane being bounded from five directions, one of them this one — a ceiling of 8 here would have weakened an argument that is load-bearing.
+
+### Finding identity — what makes two findings the same finding
+
+A round counts as no-progress only when **every** finding in it matches a prior round's. Two findings match when their **file and defect clause** match once normalised, **with the line number dropped**: a fix shifts lines, and a shifted line is not a new defect. Nothing else in a finding is compared — the failure scenario and the suggested fix are the reviewer's prose about a defect the first two clauses already name.
+
+The comparison is deliberately conservative. Declaring two findings the same is what ends the loop early, so it is declared only on near-repetition; a reworded defect reads as new, and the cycle that costs is one the ceiling still bounds.
+
+**It is the host's own arithmetic, in plain code, and no agent is dispatched to do it** — the same standing as the commit-breakdown check and the touchpoint intersection. The reviewer's return contract is unchanged: no new key, no finding identifier emitted by an agent, and nothing asked to classify its own findings as new or recurring.
+
+### The escalation carries the trajectory
+
+When the loop ends on either bound, the ending reason names **which bound fired** and states, per round, whether it brought previously-unseen findings or repeated prior ones. The same trajectory reaches the findings ledger and the attempt log. It costs nothing beyond recording what the counter already computed, and it is what lets a reader judge whether one more cycle was worth running before reading a line of the diff.
+
+### This loop and the per-commit implement loop legitimately diverge
+
+The implement loop keeps its flat bound of **2**, and that is deliberate rather than an inconsistency to tidy away. Its **give-up clause** instructs the writer of the final permitted attempt, and no earlier one, to commit abandoned work as evidence — which requires knowing at dispatch time that an attempt is the last. A progress-sensitive counter cannot supply that: firing late is impossible, because the counter only advances after a round returns, and firing early stamps abandonment on attempts that go on to succeed, which this file forbids in terms. Two lesser reasons point the same way — the implement loop's identity is free, being the writer's own `FAILING`, where a reviewer supplies prose; and its round is the cheaper of the two.
 
 The `CRITERIA` verdicts pass straight through this loop untouched — the spec axis is **reported and never blocking**, by the same reasoning as the commit-breakdown check below. A criterion verdict never enters `FINDINGS`, never changes the `VERDICT`, never triggers a fix cycle and never ends the lane: a not-met criterion means the plan lost something the issue asked for, and the only agent that could re-decide the plan is the architect, which does not run again in this lane. A review with zero findings and a not-met criterion is `APPROVED`. The last review's verdicts are the sub-lane's; they land in the findings ledger, which the lane's conclusion surfaces.
 
@@ -172,7 +214,7 @@ Every loop above is bounded — nothing retries indefinitely — and no ending k
 
 A ceiling was specified once and dropped, because it could not work. The runner's budget total is unset unless a human typed a budget directive, so it silently never fires under exactly the unattended run it was meant to guard — the worst failure mode a safety stop can have. Its spend figure is turn-wide and shared across the host and every lane, while the measured baseline is per-lane, so with parallel lanes there is nothing to attribute and one shared ceiling would halt every lane together. And it counts output tokens, which is not the metric the baseline was measured on. The obvious repair — reading the per-agent transcripts the way the baseline analysis did — is unavailable from where the enforcement would live, a workflow script having no filesystem access.
 
-**It was also unnecessary, and this is the load-bearing half.** A lane is already bounded in agent invocations from five directions: the per-commit debug-and-fix bound, the fix-cycle bound, the suite gate's ceiling, a commit count fixed by the plan, and the workflow runner's own backstop on total agents. Nothing here can loop forever. The most expensive lane in the measured set was not stuck — it was thirteen commits of genuine work against a median of three. A token ceiling would not have caught a runaway; it would have refused a big issue.
+**It was also unnecessary, and this is the load-bearing half.** A lane is already bounded in agent invocations from five directions: the per-commit debug-and-fix bound, the review loop's fix-cycle ceiling, the suite gate's ceiling, a commit count fixed by the plan, and the workflow runner's own backstop on total agents. Each loop's progress-sensitive threshold sits *inside* its ceiling and can only stop it sooner, so the count of directions is unchanged by one being added. Nothing here can loop forever. The most expensive lane in the measured set was not stuck — it was thirteen commits of genuine work against a median of three. A token ceiling would not have caught a runaway; it would have refused a big issue.
 
 ## Lane conclusion — the only branch point in this file
 
@@ -307,6 +349,7 @@ A draft is the honest signal that the pipeline could not finish its own job, and
 - **arbitrated** — contested findings the human ruled on, with the ruling. Always empty under unattended mode, where nobody rules — no conditional needed.
 - **acceptance criteria** — the reviewer's `met|partial|not-met` verdict per criterion with its evidence, verbatim. Informational: nothing in the pipeline branches on it.
 - **reviewer NOTES** — non-blocking observations, verbatim.
+- **review trajectory** — on a sub-lane whose review loop ended on either of its bounds: one entry per review round saying whether it brought previously-unseen findings or repeated prior ones. Recorded on every sub-lane and rendered only where a bound ended one, like the attempt log. It answers the question a bare count leaves open — *was this loop converging?* — before anyone opens the diff.
 - **suite** — the gate's state: `passed`, `failed` with its failing test identifiers, or `not run` with why it did not. Never `passed` for a suite that did not run.
 - **attempt log** — everything the pipeline did *after* something first went wrong, in order: each debug+fix attempt, each retry, each review fix cycle, each suite round, carrying what triggered it, what the debugger said, and how it ended. Stages that worked are already in the commit list and the categories above; repeating them buries the one entry that matters. Recorded on every sub-lane and rendered only on one that ended, so the loops append without branching.
 

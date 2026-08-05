@@ -15,7 +15,9 @@ export const meta = {
 //     notified: true when an EARLIER layer already dispatched the notifier for this lane. A lane's
 //     ending is written once per run, not once per layer; the host carries the flag forward.
 //   mode: 'gated' | 'unattended',
-//   maxFixCycles: number,  // the profile's Fix cycles key; absent ⇒ the profile's default of 2
+//   fixCycleThreshold: number,  // the profile's Fix cycles key, read as the review loop's
+//                          // NO-PROGRESS THRESHOLD rather than a flat cap; absent ⇒ the
+//                          // profile's default of 2. The hard ceiling is a constant below.
 //   suiteCommand: string,  // the profile's Full-suite command; 'none' or absent ⇒ every suite is not-run
 //   skillDir: string       // absolute path to this skill's folder; the notifier is told where
 //                          // notifications.md and notify.sh are, having no way to derive it.
@@ -43,8 +45,11 @@ export const meta = {
 // any sub-lane ended FAILED, else HALT if any did, else null. The label decides nothing — the
 // conclusion mode alone decides the push, the PR and the worktree.
 // subResults: [{branch, area, ending, commits, plannedCommits, madeCommits, deviations, disputed,
-//               criterionVerdicts, reviewNotes, fixedFindings, wontFix, openFindings, suite,
-//               attempts, terminal}]
+//               criterionVerdicts, reviewNotes, fixedFindings, wontFix, openFindings,
+//               reviewTrajectory, suite, attempts, terminal}]
+// reviewTrajectory: [string] — one entry per CHANGES_REQUESTED review round, saying whether it
+// brought previously-unseen findings or repeated prior ones. The findings ledger's, recorded on
+// every sub-lane and rendered only on one whose review loop ended on a bound.
 // suite: {state: 'passed'|'failed'|'not-run', failing: [ids], output} — always present, whatever
 // ended the sub-lane. 'not-run' is a state of its own and is never reported as passed.
 // attempts: [{stage, trigger, debugger, outcome}] — the ledger's attempt log, recorded on every
@@ -72,11 +77,21 @@ const roleAgent = role => (NS ? `${NS}:${role}` : role)
 
 const writerType = roleAgent('code-writer')
 
-// The fix-cycle bound is a repository fact, not a constant: a repository with a flaky suite wants
-// more cycles, and one that would rather read every finding itself answers 0. The host passes the
-// profile's value; the 2 below is the profile's own default, reached only when a host passed no
-// number at all. `|| 2` would be wrong — it turns a deliberate 0 back into two cycles.
-const MAX_FIX = Number.isInteger(input.maxFixCycles) && input.maxFixCycles >= 0 ? input.maxFixCycles : 2
+// The review loop's no-progress threshold — the position the counter below must REACH for the
+// loop to be judged stuck, not a count of no-progress rounds tolerated. The counter is 1 the
+// moment the first CHANGES_REQUESTED round returns, so 2 ends the loop on the first round that
+// repeats itself. A repository fact, not a constant: one with a flaky suite wants more, and one
+// that would rather read every finding itself answers 0, which spends no fix cycle at all. The
+// host passes the profile's value; the 2 below is the profile's own default, reached only when a
+// host passed no number. `|| 2` would be wrong — it turns a deliberate 0 back into two cycles.
+const NO_PROGRESS_THRESHOLD = Number.isInteger(input.fixCycleThreshold) && input.fixCycleThreshold >= 0 ? input.fixCycleThreshold : 2
+
+// The review loop's hard ceiling, in fix cycles, applied whatever the trajectory says: a
+// mis-compared finding list would look new every round and reset the threshold forever. It is
+// STATED IN contracts.md TOO, and `npm run check` compares the two — the same drift hazard the
+// cost-stage vocabulary is checked for. Five rather than the suite gate's eight because a review
+// cycle dispatches the two dearest agents in the pipeline where a suite round is one cheap call.
+const REVIEW_CEILING = 5
 
 // Passed in, never re-derived. Nothing here branches on it yet — the notifier and the unattended
 // conclusion will. Anything but 'unattended' is gated, so an unknown mode never suppresses a gate.
@@ -227,6 +242,27 @@ function suitePrompt(sub) {
 // is the same commit as `ddd1234 wip(…)`, and a miscount here is the one thing the exclusion exists
 // to prevent.
 const isWip = line => /^\W*(?:[0-9a-f]{7,40}\b\W*)?wip[(:]/i.test(line)
+
+// Finding identity — contracts.md's "Finding identity" subsection is normative. A finding is
+// `file:line — defect — failure scenario — suggested fix`, and only the first two clauses identify
+// it: the line number is dropped because a fix shifts lines and a shifted line is not a new
+// defect, and the last two clauses are the reviewer's prose about a defect the first two name.
+//
+// Case and whitespace are normalised and NOTHING ELSE is. Declaring two findings the same is what
+// ends the review loop early, so sameness is declared only on near-repetition; a reworded defect
+// reads as new, and the cycle that costs is one the ceiling still bounds. Host arithmetic in
+// plain code — no agent is dispatched to decide it, and the reviewer's return contract is
+// untouched.
+//
+// A finding carrying no em-dash at all has no clause to isolate, so the whole of it stands as its
+// own identity. That can only make two findings look MORE different, which is the safe direction.
+const squash = s => String(s).toLowerCase().replace(/\s+/g, ' ').trim()
+const findingIdentity = finding => {
+  const parts = String(finding).split(/\s+[—–]\s+/)
+  const where = squash(parts[0] || '').replace(/:\d+(:\d+)?$/, '') // file:line, file:line:col
+  // NUL separator: nothing a reviewer writes can forge a collision across the two clauses.
+  return `${where}\u0000${parts.length > 1 ? squash(parts[1]) : ''}`
+}
 
 function absorb(rec, writerResult) {
   rec.commits.push(...(writerResult.commits || []))
@@ -419,7 +455,14 @@ const runLane = async (lane, subResults) => {
     }
 
     // 2. Review → fix cycles (writer may dispute; contested disputes end the sub-lane)
-    let cycles = 0
+    //
+    // The bound is PROGRESS-SENSITIVE under a hard ceiling, exactly as the suite gate's is —
+    // contracts.md's "The bound is progress-sensitive, under a hard ceiling" is normative. A flat
+    // count cannot tell a loop that is stuck from one that is working, and the flat count this
+    // replaces abandoned a lane one cycle from green.
+    let cycles = 0                  // fix cycles spent — what the hard ceiling bounds
+    let noProgressRounds = 0        // consecutive rounds that brought nothing previously unseen
+    const seenFindings = new Set()  // every finding identity this sub-lane's review loop has shown
     let disputes = []
     while (true) {
       const disputeClause = disputes.length
@@ -451,11 +494,45 @@ const runLane = async (lane, subResults) => {
       if (disputes.length) rec.wontFix.push(...disputes) // reviewer retracted them — documented won't-fix
       disputes = []
       if (review.verdict === 'APPROVED') break
-      if (cycles >= MAX_FIX) {
-        return halt(rec, `still CHANGES_REQUESTED after ${MAX_FIX} fix cycles — the findings are still open`, { review })
+
+      // The counter, and the trajectory the escalation carries. Computed here, before either
+      // bound is read, so an ending reports the round that produced it as well as the ones before.
+      const identities = (review.findings || []).map(findingIdentity)
+      const fresh = identities.filter(id => !seenFindings.has(id))
+      identities.forEach(id => seenFindings.add(id))
+      // A round is no-progress only when EVERY finding in it matched a prior round's. One new
+      // finding is progress, and resets — a shrinking set of the same findings is not. The counter
+      // is 1 after the FIRST round whether or not that round brought anything new, exactly as the
+      // suite gate's is, so the threshold is a position it reaches and not a count of tolerated
+      // no-progress rounds. Said once here, and stated in contracts.md, because the arithmetic is
+      // easy to describe wrongly.
+      noProgressRounds = fresh.length ? 1 : noProgressRounds + 1
+      // One phrase, two readers — the trajectory and the attempt trigger below. Written once so
+      // the ledger and the attempt log cannot describe the same round differently.
+      const freshness = fresh.length ? `${fresh.length} previously unseen` : 'none previously unseen'
+      rec.reviewTrajectory.push(`round ${rec.reviewTrajectory.length + 1}: ${review.findings.length} finding(s), ${freshness}`)
+      // The trajectory IS the per-round account the escalation is required to carry, so the reason
+      // below states only which bound fired and lets this say what each round actually brought.
+      // A reason that also summarised the rounds could contradict it, and did.
+      const trajectory = `Trajectory — ${rec.reviewTrajectory.join('; ')}.`
+
+      // BOTH bounds are checked here, before this cycle's writer is dispatched, so nothing is
+      // spent on a cycle that cannot run. The threshold is read first: where both would fire it
+      // is the more specific finding, and it is the one that says the loop was repeating itself.
+      if (noProgressRounds >= NO_PROGRESS_THRESHOLD) {
+        const why = NO_PROGRESS_THRESHOLD === 0
+          ? 'this repository spends no fix cycle at all (its Fix cycles answer is 0)'
+          : `the no-progress counter reached this repository's no-progress threshold of ${NO_PROGRESS_THRESHOLD}`
+        return halt(rec, `still CHANGES_REQUESTED and the review loop is not progressing — ${why}. The findings are still open. ${trajectory}`, { review })
       }
+      if (cycles >= REVIEW_CEILING) {
+        return halt(rec, `still CHANGES_REQUESTED at the ${REVIEW_CEILING}-fix-cycle ceiling — the findings are still open. ${trajectory}`, { review })
+      }
+
       cycles++
-      const attempt = attemptOf(rec, 'Review', `CHANGES_REQUESTED — ${review.findings.length} finding(s), fix cycle ${cycles} of ${MAX_FIX}`)
+      const attempt = attemptOf(rec, 'Review',
+        `CHANGES_REQUESTED — ${review.findings.length} finding(s), ${freshness} — ` +
+        `fix cycle ${cycles} of at most ${REVIEW_CEILING} (no-progress threshold ${NO_PROGRESS_THRESHOLD})`)
       const fix = await agent(
         mark(lane.issue, STAGE.REVIEW) +
         writerPrompt(lane, sub, `Mode 2 — apply these reviewer findings (dispute any you can refute, with evidence):\n${review.findings.join('\n')}`),
@@ -559,6 +636,10 @@ const runLane = async (lane, subResults) => {
       // openFindings: reviewer findings the sub-lane finished without applying or retracting —
       // the predicate's "findings are resolved" conjunct, filled in only where one is left open.
       fixedFindings: [], wontFix: [], openFindings: [], attempts: [],
+      // One entry per CHANGES_REQUESTED review round — whether it brought previously-unseen
+      // findings or repeated prior ones. Appended by the review loop and read by whatever renders
+      // an ended sub-lane, so the loop appends without asking whether the sub-lane will end.
+      reviewTrajectory: [],
       // Never absent: the ledger renders passed / failed / not-run-and-why, and has no rendering
       // for a missing value. A sub-lane an ending stops never reaches the gate, and must still
       // say so — end() fills the why in, since only it knows what stopped it.

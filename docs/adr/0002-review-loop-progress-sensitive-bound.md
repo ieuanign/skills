@@ -1,7 +1,8 @@
 # 0002 — The review loop's bound is progress-sensitive; the implement loop's is not
 
-**Status**: accepted — the implementation lands separately, editing `contracts.md` first and both
-modes in the same change, per that file's own rule.
+**Status**: accepted, and implemented — `contracts.md` was edited first and both modes in the same
+change, per that file's own rule. The ceiling is stated in the contract's prose and held as a
+phase-script constant, and `npm run check` compares them.
 
 `/dev-loop`'s review loop halted a lane one fix cycle before green. The evidence is a single run,
 and it is unambiguous: three reviews produced three findings, at three different lines, **disjoint on
