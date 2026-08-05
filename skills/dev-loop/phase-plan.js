@@ -88,8 +88,10 @@ const results = await parallel(input.issues.map(iss => async () => {
       ` Fetch the issue yourself, explore the code, write the plan file, and report status, plan path, summary, and open questions.`,
       { agentType, label: `plan:#${iss.number}`, phase: 'Plan', schema: PLAN_SCHEMA }
     )
-    // A throw is the same outcome as a dead architect and takes the same entry.
-    return r ? { issue: iss.number, ...r } : died(iss.number, 'architect died — re-run this lane')
+    // A throw is the same outcome as an architect that returned nothing and takes the same entry.
+    // What that emptiness MEANT is not knowable from here — contracts.md's DIED entry is normative
+    // — so the summary says what happened rather than asserting a crash.
+    return r ? { issue: iss.number, ...r } : died(iss.number, "the architect returned nothing — it was skipped, or it died after the runner's retries; re-run this lane")
   } catch (err) {
     return died(iss.number, `architect threw — re-run this lane: ${crashLine(err)}`)
   }
@@ -97,6 +99,6 @@ const results = await parallel(input.issues.map(iss => async () => {
 
 // No filter: every requested issue leaves this script with an entry. The thunks cannot throw, so
 // a null here is the runner itself dropping one, which is the same unattributable loss.
-const ok = results.map((r, i) => r || died(input.issues[i].number, 'the workflow runner returned nothing for this issue — re-run this lane'))
+const ok = results.map((r, i) => r || died(input.issues[i].number, "the workflow runner for this issue returned nothing — it was skipped, or it died after the runner's retries; re-run this lane"))
 log(`${ok.length}/${input.issues.length} plans returned (${ok.filter(r => r.status === 'READY').length} READY, ${ok.filter(r => r.status === 'BLOCKED').length} BLOCKED, ${ok.filter(r => r.status === 'DIED').length} DIED)`)
 return ok
