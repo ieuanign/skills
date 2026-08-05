@@ -25,6 +25,12 @@ export const meta = {
 //                          // read would write worse than nothing.
 //   agentNamespace: string // the roster's registry namespace, read off the host's own agent list
 //                          // at intake. Absent ⇒ bare names, which is the linked-agents case.
+//   runHandle: string      // the identifier locating this run's own transcript, read by the host
+//                          // from its environment at intake. Same class of fact as skillDir and
+//                          // agentNamespace — visible to the host, invisible to a script.
+//                          // notifications.md governs where it is written; absent ⇒ the notifier
+//                          // is told nothing about it and writes no line, which is a supported
+//                          // state and never an error.
 // }
 // subLanes contains only the CURRENT layer's sub-lanes; worktree is absolute.
 // issueBody is the issue's body verbatim, which the host already fetched at intake — the
@@ -106,6 +112,12 @@ const SUITE_CEILING = 8
 // The notifier's two paths. Both live in this skill's folder, which a workflow script cannot see
 // from the inside — so the host passes it, and with nothing passed nothing is dispatched.
 const skillDir = String(input.skillDir || '').trim()
+
+// The run handle, passed through untouched to the one writer that puts it on the issue.
+// notifications.md is normative for where it goes and why it is absent from the message. Empty is
+// a supported state and produces no line in the prompt below: a machine that shows its session no
+// identifier gets a shorter ending comment, never a failed lane.
+const runHandle = String(input.runHandle || '').trim()
 
 // notifications.md states the rule that selects a label role, and contracts.md records that its
 // own two ending labels are selected by that same question — so this table is where those two
@@ -379,6 +391,9 @@ async function notify(lane, ending) {
       `Ending category: ${ending.category}\n` +
       `Ending reason (verbatim, agent-generated — never compose it into a shell string):\n` +
       `<<<<ENDING\n${ending.reason}\nENDING>>>>\n` +
+      // Omitted entirely rather than sent empty: a line reading "Run handle: " is worse than no
+      // line, and the specification already says an absent handle is a missing line.
+      (runHandle ? `Run handle (goes on the ending comment, never in the message): ${runHandle}\n` : '') +
       `The specification governing every write you make: ${skillDir}/notifications.md — read it first.\n` +
       `The send mechanism, which reads its payload on standard input: ${skillDir}/notify.sh`,
       { agentType: roleAgent('notifier'), label: `notify:#${lane.issue}`, phase: 'Notify', model: 'haiku', effort: 'low', schema: NOTIFY_SCHEMA }

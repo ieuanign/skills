@@ -39,6 +39,8 @@ Closes #<n>.                       <!-- first sub-lane only; later ones referenc
 ## Suite
 <passed | failed + failing test identifiers | not run + why>
 
+Run handle: <the run's own transcript identifier>   <!-- ended sub-lanes only; omitted when absent -->
+
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
 
