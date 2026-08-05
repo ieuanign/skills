@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": ["Bash(*)", "WebFetch(domain:docs.claude.com)"]
+  },
+  "enabledPlugins": {
+    "mattpocock-skills@claude-plugins-official": true
+  }
+}
