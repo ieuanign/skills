@@ -297,6 +297,15 @@ function terminalState(rec) {
   return { pr: 'draft', reasons }
 }
 
+// A stage that returned nothing, said honestly — contracts.md's DIED entry is normative for why.
+// From here a skip and a death after the runner's own retries are indistinguishable: both resolve
+// the call to nothing, and nothing is the whole of what this script sees. Asserting a death sends
+// a reader looking for a crash that may never have happened. The wording is the lane-level empty
+// result's, at the bottom of this file, so one condition speaks with one voice. The ending LABEL
+// is unchanged and stays FAILED: it answers only "is this worth retrying?", to which a transport
+// break is the clearest yes.
+const returnedNothing = stage => `${stage} returned nothing — it was skipped, or it died after the runner's retries`
+
 // What a throw leaves behind, said honestly. A genuinely dead agent often throws a bare value
 // carrying neither a message nor a stack, so this promises a trace only where one exists: a
 // reason reading "stack trace: undefined" sends a human looking for something that never existed.
@@ -375,7 +384,7 @@ const runLane = async (lane, subResults) => {
           `A code-writer returned FAILED while implementing commit ${c.ordinal} ("${c.message}") of plan ${lane.planPath}. This is debug+fix attempt ${tries} of 2 — after 2 the sub-lane ends.\nIts return: ${JSON.stringify(res)}\nReproduce inside the checkout at ${sub.worktree} (branch ${sub.branch}) and diagnose. When owner=code-writer, phrase the handoff as a finding (file:line — defect — failure scenario).`,
           { agentType: roleAgent('debugger'), label: `debug:#${lane.issue}:c${c.ordinal}:t${tries}`, phase: 'Implement', schema: DEBUG_SCHEMA }
         )
-        if (!diag) return failed(rec, `debugger died after FAILED commit ${c.ordinal}`)
+        if (!diag) return failed(rec, returnedNothing(`the debugger on FAILED commit ${c.ordinal}`))
         attempt.debugger = `${diag.owner}: ${diag.rootCause}`
         if (diag.owner === 'retry') {
           res = await agent(
@@ -395,7 +404,7 @@ const runLane = async (lane, subResults) => {
           return halt(rec, `debugger routed to ${diag.owner}: ${diag.rootCause}`, { diag })
         }
       }
-      if (!res) return failed(rec, `writer died on commit ${c.ordinal}`)
+      if (!res) return failed(rec, returnedNothing(`the writer on commit ${c.ordinal}`))
       // Absorbed before the result is read, so a writer that committed and THEN stopped still
       // reports what it landed: the terminal-state table's last two rows split on whether
       // anything exists, and a BLOCKED return that dropped its commits would misreport as
@@ -422,7 +431,7 @@ const runLane = async (lane, subResults) => {
         { agentType: roleAgent('reviewer'), label: `review:${tag}${cycles ? ':r' + cycles : ''}`, phase: 'Review', schema: REVIEW_SCHEMA }
       )
       // Both are returns the loop cannot use, not verdicts about the code.
-      if (!review) return failed(rec, 'reviewer died')
+      if (!review) return failed(rec, returnedNothing('the reviewer'))
       if (review.verdict === 'ERROR') return failed(rec, `reviewer ERROR: ${review.notes || ''}`)
       rec.reviewNotes = review.notes || ''
       // Recorded before every ending below so an ended sub-lane still carries them; the
@@ -455,7 +464,9 @@ const runLane = async (lane, subResults) => {
       attempt.outcome = `the fix returned ${fix ? fix.result : 'nothing'}`
       if (!fix || fix.result !== 'COMMITTED') {
         if (fix) absorb(rec, fix) // it may have committed some of them before stopping
-        const reason = `fix cycle ${cycles} returned ${fix ? fix.result : 'nothing'}${fix && fix.disputed ? ` (DISPUTED: ${fix.disputed})` : ''}`
+        const reason = fix
+          ? `fix cycle ${cycles} returned ${fix.result}${fix.disputed ? ` (DISPUTED: ${fix.disputed})` : ''}`
+          : returnedNothing(`fix cycle ${cycles}'s writer`)
         const stopped = fix && fix.result === 'BLOCKED' // a reasoned refusal, not a break
         return (stopped ? halt : failed)(rec, reason, { review, fix })
       }
@@ -482,8 +493,8 @@ const runLane = async (lane, subResults) => {
           label: `suite:${tag}${suffix}`, phase: 'Suite', model: 'haiku', effort: 'low', schema: SUITE_SCHEMA,
         })
         if (!suite) {
-          rec.suite = { state: 'not-run', failing: [], output: 'the suite gate died before it reported' }
-          return failed(rec, `suite gate died on ${sub.branch} — the suite never ran`)
+          rec.suite = { state: 'not-run', failing: [], output: returnedNothing('the suite gate') }
+          return failed(rec, `${returnedNothing(`the suite gate on ${sub.branch}`)}; the suite never ran`)
         }
         rec.suite = { state: suite.state, failing: suite.failing || [], output: suite.output || '' }
         log(`#${lane.issue}: ${sub.branch} suite ${rec.suite.state}${round > 1 ? ` (round ${round})` : ''}`)
@@ -507,7 +518,7 @@ const runLane = async (lane, subResults) => {
           `The repository's full test suite is red on branch ${sub.branch}, after its review loop settled. This is round ${round} of at most ${SUITE_CEILING} for this sub-lane.\nThe suite gate ran \`${suiteCommand}\` inside ${sub.worktree} and returned: ${JSON.stringify(rec.suite)}\nReproduce inside that checkout and diagnose. The breakage is often outside the commit scope of the work on this branch — say so if it is. When owner=code-writer, phrase the handoff as a finding (file:line — defect — failure scenario).`,
           { agentType: roleAgent('debugger'), label: `suitedebug:${tag}:r${round}`, phase: 'Suite', schema: DEBUG_SCHEMA }
         )
-        if (!diag) return failed(rec, `debugger died on a red suite on ${sub.branch}: ${redReason}`)
+        if (!diag) return failed(rec, `${returnedNothing(`the debugger on a red suite on ${sub.branch}`)}; ${redReason}`)
         attempt.debugger = `${diag.owner}: ${diag.rootCause}`
         if (diag.owner === 'code-writer') {
           const fix = await agent(
@@ -518,7 +529,9 @@ const runLane = async (lane, subResults) => {
           attempt.outcome = `the fix returned ${fix ? fix.result : 'nothing'}`
           if (!fix || fix.result !== 'COMMITTED') {
             if (fix) absorb(rec, fix) // whatever it landed before stopping is on the branch
-            const reason = `suite fix round ${round} returned ${fix ? fix.result : 'nothing'} — ${redReason}`
+            const reason = fix
+              ? `suite fix round ${round} returned ${fix.result} — ${redReason}`
+              : `${returnedNothing(`suite fix round ${round}'s writer`)}; ${redReason}`
             const stopped = fix && fix.result === 'BLOCKED'
             return (stopped ? halt : failed)(rec, reason)
           }
@@ -609,12 +622,13 @@ const laneThunk = lane => async () => {
 const laneResults = await parallel(input.lanes.map(laneThunk))
 
 // No filter: a requested issue leaves this script with an entry whatever happened to it. The
-// thunks above cannot throw, so a null here is the runner itself dropping a lane — skipped by the
-// user, or dead after its retries — which is exactly as unattributable as the throw used to be.
+// thunks above cannot throw, so a null here is the runner itself dropping a lane, which is exactly
+// as unattributable as the throw used to be — and is the same observation every stage above
+// reports through returnedNothing(), so it uses that helper rather than a second wording of it.
 const done = laneResults.map((lane, i) => lane || {
   issue: input.lanes[i].issue,
   mode: MODE,
-  ending: { category: 'FAILED', reason: 'the workflow runner returned nothing for this lane — it was skipped, or it died after its retries' },
+  ending: { category: 'FAILED', reason: returnedNothing('the workflow runner for this lane') },
   crashed: true,
   notified: false,
   subResults: [],

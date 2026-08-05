@@ -108,6 +108,11 @@ const toWriter = { rootCause: 'an off-by-one', owner: 'code-writer', finding: 's
 
 const FINDING = 'src/a.ts:12 — the guard is missing — a null body throws — add the guard'
 
+// The one sentence every ending produced by an empty return has to carry. From where the pipeline
+// sits a skip and a death after the runner's retries are the same observation, so an ending may
+// not pick one — contracts.md's DIED entry is normative.
+const EMPTY_RETURN = /returned nothing — it was skipped, or it died after the runner's retries/
+
 // --- the scenario registry ---------------------------------------------------
 
 const scenarios = []
@@ -178,9 +183,9 @@ scenario('a fix-cycle writer BLOCKED is a reasoned refusal and takes the HALT la
   assert.match(s.ending.reason, /fix cycle 1 returned BLOCKED/)
 })
 
-scenario('a dead reviewer and an ERROR reviewer both take the FAILED label', async () => {
+scenario('a reviewer that returned nothing and an ERROR reviewer both take the FAILED label', async () => {
   for (const [name, review, expected] of [
-    ['dead', null, /reviewer died/],
+    ['empty', null, EMPTY_RETURN],
     ['ERROR', { verdict: 'ERROR', findings: [], notes: 'no diff' }, /reviewer ERROR/],
   ]) {
     const { result } = await runPhase(argsFor([lane(1)]), {
@@ -320,7 +325,7 @@ scenario('the suite gate stops at its 8-round ceiling when every round brings a 
   assert.match(s.ending.reason, /the 8-round ceiling/)
 })
 
-scenario('a dead suite gate takes the FAILED label and the suite is never reported as passed', async () => {
+scenario('a suite gate that returned nothing is FAILED, and its suite is never reported as passed', async () => {
   const { result } = await runPhase(argsFor([lane(1)]), {
     'write:#1:c1': committed(),
     'review:#1': approved,
@@ -329,6 +334,7 @@ scenario('a dead suite gate takes the FAILED label and the suite is never report
   const s = only(result).subResults[0]
   assert.equal(s.ending.category, 'FAILED')
   assert.equal(s.suite.state, 'not-run')
+  assert.match(s.suite.output, EMPTY_RETURN)
 })
 
 scenario('no configured full-suite command means not-run, and dispatches nothing to say so', async () => {
@@ -341,6 +347,30 @@ scenario('no configured full-suite command means not-run, and dispatches nothing
   assert.equal(s.suite.state, 'not-run')
   // Not-run with no open findings and no unmet criterion is still a ready pull request.
   assert.equal(s.terminal.pr, 'ready')
+})
+
+// --- a stage that returned nothing -------------------------------------------
+
+scenario('every stage that returned nothing says so, and none of them claims the agent died', async () => {
+  const settled = { 'write:#1:c1': committed(), 'review:#1': approved }
+  const red = suiteRed(['a.test.ts > one'])
+  const cases = [
+    ['the writer on a plan commit', { 'write:#1:c1': null }],
+    ['the debugger', { 'write:#1:c1': writerFailed(), 'debug:#1:c1:t1': null }],
+    ['the reviewer', { 'write:#1:c1': committed(), 'review:#1': null }],
+    ['a fix-cycle writer', { ...settled, 'review:#1': changes([FINDING]), 'fix:#1:r1': null }],
+    ['the suite gate', { ...settled, 'suite:#1': null }],
+    ['the suite debugger', { ...settled, 'suite:#1': red, 'suitedebug:#1:r1': null }],
+    ['a suite-fix writer', { ...settled, 'suite:#1': red, 'suitedebug:#1:r1': toWriter, 'suitefix:#1:r1': null }],
+  ]
+  for (const [stage, script] of cases) {
+    const { result } = await runPhase(argsFor([lane(1)]), script)
+    const s = only(result).subResults[0]
+    // The label is unchanged: a break is worth retrying, whatever emptied the call.
+    assert.equal(s.ending.category, 'FAILED', `${stage}: a break, never a verdict`)
+    assert.match(s.ending.reason, EMPTY_RETURN, stage)
+    assert.doesNotMatch(s.ending.reason, /\bdied\b(?! after the runner)/, `${stage}: nothing may assert a death`)
+  }
 })
 
 // --- terminal state is per sub-lane ------------------------------------------
