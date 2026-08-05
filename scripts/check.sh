@@ -139,6 +139,32 @@ else
   failed=1
 fi
 
+# --- review-loop ceiling ------------------------------------------------------
+# The review loop's hard ceiling is stated twice on purpose: as prose in
+# contracts.md, which is normative, and as a constant in the phase script, which
+# is what actually stops the loop. That is the same triplication hazard the cost
+# stage vocabulary above exists for, so it gets the same treatment rather than a
+# seam of its own — the harness cannot catch it, because it would only ever
+# assert whichever number the script happens to hold.
+#
+# The prose phrase carries no markup INSIDE it, which is what makes it greppable
+# while still reading as a sentence. Every occurrence is collected, not just the
+# first: two prose mentions that drifted from each other is the same failure.
+ceiling_const="$(grep -m1 -oE '^const REVIEW_CEILING = [0-9]+' "$REPO/skills/dev-loop/phase-execute.js" | grep -oE '[0-9]+')"
+ceiling_prose="$(grep -oE 'hard ceiling of [0-9]+ fix cycles' "$REPO/skills/dev-loop/contracts.md" | grep -oE '[0-9]+' | sort -u)"
+if [ -z "$ceiling_const" ] || [ -z "$ceiling_prose" ]; then
+  echo "FAIL  review-loop ceiling: const=${ceiling_const:-not found} prose=${ceiling_prose:-not found}" >&2
+  echo "      expected 'const REVIEW_CEILING = <n>' in phase-execute.js and 'hard ceiling of <n> fix cycles' in contracts.md" >&2
+  failed=1
+elif [ "$ceiling_const" = "$ceiling_prose" ]; then
+  echo "ok    review-loop ceiling ($ceiling_const fix cycles)"
+else
+  echo "FAIL  review-loop ceiling drifted" >&2
+  echo "      phase-execute.js: $ceiling_const" >&2
+  echo "      contracts.md:     $(echo "$ceiling_prose" | tr '\n' ' ')" >&2
+  failed=1
+fi
+
 # --- agent types are resolved, never literal ---------------------------------
 # A phase script dispatches roster agents by name, and the SAME definition is
 # registered bare when it is linked into `.claude/agents/` and namespaced

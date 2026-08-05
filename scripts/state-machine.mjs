@@ -107,6 +107,12 @@ const suiteRed = failing => ({ state: 'failed', failing, output: failing.join('\
 const toWriter = { rootCause: 'an off-by-one', owner: 'code-writer', finding: 'src/a.ts:1 — off by one — it drops the last row' }
 
 const FINDING = 'src/a.ts:12 — the guard is missing — a null body throws — add the guard'
+// The same defect in the same file, reported at a line the previous cycle's fix shifted. Finding
+// identity drops the line, so this is NOT a new finding.
+const FINDING_MOVED = 'src/a.ts:31 — the guard is missing — a null body throws — add the guard'
+// A different defect, and the one after it a regression the fix for the second introduced.
+const FINDING_B = 'src/b.ts:40 — the retry never backs off — a hot loop on every 429 — add a delay'
+const FINDING_C = 'src/b.ts:41 — the delay is unbounded — a slow peer hangs the request — cap it'
 
 // The one sentence every ending produced by an empty return has to carry. From where the pipeline
 // sits a skip and a death after the runner's retries are the same observation, so an ending may
@@ -147,29 +153,140 @@ scenario('a clean sub-lane runs write, review, suite and opens a ready pull requ
 
 // --- the review loop ---------------------------------------------------------
 
-scenario('the review loop reaches its bound and ends HALT with the findings open', async () => {
-  const { result, labels } = await runPhase(argsFor([lane(1)], { maxFixCycles: 2 }), {
+scenario('the motivating case: three cycles of disjoint findings, then approval', async () => {
+  // Three reviews, three findings, at three different lines, disjoint on every round — the third
+  // a regression the fix for the second introduced. Every cycle did real work, and the flat bound
+  // this replaces stopped the loop here with the lane one cycle from green.
+  const { result, labels } = await runPhase(argsFor([lane(1)]), {
     'write:#1:c1': committed(),
     'review:#1': changes([FINDING]),
     'fix:#1:r1': committed(),
-    'review:#1:r1': changes([FINDING]),
+    'review:#1:r1': changes([FINDING_B]),
     'fix:#1:r2': committed(),
-    'review:#1:r2': changes([FINDING]),
+    'review:#1:r2': changes([FINDING_C]),
+    'fix:#1:r3': committed(),
+    'review:#1:r3': approved,
+    'suite:#1': suitePassed,
   })
   assert.deepEqual(labels, [
     'write:#1:c1',
     'review:#1', 'fix:#1:r1',
     'review:#1:r1', 'fix:#1:r2',
-    'review:#1:r2',
+    'review:#1:r2', 'fix:#1:r3',
+    'review:#1:r3',
+    'suite:#1',
   ])
   const s = only(result).subResults[0]
+  assert.equal(s.ending, null)
+  assert.deepEqual(s.openFindings, [])
+  assert.equal(s.terminal.pr, 'ready')
+})
+
+scenario('the stuck case: repeated findings halt at the threshold, one cycle in', async () => {
+  const { result, labels } = await runPhase(argsFor([lane(1)], { fixCycleThreshold: 2 }), {
+    'write:#1:c1': committed(),
+    'review:#1': changes([FINDING]),
+    'fix:#1:r1': committed(),
+    // The same defect in the same file, at a line the fix shifted. Not a new finding.
+    'review:#1:r1': changes([FINDING_MOVED]),
+  })
+  assert.deepEqual(labels, ['write:#1:c1', 'review:#1', 'fix:#1:r1', 'review:#1:r1'])
+  // EARLIER than the flat bound of 2 it replaces, which spent both cycles before stopping.
+  assert.equal(labels.filter(l => l.startsWith('fix:')).length, 1)
+  const s = only(result).subResults[0]
   assert.equal(s.ending.category, 'HALT')
-  assert.match(s.ending.reason, /after 2 fix cycles/)
-  assert.deepEqual(s.openFindings, [FINDING])
+  assert.match(s.ending.reason, /not progressing/)
+  assert.match(s.ending.reason, /no-progress threshold of 2/)
+  assert.doesNotMatch(s.ending.reason, /ceiling/)
+  assert.deepEqual(s.openFindings, [FINDING_MOVED])
   assert.equal(s.terminal.pr, 'draft')
   // The sub-lane ended before the gate, so the suite is not-run and says which ending stopped it.
   assert.equal(s.suite.state, 'not-run')
   assert.match(s.suite.output, /the sub-lane ended before the suite gate ran/)
+})
+
+scenario('every cycle bringing something new halts at the 5-fix-cycle ceiling, not beyond', async () => {
+  const script = { 'write:#1:c1': committed() }
+  // Six reviews, each with a finding nothing has seen, so the threshold never advances past 1.
+  for (let round = 0; round <= 5; round++) {
+    script[`review:#1${round ? ':r' + round : ''}`] = changes([`src/r${round}.ts:1 — defect ${round} — it breaks — fix it`])
+    if (round < 5) script[`fix:#1:r${round + 1}`] = committed()
+  }
+  const { result, labels } = await runPhase(argsFor([lane(1)]), script)
+  assert.equal(labels.filter(l => l.startsWith('fix:')).length, 5)
+  assert.equal(labels.filter(l => l.startsWith('review:')).length, 6)
+  assert.equal(labels[labels.length - 1], 'review:#1:r5')
+  const s = only(result).subResults[0]
+  assert.equal(s.ending.category, 'HALT')
+  assert.match(s.ending.reason, /5-fix-cycle ceiling/)
+  assert.doesNotMatch(s.ending.reason, /not progressing/)
+  assert.equal(s.reviewTrajectory.length, 6)
+})
+
+scenario('a threshold of 0 spends no fix cycle at all, and 1 behaves the same way', async () => {
+  // The counter is 1 the moment the first round returns, so a threshold of 1 is reached by that
+  // round however new its findings were. Both answers are supported; 0 is the one the ask offers.
+  for (const threshold of [0, 1]) {
+    const { result, labels } = await runPhase(argsFor([lane(1)], { fixCycleThreshold: threshold }), {
+      'write:#1:c1': committed(),
+      'review:#1': changes([FINDING]),
+    })
+    assert.deepEqual(labels, ['write:#1:c1', 'review:#1'], `threshold ${threshold}`)
+    const s = only(result).subResults[0]
+    assert.equal(s.ending.category, 'HALT', `threshold ${threshold}`)
+    assert.deepEqual(s.openFindings, [FINDING], `threshold ${threshold}`)
+  }
+})
+
+scenario('a raised threshold shifts where the stuck case halts', async () => {
+  const { result, labels } = await runPhase(argsFor([lane(1)], { fixCycleThreshold: 3 }), {
+    'write:#1:c1': committed(),
+    'review:#1': changes([FINDING]),
+    'fix:#1:r1': committed(),
+    'review:#1:r1': changes([FINDING]),
+    'fix:#1:r2': committed(),
+    'review:#1:r2': changes([FINDING_MOVED]),
+  })
+  // Two cycles where a threshold of 2 spent one, and the same findings the whole way.
+  assert.equal(labels.filter(l => l.startsWith('fix:')).length, 2)
+  const s = only(result).subResults[0]
+  assert.equal(s.ending.category, 'HALT')
+  assert.match(s.ending.reason, /no-progress threshold of 3/)
+})
+
+scenario('the ending carries the trajectory, round by round', async () => {
+  const { result } = await runPhase(argsFor([lane(1)], { fixCycleThreshold: 2 }), {
+    'write:#1:c1': committed(),
+    'review:#1': changes([FINDING, FINDING_B]),
+    'fix:#1:r1': committed(),
+    'review:#1:r1': changes([FINDING_MOVED]),
+  })
+  const s = only(result).subResults[0]
+  assert.deepEqual(s.reviewTrajectory, [
+    'round 1: 2 finding(s), 2 previously unseen',
+    'round 2: 1 finding(s), none previously unseen',
+  ])
+  assert.match(s.ending.reason, /Trajectory — round 1: 2 finding\(s\), 2 previously unseen; round 2: 1 finding\(s\), none previously unseen\./)
+  // The attempt log says the same thing about the round that triggered its cycle.
+  assert.match(s.attempts[0].trigger, /2 previously unseen/)
+  // The reason states which bound fired and leaves the per-round account to the trajectory —
+  // a reason that also summarised the rounds would contradict it, since round 1 brought new
+  // findings and still moved the counter to 1.
+  assert.doesNotMatch(s.ending.reason, /2 consecutive round\(s\) brought no previously unseen/)
+})
+
+scenario('a re-confirmed dispute still ends the sub-lane immediately', async () => {
+  const { result, labels } = await runPhase(argsFor([lane(1)]), {
+    'write:#1:c1': committed(),
+    'review:#1': changes([FINDING]),
+    'fix:#1:r1': committed({ disputed: 1, disputedFindings: [FINDING] }),
+    'review:#1:r1': { verdict: 'CHANGES_REQUESTED', findings: [FINDING], contestedFindings: [FINDING] },
+  })
+  assert.deepEqual(labels, ['write:#1:c1', 'review:#1', 'fix:#1:r1', 'review:#1:r1'])
+  const s = only(result).subResults[0]
+  assert.equal(s.ending.category, 'HALT')
+  assert.match(s.ending.reason, /contested findings/)
+  assert.deepEqual(s.openFindings, [FINDING])
 })
 
 scenario('a fix-cycle writer BLOCKED is a reasoned refusal and takes the HALT label', async () => {
@@ -382,8 +499,8 @@ scenario("one sub-lane's draft does not draft its sibling", async () => {
       subLane(1, { area: 'ui', base: 'feat/1-api', commits: [{ ordinal: 2, message: 'feat(ui): #1 - the screen' }] }),
     ],
   })]
-  const { result } = await runPhase(argsFor(lanes, { maxFixCycles: 1 }), {
-    // api ends on the review bound
+  const { result } = await runPhase(argsFor(lanes), {
+    // api ends on the review loop's no-progress threshold
     'write:#1:c1': committed(),
     'review:#1:api': changes([FINDING]),
     'fix:#1:r1': committed(),
