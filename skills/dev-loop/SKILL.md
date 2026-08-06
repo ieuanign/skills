@@ -16,7 +16,7 @@ This skill is repo- and machine-agnostic: it hardcodes no repository name, path,
 - `auto` — optional leading token: run the batch **unattended**, from filed issue to pushed PR, without stopping for approval. Modes lead and dials trail, so the word deciding whether you will ever be asked for approval is the second one you type.
 - `<issues>` — one or more GitHub issue numbers, comma or space separated. One issue = one lane; several = parallel lanes.
 - `project:<slug>` — optional project slug passed to the architect for the plan path.
-- Cleanup is not an argument here. **`/dev-loop-cleanup`** is its own skill and reaps what a finished run left behind — merged branches and their plan files — so tidying up loads none of this file.
+- Tidying up after a run is its own skill, **`/dev-loop-cleanup`** — it reaps what a finished run left behind: merged branches and their plan files.
 
 ### Run mode — `gated` or `unattended`
 
