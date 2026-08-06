@@ -92,9 +92,9 @@ const ROLE_OF = { HALT: 'awaiting-human', FAILED: 'failed' }
 const STAGE = { PLAN: 'plan', WRITE: 'write', REVIEW: 'review', SUITE: 'suite', NOTIFY: 'notify' }
 const mark = (issue, stage) => `[dev-loop lane=${issue} stage=${stage}]\n`
 
-// The return contracts, as JSON schemas the runner validates each dispatch against. The CONTRACT
-// KEYS are the contract — every branch below splits on an enum value, never on the prose an agent
-// wrote around it. A call that came back with nothing usable takes the returned-nothing path.
+// The return contracts, as JSON schemas the runner validates each dispatch against. All agent returns
+// are machine-readable and the CONTRACT KEYS are the contract — every branch splits on an enum value,
+// never on the prose around it. A call that came back with nothing takes the returned-nothing path.
 const WRITER_SCHEMA = {
   type: 'object',
   properties: {
@@ -134,9 +134,9 @@ const REVIEW_SCHEMA = {
   },
   required: ['verdict', 'findings'],
 }
-// The suite gate's return contract. It is the one role with no agent definition to carry a format,
-// so this schema and the prompt below are the whole of its specification. `failing` is empty unless
-// state is failed; not-run is a state of its own, never reported as passed.
+// The suite gate's return contract — STATE + FAILING + OUTPUT. It is the one role with no agent
+// definition to carry that format, so this schema and the prompt below are its whole specification.
+// `failing` is empty unless state is failed; not-run is a state of its own, never reported as passed.
 const SUITE_SCHEMA = {
   type: 'object',
   properties: {
@@ -213,8 +213,8 @@ function suitePrompt(sub) {
 const isWip = line => /^\W*(?:[0-9a-f]{7,40}\b\W*)?wip[(:]/i.test(line)
 
 // Finding identity — of `file:line — defect — failure scenario — fix`, only the first two clauses
-// identify a finding: a fix shifts lines, and the last two are prose about the defect the first two
-// name. Case and whitespace are normalised and NOTHING ELSE is: a reworded defect must read as new.
+// identify it, line number dropped, normalised for case and whitespace and nothing else. It is host
+// arithmetic in plain code — no agent is dispatched to do it, and the reviewer's contract is untouched.
 const squash = s => String(s).toLowerCase().replace(/\s+/g, ' ').trim()
 const findingIdentity = finding => {
   // No em-dash ⇒ one part, so the whole finding stands as its own identity — the safe direction.
@@ -505,9 +505,9 @@ const runLane = async (lane, subResults) => {
       while (true) {
         round++
         const suffix = round > 1 ? `:r${round}` : ''
-        // No persona and deliberately no agent type — this is the one role with no definition, and
-        // loading one to run a single command is waste on a gate that runs up to SUITE_CEILING
-        // times. It is labelled, so it still appears by name. It never fixes, commits, or edits.
+        // A plain subagent with no persona and deliberately no agent type, at the cheapest model and
+        // the lowest effort: it is the one role with no definition, and loading one to run a single
+        // command is waste on a gate that runs up to SUITE_CEILING times. Labelled, so it is named.
         const suite = await agent(mark(lane.issue, STAGE.SUITE) + suitePrompt(sub), {
           label: `suite:${tag}${suffix}`, phase: 'Suite', model: 'haiku', effort: 'low', schema: SUITE_SCHEMA,
         })
