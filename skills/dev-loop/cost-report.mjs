@@ -67,8 +67,8 @@ const roleOf = rec => (rec.type === 'user' || rec.type === 'assistant' ? rec.typ
 /**
  * One transcript file → the lane and stage it belongs to, and what it cost.
  *
- * Returns null for a transcript carrying no marker: an agent the host dispatched itself, a Mode A
- * prompt, or anything else outside the phase scripts. Unattributable is not the same as free, and
+ * Returns null for a transcript carrying no marker: an agent the host dispatched itself, or
+ * anything else outside the phase scripts. Unattributable is not the same as free, and
  * guessing a lane for it would pool costs across lanes.
  *
  * Assistant records are deduped by message id, keeping the last. A streaming log writes the same
