@@ -11,7 +11,8 @@ export const meta = {
 }
 
 // args: {
-//   lanes: [{ issue, issueBody, planPath, notified?, subLanes: [{ branch, worktree, base, area?, commits: [{ordinal, message}] }] }],
+//   lanes: [{ issue, issueBody, planPath, notified?, subLanes: [{ branch, worktree, base, area?,
+//             commits: [{ordinal, message}], ownedCriteria?: [{ordinal, criterion}] }] }],
 //     notified: true when an EARLIER layer already dispatched the notifier for this lane. A lane's
 //     ending is written once per run, not once per layer; the host carries the flag forward.
 //   mode: 'gated' | 'unattended',
@@ -33,9 +34,18 @@ export const meta = {
 //                          // state and never an error.
 // }
 // subLanes contains only the CURRENT layer's sub-lanes; worktree is absolute.
-// issueBody is the issue's body verbatim, which the host already fetched at intake — the
+// issueBody is the issue's body verbatim and WHOLE, which the host already fetched at intake — the
 // reviewer's Spec axis reads it from its arguments rather than fetching it, keeping its
-// Bash read-only and git-only. Omit it and the reviewer runs no spec axis.
+// Bash read-only and git-only. Omit it and the reviewer runs no spec axis. It is never sliced: a
+// checklist line rarely reads as its own specification, so ownership is passed as ordinals into a
+// body that arrives intact.
+// ownedCriteria is the acceptance criteria THIS sub-lane delivers, which the host read off the
+// plan's Commit / PR breakdown — the same section it built `commits` from. The falls-to-last
+// default for criteria the plan left unlisted is the host's and not this script's: the args above
+// carry one layer's sub-lanes with their commit lists already assembled, so nothing here can see
+// which sub-lane is a lane's last. An EMPTY array means the sub-lane owns none and its spec axis
+// is vacuously met; an ABSENT key means the whole checklist, which is the single-sub-lane case and
+// the pre-ownership behaviour. The two differ, and only the first can be stated.
 // Returns per-lane:
 // { issue, mode, ending: {category, reason}|null, crashed, notified, subResults: [...] }
 // EVERY requested issue gets an entry, whatever happened to it — nothing below filters this list.
@@ -168,7 +178,7 @@ const REVIEW_SCHEMA = {
     contestedFindings: { type: 'array', items: { type: 'string' }, description: 'disputed findings you STILL confirm after re-verifying against the writer\'s evidence — empty unless disputes were given' },
     criterionVerdicts: {
       type: 'array',
-      description: 'Spec axis: one entry per acceptance criterion in the issue body, in the issue\'s order — empty when no issue body was passed. Never blocking: these change neither verdict nor findings.',
+      description: 'Spec axis: one entry per acceptance criterion this sub-lane OWNS, in the issue\'s order — the prompt names them; empty when no issue body was passed or the sub-lane owns none. Never blocking: these change neither verdict nor findings.',
       items: {
         type: 'object',
         properties: {
@@ -231,14 +241,27 @@ function giveUpClause(lane, c, tries) {
 
 // The body is fenced rather than interpolated bare: issue bodies are markdown and routinely
 // contain the same headings and checklists the surrounding prompt uses.
-// The scope line matters on multi-PR plans: the criteria belong to the whole issue but the
-// range is one sub-lane, so without it every early PR reads as failing work not yet due.
+//
+// The owned list is what makes a multi-PR plan work: the range is one sub-lane, so the criteria
+// it is asked about are one sub-lane's too. Told which are its own, the reviewer never spends
+// judgement deciding whether something is in its range — and a sub-lane that delivered everything
+// it owns opens a ready pull request instead of the draft every early PR used to get. The body
+// still goes in whole beneath it: the prose around a checklist is what says what a checkbox means.
 function specClause(lane, sub) {
   if (!lane.issueBody) {
     return `\n\nNo issue body was passed, so there is no spec axis this run — return an empty criterionVerdicts and say so in notes.`
   }
-  const scope = `You are judging ONE sub-lane of this issue${sub.area ? ` (area: ${sub.area})` : ''} — the range above, no more. A criterion the plan's Commit / PR breakdown delivers in a different sub-lane is 'partial', naming that sub-lane; never 'not-met'.`
-  return `\n\nSpec axis — issue #${lane.issue}'s body verbatim, between the markers below. Judge the diff against its acceptance criteria and return one criterionVerdicts entry per criterion, in the issue's order. ${scope} These NEVER block: they stay out of findings, do not change the verdict, and trigger no fix cycle.\n<<<<ISSUE-BODY\n${lane.issueBody}\nISSUE-BODY>>>>`
+  // Absent ⇒ the whole checklist, the single-sub-lane case and the shape of a plan written before
+  // ownership existed. Present-and-empty ⇒ this sub-lane owns none, which is a different fact and
+  // the one a split plan states: a sibling delivers every criterion, so there is nothing to judge.
+  const owned = sub.ownedCriteria
+  if (Array.isArray(owned) && !owned.length) {
+    return `\n\nThis sub-lane owns none of issue #${lane.issue}'s acceptance criteria — either the issue lists none, or the plan delivers every one of them in another sub-lane whose reviewer judges them. Either way there is nothing here for your spec axis: return an empty criterionVerdicts and say so in notes.`
+  }
+  const scope = Array.isArray(owned) && owned.length
+    ? `Judge ONLY the criteria below. They are the ones this sub-lane${sub.area ? ` (area: ${sub.area})` : ''} delivers, taken from the plan's Commit / PR breakdown before you ran, so which are yours is not yours to decide — return one entry for each, in this order, and none for any other criterion in the body. One you own and cannot find in the diff is 'not-met'.\n${owned.map(c => `${c.ordinal}. ${c.criterion}`).join('\n')}`
+    : `Judge every acceptance criterion in the body: this plan delivers the whole issue in one pull request, so all of them are this sub-lane's. Return one entry per criterion, in the issue's order. One you cannot find in the diff is 'not-met'.`
+  return `\n\nSpec axis — ${scope}\n\nIssue #${lane.issue}'s body follows verbatim and whole, between the markers. Read all of it for the framing a checklist line does not carry, and judge the diff against your criteria. These verdicts NEVER block: they stay out of findings, do not change the verdict, and trigger no fix cycle.\n<<<<ISSUE-BODY\n${lane.issueBody}\nISSUE-BODY>>>>`
 }
 
 // No agent type and no persona: loading a role definition — merge-base rules, blocking bars,
@@ -493,8 +516,10 @@ const runLane = async (lane, subResults) => {
       if (review.verdict === 'ERROR') return failed(rec, `reviewer ERROR: ${review.notes || ''}`)
       rec.reviewNotes = review.notes || ''
       // Recorded before every ending below so an ended sub-lane still carries them; the
-      // last review's verdicts win. Read nowhere else in this file — the spec axis is
-      // reported, never blocking, so nothing branches on them.
+      // last review's verdicts win. Nothing in this loop branches on them — the spec axis is
+      // reported and blocks no review — but terminalState() reads them at the conclusion, where
+      // any verdict that is not `met` drafts the pull request. They are one sub-lane's own
+      // criteria, so that draft answers for this sub-lane's work and never a sibling's.
       rec.criterionVerdicts = review.criterionVerdicts || []
       const contested = review.contestedFindings || []
       // Everything this review leaves open, recorded the moment it is known rather than at each

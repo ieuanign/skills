@@ -34,7 +34,7 @@ What each stage is handed, what it is permitted to read, and what it hands back.
 |---|---|---|---|
 | architect | issue number (plus a project slug and any gate answers) | the full sweep: context map → area context → the area's CLAUDE.md files → the decision records governing the area → the affected code and its manifests | `STATUS`, `PLAN`, summary bullets, open questions |
 | writer | plan path, commit ordinal and message, worktree, branch | the plan, the area's CLAUDE.md files, the touched module's manifests, the touchpoint files | `RESULT`, `COMMITS`, `VERIFIED`, `DEVIATIONS`, `DISPUTED`, `DIRTY`, `WORKTREE`, `FAILING` |
-| reviewer | branch, base, plan path, **the issue body verbatim**, the sub-lane's scope, the writer's disputes | the plan, the diff of the touched files, the area's CLAUDE.md files, the repo's documented coding standards | `VERDICT`, `FINDINGS`, `CONTESTED`, **`CRITERIA`**, `NOTES` |
+| reviewer | branch, base, plan path, **the issue body verbatim and whole**, **the acceptance criteria its sub-lane owns**, the writer's disputes | the plan, the diff of the touched files, the area's CLAUDE.md files, the repo's documented coding standards | `VERDICT`, `FINDINGS`, `CONTESTED`, **`CRITERIA`**, `NOTES` |
 | debugger | the writer's return, worktree, branch | its own failure reproduction, the touched code | `ROOT-CAUSE`, `OWNER`, `CONFIDENCE`, `REPRODUCED`, a finding |
 | suite gate | the repo profile's full-suite command, worktree, branch | nothing — it runs that one command and reads its output | `STATE`, `FAILING`, `OUTPUT` |
 
@@ -50,7 +50,7 @@ Agents end with machine-readable leading lines; Mode W enforces the equivalent J
 
 - **architect**: `STATUS: READY|BLOCKED` + `PLAN: <path>` + summary bullets + open questions (BLOCKED only). The agent definition also carries a Mode 2 conformance sign-off; this pipeline never dispatches it.
 - **writer**: `RESULT: COMMITTED|BLOCKED|FAILED` + `COMMITS` + `VERIFIED` + `DEVIATIONS` + `DISPUTED` (with each disputed finding restated with refuting evidence) + `DIRTY` + `WORKTREE` + `FAILING` (FAILED only).
-- **reviewer**: `VERDICT: APPROVED|CHANGES_REQUESTED|ERROR` + `FINDINGS` (each: `file:line — defect — failure scenario — suggested fix`) + `CONTESTED` (disputed findings it still confirms) + `CRITERIA` (one `met|partial|not-met` verdict per acceptance criterion in the issue body, in the issue's order, each with its evidence; empty when no issue body was passed) + `NOTES`. Zero findings ⇒ APPROVED, whatever the criterion verdicts say.
+- **reviewer**: `VERDICT: APPROVED|CHANGES_REQUESTED|ERROR` + `FINDINGS` (each: `file:line — defect — failure scenario — suggested fix`) + `CONTESTED` (disputed findings it still confirms) + `CRITERIA` (one `met|partial|not-met` verdict per acceptance criterion **the sub-lane owns**, in the issue's order, each with its evidence; empty when no issue body was passed, or when the sub-lane owns none) + `NOTES`. Zero findings ⇒ APPROVED, whatever the criterion verdicts say.
 - **debugger**: `ROOT-CAUSE` + `OWNER: code-writer|replan|user|retry` + `CONFIDENCE` + `REPRODUCED`; when OWNER=code-writer, a finding in the reviewer's finding shape. `OWNER` carries **two routing values** — `code-writer` and `retry`, each naming the stage that runs next — and **two reporting values**, `replan` and `user`, which end the sub-lane identically and differ only in where they send the reader: `replan` back to the plan, `user` to their own machine, credentials or CI. Same pipeline behaviour, opposite next actions, which is why both are kept.
 - **suite gate**: `STATE: passed|failed|not-run` + `FAILING` (the runner's own identifier per failing test — empty unless STATE is `failed`) + `OUTPUT` (the command's output). It is the one role with no agent definition to carry that format, so whichever mode dispatches it states the format itself — Mode W in its schema, Mode A in the prompt.
 - **DIED** (any role): the call came back with nothing usable — nothing at all, or nothing parseable. Every DIED ends its sub-lane **FAILED** — a break, never a verdict. The architect is the one role that runs before any sub-lane exists: an architect DIED is reported at Gate 1 with a re-run offer instead. Never silently drop a requested issue.
@@ -90,7 +90,9 @@ On the sub-lane's exact range `<base>..<branch>` (the base may itself be a stack
 5. A fix-cycle writer return other than `COMMITTED` splits like the implement loop's: `BLOCKED` is **HALT**, `FAILED` or a writer that returned nothing is **FAILED**.
 6. `APPROVED` → the review loop is done.
 
-A review's range is one sub-lane, but the acceptance criteria belong to the whole issue, so the reviewer is told which sub-lane it is judging. A criterion the plan delivers in a different sub-lane is outside this range and is recorded `partial` with that stated — never `not-met`, which would make every early PR of a multi-PR plan read as a failure of work not yet due.
+A review's range is one sub-lane, and so are the acceptance criteria it is handed. **Which criteria a sub-lane owns is a fact the plan states and the host applies**, never a judgement the reviewer makes at review time: on a plan holding two or more pull requests the architect names, on each pull request entry, the criteria that pull request delivers, and the host reads those off the section it already parses for commits and passes each reviewer only its own. Ownership is therefore decided once per run rather than re-derived on every review and every fix cycle. Criteria the plan left unlisted fall to the **last sub-lane in plan order** — last in the plan, never "the top of the chain", since a lane's sub-lanes are sequential but not necessarily stacked. That default is also what makes a plan written before ownership existed run unchanged.
+
+The reviewer judges every criterion it owns against its own range — one range, one rule — and an owned criterion it cannot find is **`not-met`**. It receives the issue body verbatim and whole regardless: a checklist line rarely reads as its own specification, and the pipeline does not rewrite what a human wrote. A sub-lane owning no criteria returns an empty list and is vacuously met, which is the path the no-issue-body case already takes.
 
 ### The bound is progress-sensitive, under a hard ceiling
 
@@ -134,7 +136,7 @@ When the loop ends on either bound, the ending reason names **which bound fired*
 
 The implement loop keeps its flat bound of **2**, and that is deliberate rather than an inconsistency to tidy away. Its **give-up clause** instructs the writer of the final permitted attempt, and no earlier one, to commit abandoned work as evidence — which requires knowing at dispatch time that an attempt is the last. A progress-sensitive counter cannot supply that: firing late is impossible, because the counter only advances after a round returns, and firing early stamps abandonment on attempts that go on to succeed, which this file forbids in terms. Two lesser reasons point the same way — the implement loop's identity is free, being the writer's own `FAILING`, where a reviewer supplies prose; and its round is the cheaper of the two.
 
-The `CRITERIA` verdicts pass straight through this loop untouched — the spec axis is **reported and never blocking**, by the same reasoning as the commit-breakdown check below. A criterion verdict never enters `FINDINGS`, never changes the `VERDICT`, never triggers a fix cycle and never ends the lane: a not-met criterion means the plan lost something the issue asked for, and the only agent that could re-decide the plan is the architect, which does not run again in this lane. A review with zero findings and a not-met criterion is `APPROVED`. The last review's verdicts are the sub-lane's; they land in the findings ledger, which the lane's conclusion surfaces.
+The `CRITERIA` verdicts pass straight through this loop untouched — the spec axis is **reported and never blocking**. A criterion verdict never enters `FINDINGS`, never changes the `VERDICT`, never triggers a fix cycle and never ends the lane: a not-met criterion means the plan lost something the issue asked for, and the only agent that could re-decide the plan is the architect, which does not run again in this lane. A review with zero findings and a not-met criterion is `APPROVED`. The last review's verdicts are the sub-lane's; they land in the findings ledger, which the lane's conclusion surfaces — and, under `unattended`, in the terminal-state table, which is the one place a verdict decides anything at all.
 
 ## Suite gate — bound: 8 rounds, and 2 rounds without a previously unseen failure
 
@@ -317,14 +319,16 @@ Under supervision a human at Gate 2 decides what a sub-lane's ending means: they
 | A sub-lane ends | Push | Pull request |
 |---|---|---|
 | Clean | yes | **ready** |
-| Suite not-run, no open findings, all criteria met | yes | **ready**, the ledger recording not-run |
+| Suite not-run, no open findings, all owned criteria met | yes | **ready**, the ledger recording not-run |
 | Open findings after the fix-cycle bound | yes | **draft** + the ledger |
 | Suite still red at the gate's ceiling | yes | **draft** + the ledger |
-| Any acceptance criterion `partial` or `not-met` | yes | **draft** + the verdicts |
+| Any acceptance criterion the sub-lane **owns** is `partial` or `not-met` | yes | **draft** + the verdicts |
 | Ended `HALT` or `FAILED`, with commits | yes | **draft** + the ledger + the attempt log |
 | Ended with nothing landed | no — nothing is ahead of the base | **none**; the explanation is commented on the issue |
 
-**The ready predicate is one expression**: the sub-lane **concluded clean**, and its **findings are resolved**, and the **suite passed or did not run**, and **every acceptance criterion is met**. Anything else drafts.
+**The ready predicate is one expression**: the sub-lane **concluded clean**, and its **findings are resolved**, and the **suite passed or did not run**, and **every acceptance criterion the sub-lane owns is met**. Anything else drafts.
+
+The predicate itself does no filtering and gained no clause when ownership arrived: it sees only the criteria the sub-lane owns because those are the only ones its reviewer was ever asked about. A sub-lane that did its whole job cleanly therefore opens a **ready** pull request even where the issue was split — which, before ownership, no sub-lane of a split issue could.
 
 It is written as that four-way conjunction and not reduced to the shortest expression equivalent to it today. An ending currently implies the middle two, so the reduction would be correct now and silently wrong later: a change that let a red suite through without ending the sub-lane would start producing ready pull requests, with no line to have got wrong.
 
@@ -347,7 +351,7 @@ A draft is the honest signal that the pipeline could not finish its own job, and
 - **fixed** — reviewer findings the writer applied.
 - **won't-fix** — findings the writer disputed and the reviewer retracted, each with the writer's reason.
 - **arbitrated** — contested findings the human ruled on, with the ruling. Always empty under unattended mode, where nobody rules — no conditional needed.
-- **acceptance criteria** — the reviewer's `met|partial|not-met` verdict per criterion with its evidence, verbatim. Informational: nothing in the pipeline branches on it.
+- **acceptance criteria** — the reviewer's `met|partial|not-met` verdict per criterion **the sub-lane owns**, with its evidence, verbatim. Reported rather than inert: no review, fix cycle or ending turns on a verdict, but under `unattended` the terminal-state table drafts the pull request on any verdict that is not `met`.
 - **reviewer NOTES** — non-blocking observations, verbatim.
 - **review trajectory** — on a sub-lane whose review loop ended on either of its bounds: one entry per review round saying whether it brought previously-unseen findings or repeated prior ones. Recorded on every sub-lane and rendered only where a bound ended one, like the attempt log. It answers the question a bare count leaves open — *was this loop converging?* — before anyone opens the diff.
 - **suite** — the gate's state: `passed`, `failed` with its failing test identifiers, or `not run` with why it did not. Never `passed` for a suite that did not run.
