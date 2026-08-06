@@ -135,11 +135,9 @@ The tokens a run actually consumes end to end, across the orchestrator and every
 reported per lane by the cost log. The only one of these four measured after the fact rather than
 before; the other three are properties of the files, and this one is a property of the run.
 
-_Avoid_: **cost** or **token count** standing alone as a synonym for this — both are ambiguous across
-the four terms above, so name the one you mean. The word itself is fine elsewhere, and this rule does
-not reach: **discovery cost**, which is one of the four; compounds like the **cost log**, the **cost
-report**, the **cost reporting target** and the **cost stage**, which name the machinery that measures
-run spend rather than the quantity; or ordinary English — "an accepted cost", "rejected on cost".
+_Avoid_: **cost** or **token count** alone as a synonym for this — name which of the four you mean.
+Only the bare synonym: compounds (**discovery cost**, the **cost log**, the **cost stage**) and
+ordinary English ("an accepted cost") name other things and are unaffected.
 
 ## Smell override
 
