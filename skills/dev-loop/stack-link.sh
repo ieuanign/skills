@@ -4,7 +4,7 @@
 #
 #   stack-link.sh <pr-number> <pr-number> [<pr-number>...]     # bottom to top
 #
-# contracts.md's "Stack linking" subsection specifies its behaviour; this is only the
+# SKILL.md's "Stack linking" step specifies its behaviour; this is only the
 # implementation. Run it ONCE per batch, after every sub-lane has pushed and opened its pull
 # request — never per layer, because a half-linked stack shows a reviewer a chain that stops
 # short of the work.
