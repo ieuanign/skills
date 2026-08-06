@@ -1,7 +1,14 @@
 # 0003 — Criterion ownership is stated by the plan and applied by the host
 
-**Status**: accepted — the implementation lands separately, editing `contracts.md` first and both
-execution modes in the same change, per that file's own rule.
+**Status**: accepted, and implemented — the architect states ownership in the plan's Commit / PR
+breakdown, the host slices it per sub-lane, and `phase-execute.js` hands each reviewer only the
+criteria its sub-lane owns.
+
+**Written before [#121](https://github.com/ieuanign/skills/issues/121)'s compression**, when
+`skills/dev-loop/contracts.md` existed and `/dev-loop` had two execution modes. Neither does now — the
+file dissolved into `SKILL.md` and `docs/dev-loop-internals.md`, and
+[ADR-0004](./0004-mode-a-deleted.md) deleted Mode A. The decision below stands unchanged; only its
+homes moved, and the single-version clause is satisfied trivially by there being one implementation.
 
 `ready` is unreachable for a split issue. `/dev-loop`'s reviewer judges **one sub-lane's commit
 range** but is handed **the whole issue's** acceptance criteria; a criterion another sub-lane delivers
@@ -32,7 +39,8 @@ at all, at review time, from an issue body larger than its range.
 - **The reviewer judges only what it was given**, against its own range, and returns one verdict each.
   An owned criterion it cannot find is `not-met`. It receives the issue body verbatim and whole
   regardless, for the framing prose a checklist line does not carry.
-- **The ready predicate is untouched.** It stays the four-way conjunction `contracts.md` writes it as;
+- **The ready predicate is untouched.** It stays the four-way conjunction `docs/dev-loop-internals.md`
+  writes it as;
   it simply now sees only the criteria the sub-lane owns, so a sub-lane that did its whole job cleanly
   opens a **ready** pull request. A sub-lane owning no criteria returns an empty list and is vacuously
   met — the path the no-issue-body case already takes.

@@ -24,9 +24,9 @@ const PLAN_SCHEMA = {
   required: ['status', 'planPath', 'summary', 'openQuestions'],
 }
 
-// A role is resolved, never named: the same definition registers bare when linked into a repo's
-// `.claude/agents/` and `<plugin>:<name>` when the plugin is installed, so a bare literal here runs
-// only for the maintainer. Absent ⇒ bare; a trailing colon is tolerated, an unresolvable one fatal.
+// A role is resolved against the namespace the host discovered, never a literal: the same definition
+// registers bare when linked into `.claude/agents/` and `<plugin>:<name>` when installed, so a bare
+// literal RUNS ONLY FOR THE MAINTAINER. Absent ⇒ bare, trailing colon tolerated; check enforces it.
 const NS = String(input.agentNamespace || '').trim().replace(/:+$/, '')
 const roleAgent = role => (NS ? `${NS}:${role}` : role)
 

@@ -184,19 +184,18 @@ Your repository's own answers live in `docs/agents/dev-loop.md`, written by the 
 down, and never asks again. A persisted `none` counts as an answer. A repository with no profile at
 all runs on pure defaults — the interview is a convenience, not a precondition.
 
-**What the rule refuses**, so it does not creep back:
+The rule **refuses** three things. `SKILL.md` states those refusals, because they bind a run; this page
+carries only the reasoning behind them, which is what the skill deliberately does not load:
 
-- **No per-repository effort tiers.** Cost behaviour stays predictable across repositories; a tier is
-  a phase-script constant or it is nothing.
-- **No per-run overrides of gates, stages, or cost behaviour.** The run mode is the only argument that
-  changes pipeline behaviour.
+- **No per-repository effort tiers** — cost behaviour that varies by repository cannot be compared
+  across them, and the per-stage tiers are the whole cost thesis.
+- **No per-run overrides of gates, stages or cost behaviour** — an override would be a second way to
+  configure a run, and the run mode already selects everything a run is permitted to select.
 - **The cost reporting target stays a constant** — it was measured as a single median across
-  repositories, with no evidence it varies by one.
+  repositories, and nothing yet suggests it varies by one.
 
-Each refusal is a cheap promotion from constant to profile key if a repository ever actually needs
-one. That cheapness is the reason to refuse now rather than pre-empt. These are **homes, not an
-inventory**: a value the pipeline does not have yet still has its home decided, which is the point of
-a rule over a list.
+Each is a cheap promotion from constant to profile key if a repository ever actually needs one, and
+that cheapness is the reason to refuse now rather than pre-empt.
 
 Everything that makes `/dev-loop` fit *your* repository better is covered in
 [improving-dev-loop.md](./improving-dev-loop.md).

@@ -91,8 +91,9 @@ and offering it implies the two outcomes are comparable.
   and the setting is read back from the same file that grants the tool, so no derived copy exists.
   ADR-0001's boundary is undisturbed: availability is still detected at runtime and declared in no
   profile.
-- **`contracts.md` loses its only branch point.** Lane conclusion still branches on the run mode —
-  `gated` and `unattended` — but nothing branches on how a stage is dispatched, and the two remaining
+- **The run mode becomes the only branch point.** Lane conclusion still branches on `gated` versus
+  `unattended` — stated in `contracts.md` when this was written, and in `SKILL.md` since that file
+  dissolved into it — but nothing branches on how a stage is dispatched, and the two remaining
   "modes" in the vocabulary are unambiguous.
 - **A future cost dial is now simply possible.** Per-stage effort was blocked on Mode A having no way
   to express it; that constraint is gone with it.

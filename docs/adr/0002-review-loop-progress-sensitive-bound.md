@@ -1,8 +1,13 @@
 # 0002 — The review loop's bound is progress-sensitive; the implement loop's is not
 
-**Status**: accepted, and implemented — `contracts.md` was edited first and both modes in the same
-change, per that file's own rule. The ceiling is stated in the contract's prose and held as a
-phase-script constant, and `npm run check` compares them.
+**Status**: accepted, and implemented — the ceiling is prose in `docs/dev-loop-internals.md` and a
+constant in `phase-execute.js`, and `npm run check` compares them.
+
+**Written before [#121](https://github.com/ieuanign/skills/issues/121)'s compression**, when
+`skills/dev-loop/contracts.md` existed and `/dev-loop` had two execution modes. Neither does now — the
+file dissolved into `SKILL.md` and `docs/dev-loop-internals.md`, and
+[ADR-0004](./0004-mode-a-deleted.md) deleted Mode A. The decision below stands unchanged; only its
+homes moved, and the single-version clause is satisfied trivially by there being one implementation.
 
 `/dev-loop`'s review loop halted a lane one fix cycle before green. The evidence is a single run,
 and it is unambiguous: three reviews produced three findings, at three different lines, **disjoint on
@@ -55,9 +60,9 @@ the ask that should have offered it was specified in two places and implemented 
 repository silently ran on the default.
 
 **Port the suite gate verbatim, ceiling 8.** Rejected on cost: worst case 9 reviewers + 8 writers
-against today's 5 calls. `contracts.md` rests its decision to have *no token ceiling at all* on a lane
-being bounded from five directions, one of them this bound; tripling it weakens an argument that was
-load-bearing.
+against today's 5 calls. [ADR-0005](./0005-no-token-ceiling.md) rests its decision to have *no token
+ceiling at all* on a lane being bounded from five directions, one of them this bound; tripling it
+weakens an argument that was load-bearing.
 
 **Unbounded, exiting only when an agent says it is stuck.** Rejected. The runner's 1000-agent backstop
 means it terminates, but it takes the whole batch with it, since a layer's lanes share one workflow
