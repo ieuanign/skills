@@ -1,5 +1,184 @@
 # ieuanign-skills
 
+## 0.14.0
+
+### Minor Changes
+
+- [#147](https://github.com/ieuanign/skills/pull/147) [`664faf8`](https://github.com/ieuanign/skills/commit/664faf841bbb76a1b25b46f376c9b178b627423c) Thanks [@ieuanign](https://github.com/ieuanign)! - `/dev-loop`'s rationale moves to `docs/`, where a human reads it and no run loads it. **Purely additive** — nothing under `skills/` or `agents/` changes, no file is deleted, and a run behaves byte-identically before and after. This is the expand step: the new form exists beside the old so that later changes can delete the old without losing anything.
+
+  **`docs/dev-loop.md`** is the narrative. What the pipeline does, the four words you need before the rest reads (lane, sub-lane, layer, stack), when to reach for it over `/implement`, prerequisites, what one run does in six acts, and then the seven run shapes end to end — one lane, parallel lanes, stacked lanes, a split issue, an unattended run, a resumed run, cleanup. It closes with the questions people actually ask, each answered with the reason rather than the rule: why a draft opened, why the issue's checkboxes are still unticked, why planning looks expensive in the cost log, why there is no token budget, why a worktree is still standing, why there is no watchdog.
+
+  **`docs/dev-loop-internals.md`** is the mechanism. Every loop, every bound, every route, every ending, and the reasoning that fixed each one where it is: the per-commit implement loop and its give-up clause, the review loop's progress-sensitive counter with both worked traces, finding identity, the suite gate and why a red suite is diagnosed rather than handed to the writer, the commit-breakdown check, the lane conclusion, the worktree invariant, the terminal-state table and its four-way ready predicate, the findings ledger, and touchpoint overlap with its two accepted costs. A reader wants this; the orchestrator never branches on any of it.
+
+  It also records **why the suite gate has no agent definition while the notifier has one**, so the asymmetry is not later "fixed". The rule behind both: a role gets a definition when it has judgement to constrain. The suite gate runs a quoted command and has none — which is also why its effort tier lives at its dispatch site, there being nowhere else it could live.
+
+  Three architecture decision records for decisions that were load-bearing and unrecorded:
+
+  - **[ADR-0005](https://github.com/ieuanign/skills/blob/main/docs/adr/0005-no-token-ceiling.md)** — token spend is reported, never enforced. Four reasons a ceiling could not work, and the load-bearing reason it was unnecessary: a lane is already bounded from five directions, and the most expensive lane in the measured set was not stuck but thirteen commits of genuine work against a median of three. A ceiling would not have caught a runaway; it would have refused a big issue.
+  - **[ADR-0006](https://github.com/ieuanign/skills/blob/main/docs/adr/0006-empty-returns-stay-failed.md)** — an empty return is reported as an empty return, and its ending stays `FAILED`. A skipped agent and a dead one are indistinguishable from where the pipeline sits, so asserting a death sends a reader looking for a crash that may never have happened; and calling it a halt would assert the one thing known not to have happened.
+  - **[ADR-0007](https://github.com/ieuanign/skills/blob/main/docs/adr/0007-per-commit-push-is-not-implementable.md)** — per-commit push cannot be built from where the commits happen, and buys nothing where it could. No stage in the pipeline consumes an intermediate push.
+
+  A fourth was expected and turned out to exist already: the implement loop keeping a flat bound where the review loop is progress-sensitive is [ADR-0002](https://github.com/ieuanign/skills/blob/main/docs/adr/0002-review-loop-progress-sensitive-bound.md)'s, written when that bound changed. Ticked against it rather than duplicated — a derived copy with no invalidation is what ADR-0001's first corollary forbids.
+
+  92 of the rule inventory's 389 entries are ticked, each recording where it landed.
+
+- [#149](https://github.com/ieuanign/skills/pull/149) [`292e8e0`](https://github.com/ieuanign/skills/commit/292e8e0c0f815fd942af54bf7511beed1f5d986f) Thanks [@ieuanign](https://github.com/ieuanign)! - `/dev-loop` runs on the Workflow tool only — the Agent-tool fallback is deleted.
+
+  Mode A was a natural-language reimplementation of the phase scripts: the same state machine expressed
+  as instructions to be followed rather than code to be run, so its bounds were remembered rather than
+  enforced and nothing could test them. It never implemented the unattended half of lane conclusion, and
+  it was tier-locked by construction — the direct Agent tool has no effort parameter.
+
+  The `enableWorkflows` ask-then-persist flow is promoted from an `auto`-only guard to a precondition of
+  the whole pipeline: a session without the Workflow tool is refused at intake whatever the run mode,
+  told the setting and that a restart is required, and asked once per machine. A persisted refusal is
+  honoured without asking again.
+
+  The rule requiring a behaviour change to edit the contract first and then both implementations is
+  retired, there now being one implementation. `docs/adr/0004-mode-a-deleted.md` records what Mode A
+  was, why it goes, and what is lost.
+
+- [`07ef6ef`](https://github.com/ieuanign/skills/commit/07ef6efc4c1393f5906a1a5fb96c5a11a538670e) Thanks [@ieuanign](https://github.com/ieuanign)! - `/dev-loop-cleanup` becomes its own skill, so reaping merged work no longer loads the pipeline.
+
+  Cleanup was a mode of `/dev-loop` reached by a trigger word — material only some runs reach, and
+  therefore disclosed reference rather than an in-file step. It keeps its behaviour exactly: it reaps on
+  a **merged** signal and never a pushed one, deleting the local branch and the plan file once the pull
+  request has merged, and it **lists** lingering worktrees with the reason each is still there while
+  removing none. A branch whose pull request is still open keeps its branch and its plan, which is what
+  a reviewer or a resume reads.
+
+  In-run worktree removal is unchanged and did not move: `/dev-loop` still removes a sub-lane's worktree
+  the moment its push and pull request succeed.
+
+  `/dev-loop`'s own file no longer carries cleanup mode and points at the new skill instead.
+
+- [`ee4ebba`](https://github.com/ieuanign/skills/commit/ee4ebba52ac197df320710ece97b0bc2abd126c2) Thanks [@ieuanign](https://github.com/ieuanign)! - `contracts.md` is deleted, and the half the orchestrator actually evaluates now lives in `SKILL.md`.
+
+  With one implementation left, the phase script **is** the specification. Roughly half of `contracts.md`
+  documented what `phase-execute.js` already enforces mechanically and the orchestrator never branched
+  on any of it; that half is in `docs/dev-loop-internals.md` for a human. Each rule the script enforces
+  is named in a short comment at the site that enforces it — the reasoning stays in the internals doc,
+  where a maintainer reads it and no run loads it.
+
+  What the orchestrator does evaluate became four tables in `SKILL.md`:
+
+  - **touchpoint overlap → layer assignment** — the three outcomes, plus the repository's
+    `Overlapping changes` declaration and where each value puts the line;
+  - **the worktree invariant** — the five sub-lane states, plus push-succeeds-first and
+    dirty-keeps-itself;
+  - **the findings ledger** — the eight categories a conclusion and a pull request body surface;
+  - **stack linking** — when it fires, how chains are derived, and what a gap in a chain means.
+
+  The terminal-state table deliberately did **not** move: the phase script returns each sub-lane's
+  `terminal` pre-applied, so the orchestrator obeys a value rather than re-deriving a table.
+
+  The roster agents already carried their own return contracts, so nothing under `agents/` needed to
+  change. `docs/adr/0008-append-only-invariant.md` records why the label clause sits inside the
+  append-only invariant and why a per-criterion verdict never reaches the issue's checklist.
+
+  `scripts/check.sh` had a hard dependency on `contracts.md` — it greps the review-loop ceiling out of
+  its prose to compare against `REVIEW_CEILING`. That check now reads `docs/dev-loop-internals.md`, and
+  still passes.
+
+- [#152](https://github.com/ieuanign/skills/pull/152) [`cda48f7`](https://github.com/ieuanign/skills/commit/cda48f757b358ff12115deb4660a814cc8c166eb) Thanks [@ieuanign](https://github.com/ieuanign)! - Two pieces of specification move to the party that actually uses them.
+
+  **The notifications specification is the notifier's.** The notifier already read `notifications.md`
+  itself at runtime, so the orchestrator loading it too was a second payment for the same material — and
+  worse, a derived copy, since every rule the orchestrator restated was already stated there. The
+  orchestrator now keeps only the format of the three events it writes directly — lane start, plan
+  comment, lane conclusion — stated inline at the boundaries that write them, including the message
+  shape and the label-selecting question. `skillDir` is still passed, because the notifier needs both
+  `notifications.md` and `notify.sh` by path; its justification now says which of them the notifier reads
+  and the host does not.
+
+  **The pull request body template is a repository profile key.** A repository's pull request format is
+  that repository's fact, per ADR-0001's config boundary, so it joins the existing keys under the same
+  ask-then-persist rule, asked once at the first Gate 2. This retires the single largest line in the
+  skill: a 4,764-character sentence enumerating ten conditional sections, now a ten-row table of core
+  elements that any template must carry.
+
+  A repository with no profile still opens a pull request carrying every core element, in order — the
+  template lets a repository match its house style and is never a precondition.
+
+- [`ee71ff3`](https://github.com/ieuanign/skills/commit/ee71ff3f453fee83efc88bcb9b5b5a7cff724ee3) Thanks [@ieuanign](https://github.com/ieuanign)! - `SKILL.md` is compressed to the writing-for-agents standard, and the host load is measured rather than
+  projected.
+
+  Four levers over what the relocations left behind. **No-op and rationale removal** did most of it: the
+  file argued with itself constantly, and an orchestrator does not need to be persuaded of a rule it is
+  being given. **Positive phrasing** replaced prohibitions, since steering by prohibition makes the
+  forbidden behaviour more available rather than less — with exactly three destructive operations keeping
+  an explicit ban alongside the positive, because they are hard guardrails: removing or force-modifying
+  the main worktree, passing `--force` to `git worktree remove`, and force-pushing. **Leading words**
+  collapsed restatements into the terms `CONTEXT.md` already carries. And the **description** — loaded in
+  every session on the machine, not only runs that invoke the skill — is now one line with one trigger
+  per branch.
+
+  The notifier's `model` and `effort` move into its own frontmatter and the dispatch site stops setting
+  them: a second copy of a tier can only drift. The suite gate's stay at its dispatch site, since it has
+  no agent definition by design and there is nowhere else they could live.
+
+  `CONTEXT.md` gains four terms that were being used interchangeably: **discovery cost** (what a skill
+  costs a session that never invokes it), **host load** (what the orchestrator carries for a run),
+  **agent load** (what one dispatched subagent carries), and **run spend** (what a run actually consumes,
+  measured after the fact).
+
+  Measured host load — `wc -c` over every file the orchestrator loads — is **146,547 → 53,273 bytes**, a
+  63.6% reduction, or roughly 36,700 → 13,400 tokens on the metric the baseline was taken on.
+
+### Patch Changes
+
+- [`b87cef7`](https://github.com/ieuanign/skills/commit/b87cef78250835705ce25b1e057231062f7feb45) Thanks [@ieuanign](https://github.com/ieuanign)! - The sixteen findings from the two-axis review of the compression stack are resolved, and the two that mattered most turn out to be one real documentation defect and one refuted regression.
+
+  **The notifier's tier was the live risk, and it is fine.** Moving `model` and `effort` into `agents/notifier.md`'s frontmatter left the cheapest role in the pipeline resting on an untested claim — that an agent definition's frontmatter applies when the agent is dispatched from inside a workflow script rather than by the Agent tool. It does. The run's own workflow transcript records `notify:[#154](https://github.com/ieuanign/skills/issues/154)` at `claude-haiku-4-5-20251001` while every other roster dispatch in the same script ran at `claude-opus-5[1m]`, which is exactly the split the frontmatter names. `docs/dev-loop-verification.md` carries the table, because a tier nobody can see is a tier that drifts silently.
+
+  **Two ADRs cited a file that no longer exists, in the present tense.** `0002` and `0003` were written when `contracts.md` existed and `/dev-loop` had two execution modes, and `0003` still invoked the "edit the contract first, then both implementations" rule this effort deleted. Their Status lines now say where each rule actually lives — the review ceiling in `docs/dev-loop-internals.md` against a `phase-execute.js` constant, the no-token-ceiling argument in ADR-0005, the ready predicate in the internals doc — and each carries a note recording that the decision below it stands unchanged while its homes moved. The decisions themselves are untouched: an ADR is a record, not a draft.
+
+  **The measurement was narrower than its own definition.** [#130](https://github.com/ieuanign/skills/issues/130) asked for `wc -c` over every file the orchestrator loads; the figure covered the skill files only, while Act 0 also reads the repo profile under both run modes and `docs/agents/triage-labels.md` under `unattended`. Both are now counted and, because they sit unchanged on both sides of the comparison, they move the percentage without moving the saving: 62.9% on the skill files, 61.8% gated, 60.5% unattended, and ~23,100 tokens saved per run in every column.
+
+  **One config home was undeclared four lines from the table that declares them.** `SKILL.md` tables where a value lives and then reads `.claude/rules/pr-separation.md` without ever having named it as a home. The table gains the row and the rule gains its one carve-out: a repository convention that binds every session whether or not this plugin is installed is not the pipeline's to store.
+
+  The rest are duplication and record-keeping. `docs/dev-loop.md` stopped restating the config refusals normatively and keeps only the reasoning `SKILL.md` deliberately does not load; the ten-line namespace rationale duplicated across both phase scripts compresses to five, the full version already living in `docs/dev-loop-internals.md`; `CONTEXT.md`'s **Run spend** entry stops banning a word its own siblings use, and now bans it only as a bare synonym; the state-machine harness no longer reads as though the script it tests outranks it — the script governs the _prose_, and a failing scenario is the script's bug; and the four `docs/dev-loop*.md` files are linked from `README.md` instead of from nothing.
+
+  **Three findings are recorded rather than fixed, because each is a child ticket disagreeing with its parent** — [#125](https://github.com/ieuanign/skills/issues/125)'s flat-bound ADR already existed as ADR-0002, [#129](https://github.com/ieuanign/skills/issues/129)'s first criterion is met in substance by the pointer [#121](https://github.com/ieuanign/skills/issues/121)'s own Destinations table asks for, and two defect fixes ship outside a scope line that admits no behaviour change, because leaving `SKILL.md` contradicting itself through a rewrite premised on it being the single normative source is the worse trade. `docs/dev-loop-verification.md` names all three.
+
+  **What the suite still owes is now filed rather than implied.** The host load missed [#121](https://github.com/ieuanign/skills/issues/121)'s ~5,000-token target by 2.7×, and six of the ten scenarios never ran — including the gated run that [#128](https://github.com/ieuanign/skills/issues/128), [#130](https://github.com/ieuanign/skills/issues/130) and [#131](https://github.com/ieuanign/skills/issues/131) each require, which is the only thing that exercises Gate 2's rewritten arbitration and draft-offer branches. Those are [#158](https://github.com/ieuanign/skills/issues/158) and [#159](https://github.com/ieuanign/skills/issues/159), and the verification record says the suite is not green rather than implying it is.
+
+- [`e115ff8`](https://github.com/ieuanign/skills/commit/e115ff8332b0a0fd8bafe97991bd4571a090a9ae) Thanks [@ieuanign](https://github.com/ieuanign)! - Three rules weakened by [#130](https://github.com/ieuanign/skills/issues/130)'s compression are restored, and two long-standing defects in `SKILL.md`
+  are fixed.
+
+  Every one of the 389 entries in the rule inventory is now ticked. The 223 destined for `SKILL.md` were
+  checked against the pre-rewrite blob rather than against the inventory's own summary of it: 220 were
+  present as written, and three had lost a clause with independent scope while the rule around it
+  survived.
+
+  - **`S-236`** — "work one Bash command does is yours" had become a two-item enumeration. ADR-0007
+    cites the general form by name as the reason per-commit push may not spend an agent on `git push`,
+    so the enumeration left the next unlisted cheap task unbound.
+  - **`C-137`** — "and no profile key mirrors it" had gone from the overlap declaration, while the
+    config-home rule still points a future implementer at the profile for exactly that per-repository
+    value. Nothing forbade the derived copy ADR-0001 exists to prevent.
+  - **`C-128`** — the layer-is-horizontal / stack-is-vertical distinction survived only in `CONTEXT.md`,
+    which does not ship in the plugin, so a consumer lost it entirely.
+
+  Two defects that predate this effort, found while verifying:
+
+  - `SKILL.md` contradicted itself on the shape of `terminal`, describing it once as `{pr, push, reasons}`
+    and once as `{pr, reasons}` with "It carries no push column". `terminalState()` returns no `push`
+    key, so the first was wrong and is corrected.
+  - The discovered-blocker comment was specified with `--body "<text>"`, which the same file's comment
+    mechanism forbids in terms — agent-generated free text composed into a shell string. It now uses
+    `--body-file -` like every other comment the pipeline writes.
+
+- [#146](https://github.com/ieuanign/skills/pull/146) [`5c77211`](https://github.com/ieuanign/skills/commit/5c772113f34866b5c33e8db685564fff2bccdcc9) Thanks [@ieuanign](https://github.com/ieuanign)! - `docs/dev-loop-rule-inventory.md` records every normative statement in `/dev-loop`'s two large documents and assigns each exactly one destination in the structure that replaces them.
+
+  This is the prefactor for the host-load compression. `SKILL.md` and `contracts.md` between them carry 389 statements that bind behaviour — conditions the orchestrator evaluates, bounds, routes, endings, prohibitions, invariants — plus the rationale written to stop a past decision being re-litigated. Moving them is only provably lossless if something says in advance where each one goes: without it nobody can tell a rule that was deliberately deleted from one that was quietly lost, because both look identical in a diff that also relocates three hundred others.
+
+  Each entry carries enough of the original wording to stay recognisable after its source file changes, one destination drawn from the effort's own Destinations table, and the ticket that lands it. Later tickets tick entries; the final one verifies that every entry is ticked or explicitly marked dropped with a reason.
+
+  Two things fall out of writing it down. **Twenty-two entries are deleted rather than moved**, and they cluster into exactly three groups — Mode A and its vocabulary (seventeen), `contracts.md`'s claims about its own normativity (four), and the orchestrator's second read of the notifications specification (one). Nothing that binds a run's behaviour is deleted outside the first group, which is one recorded decision rather than a scatter. And **ADR numbering is reserved rather than sequential**: `0004` is spoken for by the Mode A deletion, which lands after the rationale extraction, so the rationale ADRs take `0005`–`0008` and a reader who sees `0005` land first has somewhere to read why.
+
+  No skill, agent or phase script is modified.
+
 ## 0.13.0
 
 ### Minor Changes
