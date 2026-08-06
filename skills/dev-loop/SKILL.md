@@ -68,7 +68,7 @@ The commands:
 - **A comment is `gh issue comment <n> --body-file -`**, with the body piped in from a **quoted** heredoc (`<<'BODY'`), whatever the body carries.
 - **A message is `<this-skill-dir>/notify.sh <<'MSG' … MSG`**, which reads its payload on standard input the same way. It implements the specification's channel contract, so an unconfigured channel is already handled inside it: it needs no check, no question and no profile key.
 
-Touchpoint intersection, sub-lane splitting, the profile's Constraints, the push and the PR itself are gate *work*, and happen identically under both modes. The one-time ask-then-persist preconditions are not gates and fire under both — including Act 0's step 9, which owns the two profile keys Phase B needs. What a sub-lane's *ending* means for its PR's state — ready, draft, or none — is the phase script's **terminal-state table**, which it has already applied: every sub-lane result carries a `terminal` of `{pr, push, reasons}`, so under `unattended` you open what it names rather than deciding it here.
+Touchpoint intersection, sub-lane splitting, the profile's Constraints, the push and the PR itself are gate *work*, and happen identically under both modes. The one-time ask-then-persist preconditions are not gates and fire under both — including Act 0's step 9, which owns the two profile keys Phase B needs. What a sub-lane's *ending* means for its PR's state — ready, draft, or none — is the phase script's **terminal-state table**, which it has already applied: every sub-lane result carries a `terminal` of `{pr, reasons}`, so under `unattended` you open what it names rather than deciding it here.
 
 ## Derived facts (compute once at Act 0 — never hardcode, never persist)
 
@@ -179,10 +179,10 @@ Present every lane: summary, plan path (invite the user to edit the file before 
 
   **The last two outcomes are physically identical** — same layer drop, same base — **and differ only in what they claim:**
 
-  - **real dependency** — post the discovery back to the dependent GitHub issue: `gh issue comment <B> --body "Discovered blocker: depends on #<A> — overlapping files: ..."`. **Unconditionally, and before the remedy is chosen**, so a deferred lane still leaves with its blocker documented. Then AskUserQuestion per case, with **"stack B on A's branch" as the first/recommended option** and "defer B out of this batch" as the alternative.
+  - **real dependency** — post the discovery back to the dependent GitHub issue with `gh issue comment <B> --body-file -`, per the comment mechanism above, the body reading `Discovered blocker: depends on #<A> — overlapping files: ...`. **Unconditionally, and before the remedy is chosen**, so a deferred lane still leaves with its blocker documented. Then AskUserQuestion per case, with **"stack B on A's branch" as the first/recommended option** and "defer B out of this batch" as the alternative.
   - **same-region co-touch** — post nothing and ask nothing, and say plainly in this gate's presentation that it was *sequenced to avoid a textual conflict, not because one lane needs the other*.
 
-  **The line between the first two outcomes is the repository's to move, and only that line.** It declares which in the **Overlapping changes** section of its `.claude/rules/pr-separation.md` — project rules load at launch, so read it off your own context rather than fetching the file:
+  **The line between the first two outcomes is the repository's to move, and only that line.** It declares which in the **Overlapping changes** section of its `.claude/rules/pr-separation.md` — project rules load at launch, so read it off your own context rather than fetching the file, and no profile key mirrors it:
 
   | Declared | Where the line sits |
   |---|---|
@@ -199,6 +199,8 @@ Present every lane: summary, plan path (invite the user to edit the file before 
 Only lanes the user approves proceed. Drop the rest with a note.
 
 ## Act 2 — Provisioning (you, plain Bash — no agents)
+
+**A layer is horizontal and a stack is vertical**, and the pipeline has both: a layer is the set of sub-lanes that run concurrently, all based on branches that already hold their commits, while a stack is a chain of branches each based on the one below, sitting on the trunk with a bottom directly on it and a top nothing is based on.
 
 Layer logic: **anything based on the trunk (`origin/<DEFAULT>`) runs in layer 1; anything based on a branch that gets its commits in layer N runs in layer N+1** — this applies to stacked _lanes_ AND to dependent _sub-lanes_ within one lane, so a frontend sub-lane based on its own backend sub-lane's branch waits for the next layer. Provision a layer only after its bases completed the previous layer. For each sub-lane in the current layer:
 
@@ -365,7 +367,7 @@ Then tell the user where the logs are. `cost-report.mjs` measures on the metric 
 - **Push before you remove.** A worktree is removed only after a push of its branch succeeded.
 - A lane worktree is a cold checkout plus its `.worktreeinclude` files and whatever the Setup command installs. Everything else an agent needs — skills, roster, settings, permissions — it already has: it runs in a session rooted in MAIN whatever directory it works in.
 - **Never halt, warn, or change a lane's behaviour because of what it costs.** Token spend is reported by Act 4 and enforced nowhere. **There is no token ceiling, no per-lane budget and no cost-triggered ending anywhere in this pipeline** — every loop is already bounded without one, and no argument, profile key or ending unlocks this.
-- Provisioning and pushing are one Bash command each and are yours; planning, coding and reviewing are the agents'.
+- Work that one Bash command does is yours, whatever it is — provisioning and pushing among them; planning, coding, reviewing and debugging are the agents'.
 - Plan paths passed to agents are always ABSOLUTE.
 - If the session dies mid-run, `/dev-loop <same issues>` resumes from artifacts — do not keep separate state files.
 - Every repository name, absolute path and project-specific fact stays out of this skill and its bundled agents — repo facts belong to the repo profile and the repo's own docs, so the skill folder stays copyable to any machine as-is.
