@@ -34,8 +34,8 @@ file is only how to run the three writes safely.
 
 **The specification is yours, not the orchestrator's.** The orchestrator does not load
 `notifications.md` — it states the format of its own three events (lane start, plan comment, lane
-conclusion) inline, and leaves every mid-lane ending to you. So you are the only reader of that file during a run, and
-nothing you find in it needs reconciling with what the host was told.
+conclusion) inline, and leaves every mid-lane ending to you. So you are the only reader of that
+file during a run, and nothing you find in it needs reconciling with what the host was told.
 
 **Resolve roles to label strings** through the repository's own triage-label documentation at
 `docs/agents/triage-labels.md`, read from the repository root, per that file's rule.

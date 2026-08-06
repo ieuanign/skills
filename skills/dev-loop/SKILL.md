@@ -86,13 +86,11 @@ Adding a value to this pipeline? The rule decides its home:
 
 > **Varies per run → argument. Varies per repository → profile. Does not vary → constant.**
 
-**One carve-out**: a repository convention that binds every session whether or not this plugin is installed is not the pipeline's to store — it stays in `.claude/rules/` and no profile key mirrors it.
-
 | Home | Values |
 |---|---|
 | **Argument** | the run mode, the issue list, the optional `project:<slug>` |
 | **Repository profile** (ask-then-persist, below) | every key in **Repo profile** below — branch template, suite command, **fix cycles** |
-| **Repository rules** — `.claude/rules/` | conventions binding every session in the repo, plugin or no plugin. This pipeline reads one: `pr-separation.md`'s **Overlapping changes** line, at Gate 1. Project rules load at launch, so read it off your own context rather than fetching the file |
+| **Repository rules** — `.claude/rules/` | conventions binding every session in the repo, plugin or no plugin — never this pipeline's to store. It reads one: `pr-separation.md`'s **Overlapping changes** line, at Gate 1, which states its own read mechanism |
 | **Phase-script constant** | per-stage effort and model tiers, the per-commit debug-and-fix bound, the review loop's fix-cycle ceiling, the suite gate's two round bounds, the stage list each mode runs |
 | **Skill constant** | gate suppression under `unattended` (stated once under Run mode above), the cost reporting target |
 

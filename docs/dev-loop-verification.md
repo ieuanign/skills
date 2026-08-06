@@ -13,8 +13,8 @@ picks the suite up, so it says what was **not** verified as plainly as what was.
 | | Bytes | Tokens |
 |---|---|---|
 | `SKILL.md` + `contracts.md` + `notifications.md` (at the effort's base commit) | 146,547 | ~36,700 |
-| `SKILL.md` alone | **54,238** | **~13,600** |
-| Reduction | **63.0%** | **~23,100 per run** |
+| `SKILL.md` alone | **54,002** | **~13,500** |
+| Reduction | **63.2%** | **~23,200 per run** |
 
 The token column uses the bytes-per-token ratio the ~36,700 baseline itself implies (3.99), so every
 row on this page is on one metric.
@@ -34,10 +34,10 @@ Totals with them included, for this repository:
 
 | Run mode | Before | After | Reduction |
 |---|---|---|---|
-| `gated` | 149,243 (~37,400) | 56,934 (**~14,300**) | 61.8% |
-| `unattended` | 152,462 (~38,200) | 60,153 (**~15,100**) | 60.5% |
+| `gated` | 149,243 (~37,400) | 56,698 (**~14,200**) | 62.0% |
+| `unattended` | 152,462 (~38,200) | 59,917 (**~15,000**) | 60.7% |
 
-**The absolute saving is ~23,100 tokens in every column**, which is the figure that matters: repo
+**The absolute saving is ~23,200 tokens in every column**, which is the figure that matters: repo
 config sits unchanged on both sides, so it can dilute the percentage but never the reduction.
 
 **Short of #121's ~5,000-token target on every reading of it** — 2.7× on the skill-files line, 3.0× on
