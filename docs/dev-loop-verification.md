@@ -13,8 +13,8 @@ picks the suite up, so it says what was **not** verified as plainly as what was.
 | | Bytes | Tokens |
 |---|---|---|
 | `SKILL.md` + `contracts.md` + `notifications.md` (at the effort's base commit) | 146,547 | ~36,700 |
-| `SKILL.md` alone | **54,295** | **~13,600** |
-| Reduction | **62.9%** | **~23,100 per run** |
+| `SKILL.md` alone | **54,238** | **~13,600** |
+| Reduction | **63.0%** | **~23,100 per run** |
 
 The token column uses the bytes-per-token ratio the ~36,700 baseline itself implies (3.99), so every
 row on this page is on one metric.
@@ -34,15 +34,17 @@ Totals with them included, for this repository:
 
 | Run mode | Before | After | Reduction |
 |---|---|---|---|
-| `gated` | 149,243 (~37,400) | 56,991 (**~14,300**) | 61.8% |
-| `unattended` | 152,462 (~38,200) | 60,210 (**~15,100**) | 60.5% |
+| `gated` | 149,243 (~37,400) | 56,934 (**~14,300**) | 61.8% |
+| `unattended` | 152,462 (~38,200) | 60,153 (**~15,100**) | 60.5% |
 
 **The absolute saving is ~23,100 tokens in every column**, which is the figure that matters: repo
 config sits unchanged on both sides, so it can dilute the percentage but never the reduction.
 
 **Short of #121's ~5,000-token target on every reading of it** — 2.7× on the skill-files line, 3.0× on
-the unattended total. The figures above are HEAD's, so they include the ~500 bytes the review fixes
-added back to `SKILL.md`: the `.claude/rules/` row in the config-homes table and its carve-out. Closing that gap would mean cutting rules rather than prose: what remains is the
+the unattended total. The figures above are HEAD's, and `SKILL.md` grew 965 bytes over the 53,273 that
+[#130](https://github.com/ieuanign/skills/issues/130) left: 466 restoring the three weakened rules
+below, and 499 adding the `.claude/rules/` row to the config-homes table with its carve-out. Both were
+additions this ticket judged necessary, and neither is prose. Closing that gap would mean cutting rules rather than prose: what remains is the
 Acts, the Gates, the four host tables and the ten-element pull request body floor. That is now
 [#158](https://github.com/ieuanign/skills/issues/158)'s to settle — either by naming the rules that go
 or by an ADR retiring the target — rather than a number left with no owner.
