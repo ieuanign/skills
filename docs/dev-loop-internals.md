@@ -528,7 +528,7 @@ pushed, and **that is the intent rather than an oversight**. It is working mater
 a reason to remove the worktree, not a cost of doing so.
 
 Two alternatives were weighed and rejected: **keeping the worktree** strands one per sub-lane that
-writes anything, and cleanup mode removes none of them; **copying the files back** writes throwaway
+writes anything, and `/dev-loop-cleanup` removes none of them; **copying the files back** writes throwaway
 output into the main checkout, where nothing ever reaps it.
 
 What was wrong was only that the loss was **silent** — including when the plan's own acceptance

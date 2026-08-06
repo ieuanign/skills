@@ -1,11 +1,11 @@
 ---
 name: dev-loop
-description: Issue-to-PR pipeline over the custom agent roster — plans, implements, and reviews one or more GitHub issues, each in its own git worktree, with parallel lanes and human gates at plan approval and push/PR. Use when the user invokes /dev-loop with issue numbers, wants an issue worked end-to-end, says "/dev-loop auto" for an unattended run that never stops for approval, or says "/dev-loop cleanup".
+description: Issue-to-PR pipeline over the custom agent roster — plans, implements, and reviews one or more GitHub issues, each in its own git worktree, with parallel lanes and human gates at plan approval and push/PR. Use when the user invokes /dev-loop with issue numbers, wants an issue worked end-to-end, or says "/dev-loop auto" for an unattended run that never stops for approval.
 ---
 
 # /dev-loop — issue-to-PR pipeline
 
-You are the orchestrator. You stay in the MAIN worktree and never write code, plan, review, or debug yourself — the agents do (architecture-engineer, code-writer, reviewer, debugger). You do: intake, gates, worktree provisioning, push, PRs, cleanup — and, under `unattended`, the notifications at your own boundaries. The fifth roster agent, the **notifier**, is not one you dispatch: `phase-execute.js` dispatches it mid-script for a lane that ends, because you are blind while a script runs. `notifications.md` governs who writes what. All agent returns are machine-readable — trust the contract keys (`STATUS/RESULT/VERDICT/OWNER`), not vibes. The pipeline's state machine (role contracts, cycle caps, endings) is specified in `<this-skill-dir>/contracts.md` — read it before Phase B.
+You are the orchestrator. You stay in the MAIN worktree and never write code, plan, review, or debug yourself — the agents do (architecture-engineer, code-writer, reviewer, debugger). You do: intake, gates, worktree provisioning and removal, push, PRs — and, under `unattended`, the notifications at your own boundaries. The fifth roster agent, the **notifier**, is not one you dispatch: `phase-execute.js` dispatches it mid-script for a lane that ends, because you are blind while a script runs. `notifications.md` governs who writes what. All agent returns are machine-readable — trust the contract keys (`STATUS/RESULT/VERDICT/OWNER`), not vibes. The pipeline's state machine (role contracts, cycle caps, endings) is specified in `<this-skill-dir>/contracts.md` — read it before Phase B.
 
 This skill is repo- and machine-agnostic: it hardcodes no repository name, path, or project fact. Everything it needs is derived below or read from the repo profile.
 
@@ -13,10 +13,10 @@ This skill is repo- and machine-agnostic: it hardcodes no repository name, path,
 
 `/dev-loop [auto] <issues> [project:<slug>]`
 
-- `auto` — optional leading token: run the batch **unattended**, from filed issue to pushed PR, without stopping for approval. Modes lead and dials trail — the shape `cleanup` already has — so the word deciding whether you will ever be asked for approval is the second one you type.
+- `auto` — optional leading token: run the batch **unattended**, from filed issue to pushed PR, without stopping for approval. Modes lead and dials trail, so the word deciding whether you will ever be asked for approval is the second one you type.
 - `<issues>` — one or more GitHub issue numbers, comma or space separated. One issue = one lane; several = parallel lanes.
 - `project:<slug>` — optional project slug passed to the architect for the plan path.
-- `/dev-loop cleanup` — run Cleanup mode (bottom) instead of the pipeline.
+- Cleanup is not an argument here. **`/dev-loop-cleanup`** is its own skill and reaps what a finished run left behind — merged branches and their plan files — so tidying up loads none of this file.
 
 ### Run mode — `gated` or `unattended`
 
@@ -101,7 +101,7 @@ Profile keys:
 
 ## Act 0 — Intake (before any agent runs)
 
-1. Parse the arguments: a leading `cleanup` selects Cleanup mode; a leading `auto` sets the **run mode** to `unattended`, its absence to `gated`; the rest are issue numbers and the optional `project:<slug>`. This is the ONLY place the run mode is derived — carry that one value from here.
+1. Parse the arguments: a leading `auto` sets the **run mode** to `unattended`, its absence to `gated`; the rest are issue numbers and the optional `project:<slug>`. This is the ONLY place the run mode is derived — carry that one value from here.
 
    Then read the **agent namespace** off your own roster, which is another look at what you already have and also costs nothing: find `code-writer` among your available agent types — listed bare, the namespace is the empty string; listed as `<prefix>:code-writer`, it is `<prefix>`. This is the ONLY place it is derived — carry that one value from here too. Never write it as a literal and never derive it from a path, a package name or a manifest: the roster is the registry's own answer, so a renamed plugin or a differently named marketplace needs no edit. contracts.md's **Roles** section is normative for why a role is resolved rather than named. A phase script sees no registry at all, and unless you pass it every dispatch in the phase dies on an unresolvable agent type for everyone but a maintainer running linked agents.
 2. **The pipeline requires the Workflow tool.** Every stage is dispatched through it, so a session without it in your toolset → refuse the run here, whatever the run mode, before a single agent is dispatched and before this Act asks the user anything else — a developer whose run is about to be refused should not first be asked to fill in a profile it will never use. Tell them the setting, `"enableWorkflows": true` in the per-machine settings file (`~/.claude/settings.json`), and that a **restart is required** — tool availability is fixed at session start, so writing the setting cannot rescue this run. Asked once, then never again on this machine, with the settings file itself as the persistence:
@@ -127,7 +127,7 @@ Profile keys:
    - A worktree already exists for the branch → reuse it as-is.
 9. **Phase B's two profile keys — the ONE place either is asked.** The **Full-suite command** and **Fix cycles** keys are needed by Phase B and by nothing before it, and this step owns both asks. Nowhere else in this file asks for either: an obligation stated only in a key's own description is one no step performs, which is how every repository came to run silently on the defaults.
 
-   **Skip the whole step unless this run will reach Phase B** — no lane survived steps 6–8, or this is Cleanup mode, and nothing is asked. Then, per key, **skip a key the profile already carries**: a persisted value is an answer and is never revisited, and `none` and `0` are persisted answers like any other. So the ordinary run asks nothing, and a repository is asked at most once ever.
+   **Skip the whole step unless this run will reach Phase B** — no lane survived steps 6–8, and nothing is asked. Then, per key, **skip a key the profile already carries**: a persisted value is an answer and is never revisited, and `none` and `0` are persisted answers like any other. So the ordinary run asks nothing, and a repository is asked at most once ever.
 
    It is **not a gate**. It raises no question about this batch's work, so gate suppression does not touch it and it fires under both run modes — like `.worktreeinclude` and the branch template, and for the same reason: there is somewhere durable to record the answer. It sits here, at intake, because it is the last point at which a human who typed `auto` is reliably still watching.
 
@@ -208,7 +208,7 @@ Gate 2 fires at the end of EVERY layer, for every sub-lane that layer finished �
 
    🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
-3. Worktrees, per contracts.md's **worktree invariant** — removed when, and only when, the work reached the remote AND no human is expected to resume in it. Removal is `git worktree remove <WORKTREES>/<slug>` and is never `--force`, and it runs **only after that push succeeded**: after removal the remote branch is the only copy, so a push that failed or never ran keeps its worktree. A refusal means work was left behind — report `git -C <wt> status --porcelain` verbatim and keep that worktree; that refusal IS the dirty-work guard, so never argue with it. NEVER target MAIN: before any removal, confirm the path is NOT the first entry of `git worktree list`. The local branch and the plan file stay (`/dev-loop cleanup` reaps those once the PR merges). Which worktrees go:
+3. Worktrees, per contracts.md's **worktree invariant** — removed when, and only when, the work reached the remote AND no human is expected to resume in it. Removal is `git worktree remove <WORKTREES>/<slug>` and is never `--force`, and it runs **only after that push succeeded**: after removal the remote branch is the only copy, so a push that failed or never ran keeps its worktree. A refusal means work was left behind — report `git -C <wt> status --porcelain` verbatim and keep that worktree; that refusal IS the dirty-work guard, so never argue with it. NEVER target MAIN: before any removal, confirm the path is NOT the first entry of `git worktree list`. The local branch and the plan file stay (`/dev-loop-cleanup` reaps those once the PR merges). Which worktrees go:
 
    - a sub-lane that concluded **clean**, in both modes — removed once its push and PR succeeded;
    - a sub-lane that **ended**, under `unattended` — removed once its push succeeded, nobody being there to resume in it;
@@ -274,21 +274,6 @@ node <this-skill-dir>/cost-report.mjs --issues <n> <transcriptDir>... \
 - **Best-effort, and last for that reason.** A failure here — the script missing, a directory unreadable, no transcript directory captured at all — is reported and dropped. It never changes a lane's ending, never blocks the run's conclusion, and never makes a batch report failure. Nothing downstream reads these files.
 
 Then tell the user where the logs are. `cost-report.mjs` is what reads the transcripts: it measures on the metric the baseline was measured on, and a comparison against any other metric is meaningless.
-
-## Cleanup mode (`/dev-loop cleanup`)
-
-Cleanup reaps what has an exact done-signal and **lists** what does not. It is safe to run at any time, including while another batch is mid-layer, and that is the property to preserve.
-
-**It removes no worktree.** Every normal path now removes its own the moment its work reaches the remote (contracts.md's **worktree invariant**), so a worktree still standing is one nothing proved done. The old scan proved it with "the branch is merged", which is not the same claim: a branch merges the moment its PR lands, which says nothing about whether the run holding that checkout has finished with it — so the scan could delete an active worktree out from under a run still in flight, and would look like it was working correctly while doing it.
-
-1. `git fetch origin <DEFAULT>`.
-2. **Reap, by the exact signal.** A lane is done when its PR is merged (`gh pr view <branch> --json state,mergedAt`) or its branch is fully merged into `origin/<DEFAULT>`. **The `gh` arm is the load-bearing one, and the git arm is the fallback** — not the other way round. A repository that merges by **squash** or by **rebase** replays the work under new shas, so the branch's own commits are never ancestors of the default branch and `git branch --merged origin/<DEFAULT>` never lists it; the git arm silently never fires there, and only the merged-PR check sees the truth. Keep it anyway for plain merge commits and for a branch that never had a PR. For each done lane: delete the local branch, and delete the lane's plan file `.scratch/*/plans/<n>-*.md` (plans are temporary artifacts). Reaping these is why cleanup exists.
-
-   Delete with `git branch -d`, which succeeds whenever the branch is merged into the default branch **or** still matches its upstream — the ordinary case, since every branch that got a PR was pushed. It refuses one combination, and **squash and rebase both produce it**: a merge that rewrote the commits, whose remote branch was then deleted (GitHub's default on merge). The rewrite means the commits are not ancestors of the default branch, and the deletion takes away the remote-tracking ref that was carrying the proof instead. Only when `-d` refuses AND the merged check above passed, re-run it as `git branch -D`: that check is the proof git can no longer see for itself, and without this fallback cleanup would reap nothing at all in either of the two commonest GitHub configurations. Never reach for `-D` in any other situation — not on a branch the merged check did not pass, and not to get past any other refusal.
-3. **A branch checked out in a surviving worktree cannot be deleted**, and git refuses — correctly, since something still holds it. List it alongside that worktree instead of working around it; the plan file still goes.
-4. **List every worktree under `<WORKTREES>`; remove none.** Per worktree, say why it is still here, from what you can observe: uncommitted or untracked work (`git -C <wt> status --porcelain` non-empty — a removal that was refused), nothing on the remote (no upstream, or `git -C <wt> rev-list --count @{u}..HEAD` unreadable — held at a gate, or a session that died mid-run), or pushed with its PR still open. None of these has an exact done-signal and none distinguishes a live run's worktree from an abandoned one, so the human decides — give them the `git worktree remove <path>` line to run if they agree, and never run it for them.
-5. NEVER touch MAIN (the first entry of `git worktree list`) — it is not a candidate under any condition, and only worktrees under `<WORKTREES>` are listed at all.
-6. Report the two apart, so the difference is visible: **reaped** (branch, plan file) and **needs attention** (worktree, why it is lingering, the removal command). An empty second table is the good outcome.
 
 ## Hard rules
 

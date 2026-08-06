@@ -143,6 +143,17 @@ nothing added to your repo. The skill is repo- and machine-agnostic; per-repo se
 > your git config for stacked branches, keeping working material out of the repo, and making comments
 > earn their space.
 
+### [`/dev-loop-cleanup`](./skills/dev-loop-cleanup/SKILL.md) — reap merged work
+
+`/dev-loop-cleanup` deletes the local branch and the plan file for every lane whose pull request has
+merged, and **lists** every lingering worktree with the reason it is still there — removing none, and
+never touching the main worktree. Reaping on a merged signal is the whole of it: a branch whose PR is
+still open keeps its branch and its plan, which is what a reviewer or a resume reads.
+
+It is a separate skill so that tidying up does not load the pipeline. In-run worktree removal is not
+its job and has not moved — `/dev-loop` still removes a sub-lane's worktree the moment its push and
+pull request succeed.
+
 ### [`/code-review-mp`](./skills/code-review-mp/SKILL.md) — two-axis diff review
 
 Reviews the diff since a fixed point along two axes, each in its own parallel sub-agent so they don't

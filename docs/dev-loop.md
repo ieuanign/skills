@@ -7,7 +7,7 @@ by commit, reviews the result, runs your suite against it, pushes, and opens the
 issue in its own git worktree, several issues at once, with two human gates.
 
 It is an **orchestrator**. The skill itself never writes code, plans, reviews or debugs: it does
-intake, gates, worktree provisioning, push, pull requests and cleanup, and delegates everything else
+intake, gates, worktree provisioning and removal, push and pull requests, and delegates everything else
 to a roster of agents that ship with the plugin. That division is the whole design. The orchestrator
 stays cheap and stays in the main worktree; the expensive work happens in subagents with their own
 context windows, in checkouts that cannot collide.
@@ -47,7 +47,7 @@ whether it should run the phases you just asked for.
 | One ticket, on the branch you are standing on | `/implement` |
 | Not written down as an issue yet | `/to-spec` then `/to-tickets`, then come back |
 | Already built, and you want it checked | `/code-review` |
-| Merged work you want reaped | `/dev-loop cleanup` |
+| Merged work you want reaped | `/dev-loop-cleanup` |
 
 ## Prerequisites
 
@@ -166,8 +166,9 @@ This is also the answer to "the session died". Type the same command again.
 
 ### Cleanup
 
-`/dev-loop cleanup` reaps what has an exact done-signal — the local branch and the plan file, once the
-pull request is **merged** — and **lists** what does not. It removes no worktree. It is safe to run at
+`/dev-loop-cleanup` is its own skill, so reaping does not load the pipeline. It reaps what has an exact
+done-signal — the local branch and the plan file, once the pull request is **merged** — and **lists**
+what does not. It removes no worktree. It is safe to run at
 any time, including while another batch is mid-layer, and that property is deliberate: a worktree still
 standing is one nothing proved done, and a merge tells you nothing about whether the run holding that
 checkout has finished with it.
