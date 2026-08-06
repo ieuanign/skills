@@ -7,9 +7,9 @@ export const meta = {
 
 // args: {
 //   issues: [{ number, title, project?, answers? }],
-//   agentNamespace: string  // the roster's registry namespace, read off the host's own agent list
-//                           // at intake. Absent ⇒ bare names, which is the linked-agents case.
+//   agentNamespace: string  // the roster's registry namespace; absent ⇒ bare names
 // }
+
 // The harness may deliver args as a JSON string; normalize to an object.
 const input = typeof args === 'string' ? JSON.parse(args) : args
 
@@ -24,40 +24,17 @@ const PLAN_SCHEMA = {
   required: ['status', 'planPath', 'summary', 'openQuestions'],
 }
 
-// A role is resolved, never named. The same definition registers bare when it is linked into a
-// repo's `.claude/agents/` and namespaced `<plugin>:<name>` when the plugin is installed — and the
-// plugin is the supported install path, so the namespaced form is the ordinary one and the bare
-// form is the maintainer's. A phase script carrying a bare literal therefore RUNS ONLY FOR THE
-// MAINTAINER and dies on its first dispatch for everyone who installed the plugin. A workflow
-// script sees neither registry, so the host reads the namespace off its own roster and passes it.
-// A trailing colon is tolerated because writing one is a plausible reading of "namespace" and the
-// failure it would otherwise cause is total: every dispatch in the phase dies on an unresolvable
-// type, so no plan is written and every lane comes back DIED. Absent ⇒ bare, the linked case and
-// the pre-plugin behaviour.
+// A role is resolved, never named: the same definition registers bare when linked into a repo's
+// `.claude/agents/` and `<plugin>:<name>` when the plugin is installed, so a bare literal here runs
+// only for the maintainer. Absent ⇒ bare; a trailing colon is tolerated, an unresolvable one fatal.
 const NS = String(input.agentNamespace || '').trim().replace(/:+$/, '')
 const roleAgent = role => (NS ? `${NS}:${role}` : role)
 
 const agentType = roleAgent('architecture-engineer')
 
-// The lane-and-stage marker every dispatched prompt leads with. It says which lane (the issue
-// number) and which stage an agent belongs to, so its own transcript identifies it without anyone
-// pattern-matching the English of a prompt that gets reworded. Inert to the agent: nothing is
-// asked to return it and no parsing of a return depends on it — only the cost report, reading the
-// transcripts afterwards, cares.
-//
-// It leads rather than trails because a transcript's first user record is the prompt, and reading
-// its opening line is the cheapest identification there is.
-//
-// Planning is the reason this exists rather than an inference from the prompt's prose: a plan path
-// identifies a lane in every OTHER stage's prompt, but planning runs before a plan file exists, so
-// the architect's prompt has no path to read — and planning is roughly three tenths of a lane.
-//
-// These are COST stages, coarser than the Per-stage context contract's, which names each role's
-// turn: a debugger's turn has no cost stage of its own and is charged to the stage that needed it.
-//
-// The vocabulary is shared with phase-execute.js and with cost-report.mjs, and each copy is
-// written out in full: a phase script imports nothing, being compiled as one function over the
-// runner's globals. Add a stage in one and add it in all three — `npm run check` compares them.
+// The lane-and-stage marker every prompt leads with, so a transcript identifies its lane and stage
+// without parsing prompt prose. Inert to the agent; only the cost report reads it. Written out in
+// full here, in phase-execute.js and in cost-report.mjs — a script imports nothing; check compares.
 const STAGE = { PLAN: 'plan', WRITE: 'write', REVIEW: 'review', SUITE: 'suite', NOTIFY: 'notify' }
 const mark = (issue, stage) => `[dev-loop lane=${issue} stage=${stage}]\n`
 
@@ -65,10 +42,9 @@ const mark = (issue, stage) => `[dev-loop lane=${issue} stage=${stage}]\n`
 // silently dropped, so every path out of a thunk below produces one of these.
 const died = (number, why) => ({ issue: number, status: 'DIED', planPath: '', summary: why, openQuestions: [] })
 
-// Honest about what a throw actually carried: a dead agent often throws a bare value with neither
-// a message nor a stack, and a summary promising a trace that is empty helps nobody. The same
-// shape as phase-execute.js's, which cannot be shared — a phase script imports nothing, being
-// compiled as one function over the runner's globals.
+// Honest about what a throw actually carried: a dead agent often throws a bare value with neither a
+// message nor a stack, and a summary promising an empty trace helps nobody. The same shape as
+// phase-execute.js's, which cannot be shared — a phase script imports nothing.
 function crashLine(err) {
   const message = err && typeof err.message === 'string' ? err.message.trim() : ''
   if (message) return message
@@ -92,9 +68,8 @@ const results = await parallel(input.issues.map(iss => async () => {
       { agentType, label: `plan:#${iss.number}`, phase: 'Plan', schema: PLAN_SCHEMA }
     )
     // A throw is the same outcome as an architect that returned nothing and takes the same entry.
-    // What that emptiness MEANT is not knowable from here — a stage that returned nothing is
-    // reported as exactly that, and never as an agent that died — so the summary says what
-    // happened rather than asserting a crash.
+    // What that emptiness MEANT is not knowable from here, so the summary says what happened
+    // rather than asserting a crash.
     return r ? { issue: iss.number, ...r } : died(iss.number, "the architect returned nothing — it was skipped, or it died after the runner's retries; re-run this lane")
   } catch (err) {
     return died(iss.number, `architect threw — re-run this lane: ${crashLine(err)}`)
