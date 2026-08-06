@@ -24,5 +24,5 @@ costs a session that never invokes it), **host load** (what the orchestrator car
 **agent load** (what one dispatched subagent carries), and **run spend** (what a run actually consumes,
 measured after the fact).
 
-Measured host load — `wc -c` over every file the orchestrator loads — is **146,547 → 53,330 bytes**, a
+Measured host load — `wc -c` over every file the orchestrator loads — is **146,547 → 53,273 bytes**, a
 63.6% reduction, or roughly 36,700 → 13,400 tokens on the metric the baseline was taken on.

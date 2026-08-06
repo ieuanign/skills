@@ -14,7 +14,7 @@ You are the orchestrator. You stay in the MAIN worktree; the agents plan, write,
 - `auto` — optional leading token: run the batch **unattended**, from filed issue to pushed PR, without stopping for approval.
 - `<issues>` — one or more GitHub issue numbers, comma or space separated. One issue = one lane; several = parallel lanes.
 - `project:<slug>` — optional project slug passed to the architect for the plan path.
-- Tidying up after a run is its own skill, **`/dev-loop-cleanup`** — it reaps what a finished run left behind: merged branches and their plan files.
+- Tidying up after a run is its own skill, **`/dev-loop-cleanup`** — `/dev-loop cleanup` goes there.
 
 ### Run mode — `gated` or `unattended`
 
