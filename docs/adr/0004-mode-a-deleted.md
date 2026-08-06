@@ -24,8 +24,11 @@ a refusal, is persisted in that settings file.
 something lesser.
 
 **The rule requiring a behaviour change to edit the contract first and then both implementations is
-retired.** There is one implementation. ADR-0002 and ADR-0003 record in their status lines that they
-were implemented under that rule; those lines are history and stay as written.
+retired.** There is one implementation. ADR-0002 and ADR-0003 cited that rule in their status lines,
+and those lines were rewritten once `contracts.md` itself ceased to exist — a status line is a
+present-tense field, and one pointing at a deleted file states something false. Each now names where
+its rule actually lives and carries a note recording that it was written under the two-mode regime.
+**The decisions those records hold are untouched**; only the pointers around them moved.
 
 ## What Mode A was, and why it goes
 

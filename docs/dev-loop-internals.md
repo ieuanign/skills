@@ -82,8 +82,8 @@ What each stage is handed, what it is permitted to read, and what it hands back.
 | debugger | the writer's return, worktree, branch | its own failure reproduction, the touched code | `ROOT-CAUSE`, `OWNER`, `CONFIDENCE`, `REPRODUCED`, a finding |
 | suite gate | the repository profile's full-suite command, worktree, branch | nothing — it runs that one command and reads its output | `STATE`, `FAILING`, `OUTPUT` |
 
-**The pipeline passes references rather than content wherever a reference is enough**, so the cost
-lives in the reads — which is why they are part of the contract rather than left to each agent's
+**The pipeline passes references rather than content wherever a reference is enough**, so the run
+spend lives in the reads — which is why they are part of the contract rather than left to each agent's
 discretion.
 
 **The suite gate is the one stage that reads nothing.** That is what makes it the cheapest stage in
@@ -255,7 +255,7 @@ number written twice is a number that can disagree with itself.
 rarely word the same defect identically, so the threshold fires rarely. That is the design rather than
 a defect, and it is recorded so that nobody later "fixes" the counter for not advancing.
 
-The ceiling being 5 where the suite gate's is 8 encodes cost: a review cycle dispatches the two
+The ceiling being 5 where the suite gate's is 8 encodes run spend: a review cycle dispatches the two
 dearest agents in the pipeline, where a suite round is one cheap call running one command.
 [ADR-0005](./adr/0005-no-token-ceiling.md) rests the decision to have no token ceiling at all on a lane
 being bounded from five directions, one of them this one — so raising it is not free.

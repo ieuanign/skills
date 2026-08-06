@@ -187,9 +187,9 @@ all runs on pure defaults — the interview is a convenience, not a precondition
 The rule **refuses** three things. `SKILL.md` states those refusals, because they bind a run; this page
 carries only the reasoning behind them, which is what the skill deliberately does not load:
 
-- **No per-repository effort tiers** — cost behaviour that varies by repository cannot be compared
-  across them, and the per-stage tiers are the whole cost thesis.
-- **No per-run overrides of gates, stages or cost behaviour** — an override would be a second way to
+- **No per-repository effort tiers** — run spend that varies by repository cannot be compared across
+  them, and the per-stage tiers are the whole argument for tiering at all.
+- **No per-run overrides of gates, stages or cost reporting** — an override would be a second way to
   configure a run, and the run mode already selects everything a run is permitted to select.
 - **The cost reporting target stays a constant** — it was measured as a single median across
   repositories, and nothing yet suggests it varies by one.
