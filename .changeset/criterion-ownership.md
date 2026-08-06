@@ -1,0 +1,15 @@
+---
+"ieuanign-skills": minor
+---
+
+`/dev-loop`: a sub-lane of a split issue that finished its own job cleanly now opens a **ready** pull request. Before this, it could not — `ready` was unreachable for any issue `pr-separation.md` split.
+
+**Two correct rules composed into a broken one.** The reviewer judges one sub-lane's commit range but was handed the whole issue's acceptance criteria, and recorded a criterion another sub-lane delivers as `partial` so that an early pull request would not read as a failure of work not yet due. The terminal-state table then drafts on any criterion that is `partial` or `not-met`. So every pull request of a split issue drafted, including the top of the chain — and the draft signal, which also carries open findings, a red suite and an ending mid-pipeline, stopped meaning anything.
+
+**Ownership is now a fact the plan states and the host applies.** On a plan holding two or more pull requests, the architect names on each pull request entry the acceptance criteria that pull request delivers — ordinals into the issue's checklist plus each criterion's first clause — in the same `Commit / PR breakdown` the host already parses for commits. The host reads them off and hands each reviewer only its own. Anything the plan left unlisted falls to the **last sub-lane in plan order**, which is what makes a single-pull-request plan own its whole checklist, makes a plan written before this change run unchanged, and stops a criterion the architect missed from going unjudged. Falls-to-last is the host's rather than the phase script's: a phase script sees one layer's sub-lanes with their commit lists already built, so it cannot identify the last sub-lane of a lane that spans layers.
+
+**The reviewer judges only what it was given**, against its own range, and an owned criterion it cannot find is `not-met` rather than `partial`. The `out of this range → partial` rule is deleted — not reworded — from `contracts.md`, the reviewer agent and the execute phase's prompt, because a reviewer never sees another sub-lane's criterion now. It still receives the issue body verbatim and whole: a checklist line rarely reads as its own specification, and the pipeline does not rewrite what a human wrote.
+
+**Nothing new to reason about.** The verdict vocabulary (`met | partial | not-met`), the reviewer's return schema and the ready predicate are unchanged. The predicate gained no filtering clause — it simply now sees only the criteria the sub-lane owns. A sub-lane owning none returns an empty list and is vacuously met, the path the no-issue-body case already takes. A single-pull-request plan, and an issue with no acceptance criteria, behave exactly as they do today.
+
+Corrected in passing: the findings ledger described criterion verdicts as informational, "nothing in the pipeline branches on it", while the terminal-state table has drafted pull requests on them all along. [ADR-0003](https://github.com/ieuanign/skills/blob/main/docs/adr/0003-criterion-ownership.md) carries the decision and its rejected alternatives.

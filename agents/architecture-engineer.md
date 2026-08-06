@@ -68,6 +68,8 @@ Check rather than assume, and **for a directory ask about a path underneath it**
 
 Ordered list. For each commit: conventional message (with issue number), repo area, and which PR it belongs to, per the repo's PR separation policy.
 
+**On a breakdown holding two or more PRs, every PR entry also names the acceptance criteria that PR delivers** — the ordinals into the issue's `- [ ]` checklist, plus each criterion's first clause so a human can check the split without counting. The reviewer of that PR is handed exactly those and judges nothing else, so this is where the split is recorded: decide it here, while you are deciding the split, rather than leaving it to be re-derived later by an agent seeing one PR's diff. A criterion you leave unlisted falls to the LAST PR in this order, so a plan that quietly drops one still gets it judged. **A single-PR breakdown names nothing** and owns the whole checklist by that same default.
+
 ## Test expectations
 
 Which seams get tests and what must pass, named in the repo's own terms (its suites, linters, and scripts).
