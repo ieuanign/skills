@@ -6,8 +6,9 @@
 
 With one implementation left, the phase script **is** the specification. Roughly half of `contracts.md`
 documented what `phase-execute.js` already enforces mechanically and the orchestrator never branched
-on any of it; that half is in `docs/dev-loop-internals.md` for a human, and the rules the script
-enforces now carry their own reasoning as comments at the sites that enforce them.
+on any of it; that half is in `docs/dev-loop-internals.md` for a human. Each rule the script enforces
+is named in a short comment at the site that enforces it — the reasoning stays in the internals doc,
+where a maintainer reads it and no run loads it.
 
 What the orchestrator does evaluate became four tables in `SKILL.md`:
 

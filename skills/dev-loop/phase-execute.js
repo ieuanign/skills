@@ -15,101 +15,51 @@ export const meta = {
 //             commits: [{ordinal, message}], ownedCriteria?: [{ordinal, criterion}] }] }],
 //     notified: true when an EARLIER layer already dispatched the notifier for this lane. A lane's
 //     ending is written once per run, not once per layer; the host carries the flag forward.
-//   mode: 'gated' | 'unattended',
-//   fixCycleThreshold: number,  // the profile's Fix cycles key, read as the review loop's
-//                          // NO-PROGRESS THRESHOLD rather than a flat cap; absent ⇒ the
-//                          // profile's default of 2. The hard ceiling is a constant below.
-//   suiteCommand: string,  // the profile's Full-suite command; 'none' or absent ⇒ every suite is not-run
-//   skillDir: string       // absolute path to this skill's folder; the notifier is told where
-//                          // notifications.md and notify.sh are, having no way to derive it.
-//                          // Absent ⇒ no notifier is dispatched: one with no specification to
-//                          // read would write worse than nothing.
-//   agentNamespace: string // the roster's registry namespace, read off the host's own agent list
-//                          // at intake. Absent ⇒ bare names, which is the linked-agents case.
-//   runHandle: string      // the identifier locating this run's own transcript, read by the host
-//                          // from its environment at intake. Same class of fact as skillDir and
-//                          // agentNamespace — visible to the host, invisible to a script.
-//                          // notifications.md governs where it is written; absent ⇒ the notifier
-//                          // is told nothing about it and writes no line, which is a supported
-//                          // state and never an error.
+//   mode: 'gated' | 'unattended',  // anything but 'unattended' is gated
+//   fixCycleThreshold: number,     // the review loop's NO-PROGRESS THRESHOLD, not a flat cap; absent ⇒ 2
+//   suiteCommand: string,          // 'none' or absent ⇒ every suite is not-run
+//   skillDir: string,              // absolute path to this skill's folder; absent ⇒ no notifier is dispatched
+//   agentNamespace: string,        // the roster's registry namespace; absent ⇒ bare names
+//   runHandle: string              // this run's transcript id; absent ⇒ the notifier writes no line
 // }
-// subLanes contains only the CURRENT layer's sub-lanes; worktree is absolute.
-// issueBody is the issue's body verbatim and WHOLE, which the host already fetched at intake — the
-// reviewer's Spec axis reads it from its arguments rather than fetching it, keeping its
-// Bash read-only and git-only. Omit it and the reviewer runs no spec axis. It is never sliced: a
-// checklist line rarely reads as its own specification, so ownership is passed as ordinals into a
-// body that arrives intact.
-// ownedCriteria is the acceptance criteria THIS sub-lane delivers, which the host read off the
-// plan's Commit / PR breakdown — the same section it built `commits` from. The falls-to-last
-// default for criteria the plan left unlisted is the host's and not this script's: the args above
-// carry one layer's sub-lanes with their commit lists already assembled, so nothing here can see
-// which sub-lane is a lane's last. An EMPTY array means the sub-lane owns none and its spec axis
-// is vacuously met; an ABSENT key means the whole checklist, which is the single-sub-lane case and
-// the pre-ownership behaviour. The two differ, and only the first can be stated.
-// Returns per-lane:
-// { issue, mode, ending: {category, reason}|null, crashed, notified, subResults: [...] }
-// EVERY requested issue gets an entry, whatever happened to it — nothing below filters this list.
-// mode is the run mode the host parsed, carried out unchanged rather than re-derived — whatever
-// concludes the lane reads it off the result it already holds.
-// crashed is true only for a lane whose closure THREW. It is what the host reads at the
-// conclusion: every other ending was already labelled mid-script, and a throw is the one that
-// could not be, because a throw unwinds past the point the notifier is dispatched from.
-// notified is true when the notifier wrote this lane's label mid-script, so the host leaves that
-// verdict standing instead of relabelling it. False covers every other case — a clean lane, a
-// gated run, a crash, and a dispatch that failed — all of which leave the label to the host.
-// An ending ends its SUB-lane, so the lane's ending is a roll-up for reporting only: FAILED if
-// any sub-lane ended FAILED, else HALT if any did, else null. The label decides nothing — the
-// conclusion mode alone decides the push, the PR and the worktree.
-// subResults: [{branch, area, ending, commits, plannedCommits, madeCommits, deviations, disputed,
-//               criterionVerdicts, reviewNotes, fixedFindings, wontFix, openFindings,
-//               reviewTrajectory, suite, attempts, terminal}]
-// reviewTrajectory: [string] — one entry per CHANGES_REQUESTED review round, saying whether it
-// brought previously-unseen findings or repeated prior ones. The findings ledger's, recorded on
-// every sub-lane and rendered only on one whose review loop ended on a bound.
-// suite: {state: 'passed'|'failed'|'not-run', failing: [ids], output} — always present, whatever
-// ended the sub-lane. 'not-run' is a state of its own and is never reported as passed.
-// attempts: [{stage, trigger, debugger, outcome}] — the ledger's attempt log, recorded on every
-// sub-lane and rendered only on one that ended. A wip: commit is listed but never counted.
-// terminal: {pr: 'ready'|'draft'|'none', reasons: [why it is not ready]} — the terminal-state
-// table's row for this sub-lane, read under unattended mode only; under gated the human at
-// Gate 2 decides and this is not consulted. The push column is absent on purpose: git alone
-// decides it, and the host's ahead-of-base read overrides `pr` when the two disagree.
+
+// subLanes is the CURRENT layer's only and worktree is absolute. issueBody is the issue verbatim and
+// WHOLE, never sliced — absent ⇒ the reviewer runs no spec axis. ownedCriteria is the criteria this
+// sub-lane delivers: empty ⇒ it owns none, absent ⇒ the whole checklist. The two differ.
+
+// Returns one entry per REQUESTED issue whatever happened to it — nothing below filters the list:
+// { issue, mode, ending: {category, reason}|null, crashed, notified, subResults: [{branch, area,
+//   ending, commits, plannedCommits, madeCommits, deviations, disputed, criterionVerdicts,
+//   reviewNotes, fixedFindings, wontFix, openFindings, reviewTrajectory, suite, attempts, terminal}] }
+
+// crashed ⇒ the lane's closure threw, the one ending no mid-script dispatch could label. notified ⇒
+// the notifier already applied the label, so the host leaves it standing. The lane's ending is a
+// roll-up for reporting only: FAILED if any sub-lane ended FAILED, else HALT if any did, else null.
+
+// reviewTrajectory: one entry per CHANGES_REQUESTED round, whether it brought unseen findings.
+// suite: {state: 'passed'|'failed'|'not-run', failing, output} — always present; not-run is never passed.
+// attempts: [{stage, trigger, debugger, outcome}] — a wip: commit is listed but never counted.
+// terminal: {pr: 'ready'|'draft'|'none', reasons} — unattended only; no push column, git decides that.
 
 // The harness may deliver args as a JSON string; normalize to an object.
 const input = typeof args === 'string' ? JSON.parse(args) : args
 
-// A role is resolved, never named. The same definition registers bare when it is linked into a
-// repo's `.claude/agents/` and namespaced `<plugin>:<name>` when the plugin is installed — and the
-// plugin is the supported install path, so the namespaced form is the ordinary one and the bare
-// form is the maintainer's. A phase script carrying a bare literal therefore RUNS ONLY FOR THE
-// MAINTAINER and dies on its first dispatch for everyone who installed the plugin. A workflow
-// script sees neither registry, so the host reads the namespace off its own roster and passes it,
-// the same class of fact as skillDir. A trailing colon is tolerated because writing one is a
-// plausible reading of "namespace" and the failure it would otherwise cause is total: every
-// dispatch in the phase dies on an unresolvable type, so no lane gets past its first commit.
-// Absent ⇒ bare, the linked case and the pre-plugin behaviour.
-//
-// The suite gate is dispatched with no agentType at all and is deliberately absent below: it is
-// the one role with no agent definition, so it has no name to resolve.
+// A role is resolved, never named: the same definition registers bare when linked into a repo's
+// `.claude/agents/` and `<plugin>:<name>` when the plugin is installed, so a bare literal here runs
+// only for the maintainer. Absent ⇒ bare; a trailing colon is tolerated, an unresolvable one fatal.
 const NS = String(input.agentNamespace || '').trim().replace(/:+$/, '')
 const roleAgent = role => (NS ? `${NS}:${role}` : role)
 
 const writerType = roleAgent('code-writer')
 
-// The review loop's no-progress threshold — the position the counter below must REACH for the
-// loop to be judged stuck, not a count of no-progress rounds tolerated. The counter is 1 the
-// moment the first CHANGES_REQUESTED round returns, so 2 ends the loop on the first round that
-// repeats itself. A repository fact, not a constant: one with a flaky suite wants more, and one
-// that would rather read every finding itself answers 0, which spends no fix cycle at all. The
-// host passes the profile's value; the 2 below is the profile's own default, reached only when a
-// host passed no number. `|| 2` would be wrong — it turns a deliberate 0 back into two cycles.
+// The review loop's no-progress threshold — the position the counter must REACH, not a count of
+// rounds tolerated. A repository fact the host passes; 2 is the profile's default, reached only
+// when no number came. `|| 2` would be wrong — it turns a deliberate 0 back into two cycles.
 const NO_PROGRESS_THRESHOLD = Number.isInteger(input.fixCycleThreshold) && input.fixCycleThreshold >= 0 ? input.fixCycleThreshold : 2
 
-// The review loop's hard ceiling, in fix cycles, applied whatever the trajectory says: a
-// mis-compared finding list would look new every round and reset the threshold forever. `npm run
-// check` compares it against the prose that states it — the same drift hazard the cost-stage
-// vocabulary is checked for. Five rather than the suite gate's eight because a review cycle
-// dispatches the two dearest agents in the pipeline where a suite round is one cheap call.
+// The review loop's hard ceiling in fix cycles, applied whatever the trajectory says: a
+// mis-compared finding list would look new every round and reset the threshold forever. Lower than
+// the suite gate's: a review cycle dispatches two costly agents where a suite round is one call.
 const REVIEW_CEILING = 5
 
 // Passed in, never re-derived. Nothing here branches on it yet — the notifier and the unattended
@@ -126,42 +76,25 @@ const SUITE_CEILING = 8
 // from the inside — so the host passes it, and with nothing passed nothing is dispatched.
 const skillDir = String(input.skillDir || '').trim()
 
-// The run handle, passed through untouched to the one writer that puts it on the issue.
-// notifications.md is normative for where it goes and why it is absent from the message. Empty is
-// a supported state and produces no line in the prompt below: a machine that shows its session no
+// The run handle, passed through untouched to the one writer that puts it on the issue. Empty is a
+// supported state and produces no line in the prompt below: a machine that shows its session no
 // identifier gets a shorter ending comment, never a failed lane.
 const runHandle = String(input.runHandle || '').trim()
 
-// notifications.md states the rule that selects a label role, and this script's own two ending
-// labels are selected by that same question — did something deliberately stop, or did something
-// break? — so this table is where the two meet. Keeping it in the script rather than the prompt
-// is what makes the mapping mechanical: the notifier is told which role to write, never asked.
+// Which label role each ending category takes — did something deliberately stop, or did something
+// break? Kept in the script rather than the prompt so the mapping stays mechanical: the notifier is
+// told which role to write, never asked. notifications.md states the rule that selects it.
 const ROLE_OF = { HALT: 'awaiting-human', FAILED: 'failed' }
 
-// The lane-and-stage marker every dispatched prompt leads with. It says which lane (the issue
-// number) and which stage an agent belongs to, so its own transcript identifies it without anyone
-// pattern-matching the English of a prompt that gets reworded. Inert to the agent: nothing is
-// asked to return it and no parsing of a return depends on it — only the cost report, reading the
-// transcripts afterwards, cares.
-//
-// The stage is the workflow phase the call is dispatched under, named in the cost baseline's own
-// vocabulary: Implement is `write`, Review is `review`, Suite is `suite`, Notify is `notify`.
-// These are COST stages, deliberately coarser than the Per-stage context contract's, which names
-// each role's turn: a recovery is charged to the stage that needed it, so a debugger called on a
-// red suite is suite cost rather than a stage of its own. The split exists to say which dial to
-// turn, and the dial for a red suite is the suite gate's.
-//
-// The vocabulary is shared with phase-plan.js and with cost-report.mjs, and each copy is written
-// out in full: a phase script imports nothing, being compiled as one function over the runner's
-// globals. Add a stage in one and add it in all three — `npm run check` compares them.
+// The lane-and-stage marker every prompt leads with, so a transcript identifies its lane and stage
+// without parsing prompt prose. Inert to the agent; only the cost report reads it. Written out in
+// full here, in phase-plan.js and in cost-report.mjs — a script imports nothing; check compares.
 const STAGE = { PLAN: 'plan', WRITE: 'write', REVIEW: 'review', SUITE: 'suite', NOTIFY: 'notify' }
 const mark = (issue, stage) => `[dev-loop lane=${issue} stage=${stage}]\n`
 
-// The return contracts, as JSON schemas the runner validates each dispatch against. All agent
-// returns are machine-readable and the CONTRACT KEYS are the contract — the writer's RESULT, the
-// reviewer's VERDICT, the debugger's OWNER, the gate's STATE — so every branch below splits on an
-// enum value and never on the prose an agent wrote around it. No verdict, no result: a call that
-// came back with nothing usable is not read for intent, and takes the returned-nothing path.
+// The return contracts, as JSON schemas the runner validates each dispatch against. The CONTRACT
+// KEYS are the contract — every branch below splits on an enum value, never on the prose an agent
+// wrote around it. A call that came back with nothing usable takes the returned-nothing path.
 const WRITER_SCHEMA = {
   type: 'object',
   properties: {
@@ -201,11 +134,9 @@ const REVIEW_SCHEMA = {
   },
   required: ['verdict', 'findings'],
 }
-// The suite gate's return contract — STATE + FAILING + OUTPUT. It is the one role with no agent
-// definition to carry that format, so whatever dispatches it states the format itself: this schema
-// and the prompt below are the whole of its specification. FAILING is the runner's own identifier
-// per failing test and is empty unless STATE is failed; not-run is a state of its own, never
-// reported as passed.
+// The suite gate's return contract. It is the one role with no agent definition to carry a format,
+// so this schema and the prompt below are the whole of its specification. `failing` is empty unless
+// state is failed; not-run is a state of its own, never reported as passed.
 const SUITE_SCHEMA = {
   type: 'object',
   properties: {
@@ -215,10 +146,9 @@ const SUITE_SCHEMA = {
   },
   required: ['state', 'failing', 'output'],
 }
-// Mirrors the notifier's return contract. `label` is the only key anything reads: the host's
-// conclusion leaves a label standing ONLY when one was actually applied, so a notifier that
-// failed — or that skipped, the repository having no string for that role — must not be able to
-// report success. Getting this wrong removes in-progress and replaces it with nothing.
+// Mirrors the notifier's return contract. `label` is the only key anything reads: the host leaves a
+// label standing ONLY when one was applied, so a notifier that failed or skipped must not be able
+// to report success. Getting this wrong removes in-progress and replaces it with nothing.
 const NOTIFY_SCHEMA = {
   type: 'object',
   properties: {
@@ -252,21 +182,15 @@ function giveUpClause(lane, c, tries) {
   return `\nThis is the FINAL permitted attempt — nothing runs after it. If you still cannot get green, do not leave the work uncommitted: commit what exists as \`wip(<scope>): #${lane.issue} - commit ${c.ordinal} FAILED - <reason>\` and return FAILED anyway. That commit is evidence for the human, not work.`
 }
 
-// The body is fenced rather than interpolated bare: issue bodies are markdown and routinely
-// contain the same headings and checklists the surrounding prompt uses.
-//
-// The owned list is what makes a multi-PR plan work: the range is one sub-lane, so the criteria
-// it is asked about are one sub-lane's too. Told which are its own, the reviewer never spends
-// judgement deciding whether something is in its range — and a sub-lane that delivered everything
-// it owns opens a ready pull request instead of the draft every early PR used to get. The body
-// still goes in whole beneath it: the prose around a checklist is what says what a checkbox means.
+// The body is fenced rather than interpolated bare: issue bodies are markdown and routinely carry
+// the same headings the surrounding prompt uses. The owned list is what makes a multi-PR plan work
+// — told which criteria are its own, the reviewer never judges whether one is in its range.
 function specClause(lane, sub) {
   if (!lane.issueBody) {
     return `\n\nNo issue body was passed, so there is no spec axis this run — return an empty criterionVerdicts and say so in notes.`
   }
-  // Absent ⇒ the whole checklist, the single-sub-lane case and the shape of a plan written before
-  // ownership existed. Present-and-empty ⇒ this sub-lane owns none, which is a different fact and
-  // the one a split plan states: a sibling delivers every criterion, so there is nothing to judge.
+  // Absent ⇒ the whole checklist, the single-sub-lane case. Present-and-empty ⇒ this sub-lane owns
+  // none, a different fact and the one a split plan states: a sibling delivers every criterion.
   const owned = sub.ownedCriteria
   if (Array.isArray(owned) && !owned.length) {
     return `\n\nThis sub-lane owns none of issue #${lane.issue}'s acceptance criteria — either the issue lists none, or the plan delivers every one of them in another sub-lane whose reviewer judges them. Either way there is nothing here for your spec axis: return an empty criterionVerdicts and say so in notes.`
@@ -283,29 +207,17 @@ function suitePrompt(sub) {
   return `Run this repository's full test suite once and report what it did. Nothing else: fix nothing, commit nothing, modify no file.\ncd ${sub.worktree} (branch ${sub.branch}) and run exactly this command:\n${suiteCommand}\nReturn state 'passed' when it exits 0, 'failed' when it does not, and 'not-run' when the command cannot run at all (no such script, no such runner) — never 'passed' for a suite you did not actually run. When it failed, put every failing test in failing using the runner's own identifier for it (file path plus test name), and the command's output in output.`
 }
 
-// The give-up path's abandoned work: evidence, not work. Listed so the human sees it, never
-// counted — counting it would report `1 planned, 2 made` for a sub-lane that made one.
-// A commit line is free text the writer composed to the schema's "sha + message" description, so
-// the sha and whatever separator it chose are stripped before the prefix is read: `ddd1234 - wip(…)`
-// is the same commit as `ddd1234 wip(…)`, and a miscount here is the one thing the exclusion exists
-// to prevent.
+// The give-up path's abandoned work: evidence, not work. Listed so the human sees it, never counted
+// — counting it would report `1 planned, 2 made` for a sub-lane that made one. A commit line is
+// free text, so the sha and whatever separator the writer chose are stripped before the prefix.
 const isWip = line => /^\W*(?:[0-9a-f]{7,40}\b\W*)?wip[(:]/i.test(line)
 
-// Finding identity — what makes two findings the same finding. A finding is
-// `file:line — defect — failure scenario — suggested fix`, and only the first two clauses identify
-// it: the line number is dropped because a fix shifts lines and a shifted line is not a new
-// defect, and the last two clauses are the reviewer's prose about a defect the first two name.
-//
-// Case and whitespace are normalised and NOTHING ELSE is. Declaring two findings the same is what
-// ends the review loop early, so sameness is declared only on near-repetition; a reworded defect
-// reads as new, and the cycle that costs is one the ceiling still bounds. Host arithmetic in
-// plain code — no agent is dispatched to decide it, and the reviewer's return contract is
-// untouched.
-//
-// A finding carrying no em-dash at all has no clause to isolate, so the whole of it stands as its
-// own identity. That can only make two findings look MORE different, which is the safe direction.
+// Finding identity — of `file:line — defect — failure scenario — fix`, only the first two clauses
+// identify a finding: a fix shifts lines, and the last two are prose about the defect the first two
+// name. Case and whitespace are normalised and NOTHING ELSE is: a reworded defect must read as new.
 const squash = s => String(s).toLowerCase().replace(/\s+/g, ' ').trim()
 const findingIdentity = finding => {
+  // No em-dash ⇒ one part, so the whole finding stands as its own identity — the safe direction.
   const parts = String(finding).split(/\s+[—–]\s+/)
   const where = squash(parts[0] || '').replace(/:\d+(:\d+)?$/, '') // file:line, file:line:col
   // NUL separator: nothing a reviewer writes can forge a collision across the two clauses.
@@ -345,17 +257,9 @@ const end = (rec, category, reason, payload) => {
 const halt = (rec, reason, payload) => end(rec, 'HALT', reason, payload)
 const failed = (rec, reason, payload) => end(rec, 'FAILED', reason, payload)
 
-// The terminal-state table: what a sub-lane's ending makes of its pull request.
-//
-// The ready predicate is the four-way conjunction the contract states — concluded clean, AND
-// findings resolved, AND the suite passed or did not run, AND every criterion met — written out
-// rather than reduced to the shortest expression equivalent to it today. An ending already
-// implies the middle two, so the reduction would be correct now and silently wrong after any
-// change that let a red suite through without ending the sub-lane: ready pull requests would
-// start appearing with no line here to have got wrong.
-//
-// Each trigger names itself, because the draft IS the signal and a human landing on one should
-// see which of the four fired without opening anything else.
+// The terminal-state table: what a sub-lane's ending makes of its pull request. The ready predicate
+// is written out as the full four-way conjunction rather than reduced — the reduction is correct
+// today and silently wrong the moment a red suite can pass without ending the sub-lane.
 function terminalState(rec) {
   const reasons = []
   if (rec.ending) reasons.push(`ended ${rec.ending.category} — ${rec.ending.reason}`)
@@ -373,28 +277,21 @@ function terminalState(rec) {
     reasons.push(`${unmet.length} acceptance criterion(s) not met — ${unmet.map(v => `${v.verdict}: ${v.criterion}`).join('; ')}`)
   }
   if (!reasons.length) return { pr: 'ready', reasons }
-  // Only an ENDED sub-lane can propose the no-PR row. A clean sub-lane that reported no commits
-  // is a resume whose commits were already in the log, so its branch is ahead of its base and it
-  // is owed a real pull request. The push column is not proposed at all: git alone decides it,
-  // and the host's ahead-of-base read overrides this row when the two disagree.
+  // Only an ENDED sub-lane can propose the no-PR row: a clean sub-lane reporting no commits is a
+  // resume whose commits were already in the log, so it is owed a real pull request. No push column
+  // is proposed — git decides that, and the host's ahead-of-base read overrides this row.
   if (rec.ending && !rec.commits.length) return { pr: 'none', reasons }
   return { pr: 'draft', reasons }
 }
 
-// A stage that returned nothing is reported as exactly that, and never as an agent that died.
-// From here a skip and a death after the runner's own retries are indistinguishable: both resolve
-// the call to nothing, and nothing is the whole of what this script sees. Asserting a death sends
-// a reader looking for a crash that may never have happened. The wording is the lane-level empty
-// result's, at the bottom of this file, so one condition speaks with one voice. The ending LABEL
-// is unchanged and stays FAILED: it answers only "is this worth retrying?", to which a transport
-// break is the clearest yes.
+// A stage that returned nothing, said as exactly that and never as an agent that died: from here a
+// skip and a death after the runner's retries are indistinguishable. The ending LABEL stays FAILED
+// — it answers only "is this worth retrying?", to which a transport break is the clearest yes.
 const returnedNothing = stage => `${stage} returned nothing — it was skipped, or it died after the runner's retries`
 
-// What a throw leaves behind, said honestly. A genuinely dead agent often throws a bare value
-// carrying neither a message nor a stack, so this promises a trace only where one exists: a
-// reason reading "stack trace: undefined" sends a human looking for something that never existed.
-// phase-plan.js carries the same shape and cannot share this one — a phase script imports
-// nothing, being compiled as a single function over the runner's globals.
+// What a throw leaves behind, said honestly: a dead agent often throws a bare value carrying
+// neither a message nor a stack, so this promises a trace only where one exists. phase-plan.js
+// carries the same shape and cannot share this one — a phase script imports nothing.
 function crashReason(err) {
   const stack = err && typeof err.stack === 'string' ? err.stack.trim() : ''
   const message = err && typeof err.message === 'string' ? err.message.trim() : ''
@@ -412,10 +309,9 @@ function describe(err) {
   return `a ${typeof err} value (${shown || 'empty'})`
 }
 
-// The mid-lane writer. Everything it does is notifications.md's — the label roles, the comment
-// rule and the message format are stated there and nowhere else, and it reads that file before it
-// writes anything. It exists because a workflow script has no shell, so a lane that ends while
-// the script runs has no other writer; the host's own boundary events stay host commands.
+// The mid-lane writer. Everything it does is notifications.md's — label roles, comment rule and
+// message format are stated there and nowhere else, and it reads that file first. It exists because
+// a workflow script has no shell, so a lane ending mid-script has no other writer.
 async function notify(lane, ending) {
   if (MODE !== 'unattended' || !skillDir) return false
   try {
@@ -493,9 +389,8 @@ const runLane = async (lane, subResults) => {
       }
       if (!res) return failed(rec, returnedNothing(`the writer on commit ${c.ordinal}`))
       // Absorbed before the result is read, so a writer that committed and THEN stopped still
-      // reports what it landed: the terminal-state table's last two rows split on whether
-      // anything exists, and a BLOCKED return that dropped its commits would misreport as
-      // "nothing landed". The FAILED path's evidence commit arrives the same way.
+      // reports what it landed: the terminal-state table's last two rows split on whether anything
+      // exists, and a BLOCKED return that dropped its commits would misreport as "nothing landed".
       absorb(rec, res)
       if (res.result === 'FAILED') {
         return halt(rec, `commit ${c.ordinal} still FAILED after 2 debug+fix attempts — the commit was never produced`)
@@ -505,11 +400,9 @@ const runLane = async (lane, subResults) => {
       log(`#${lane.issue}: commit ${c.ordinal}/${sub.commits.length} of ${sub.branch} done`)
     }
 
-    // 2. Review → fix cycles (writer may dispute; contested disputes end the sub-lane)
-    //
-    // The bound is PROGRESS-SENSITIVE under a hard ceiling, exactly as the suite gate's is. A flat
-    // count cannot tell a loop that is stuck from one that is working, and the flat count this
-    // replaces abandoned a lane one cycle from green.
+    // 2. Review → fix cycles. PROGRESS-SENSITIVE under a hard ceiling, as the suite gate is: a flat
+    // count cannot tell a stuck loop from a working one, and the flat count this replaces abandoned
+    // a lane one cycle from green. The writer may dispute; contested disputes end the sub-lane.
     let cycles = 0                  // fix cycles spent — what the hard ceiling bounds
     let noProgressRounds = 0        // consecutive rounds that brought nothing previously unseen
     const seenFindings = new Set()  // every finding identity this sub-lane's review loop has shown
@@ -527,11 +420,9 @@ const runLane = async (lane, subResults) => {
       if (!review) return failed(rec, returnedNothing('the reviewer'))
       if (review.verdict === 'ERROR') return failed(rec, `reviewer ERROR: ${review.notes || ''}`)
       rec.reviewNotes = review.notes || ''
-      // Recorded before every ending below so an ended sub-lane still carries them; the
-      // last review's verdicts win. Nothing in this loop branches on them — the spec axis is
-      // reported and blocks no review — but terminalState() reads them at the conclusion, where
-      // any verdict that is not `met` drafts the pull request. They are one sub-lane's own
-      // criteria, so that draft answers for this sub-lane's work and never a sibling's.
+      // Recorded before every ending below so an ended sub-lane still carries them; the last
+      // review's verdicts win. Nothing in this loop branches on them — the spec axis blocks no
+      // review — but terminalState() reads them, where any verdict short of `met` drafts the PR.
       rec.criterionVerdicts = review.criterionVerdicts || []
       const contested = review.contestedFindings || []
       // Everything this review leaves open, recorded the moment it is known rather than at each
@@ -553,18 +444,15 @@ const runLane = async (lane, subResults) => {
       const fresh = identities.filter(id => !seenFindings.has(id))
       identities.forEach(id => seenFindings.add(id))
       // A round is no-progress only when EVERY finding in it matched a prior round's. One new
-      // finding is progress, and resets — a shrinking set of the same findings is not. The counter
-      // is 1 after the FIRST round whether or not that round brought anything new, exactly as the
-      // suite gate's is, so the threshold is a position it reaches and not a count of tolerated
-      // no-progress rounds. Said once here, because the arithmetic is easy to describe wrongly.
+      // finding is progress and resets; a shrinking set of the same findings is not. The counter is
+      // 1 after the FIRST round either way, so the threshold is a position, not a tolerated count.
       noProgressRounds = fresh.length ? 1 : noProgressRounds + 1
       // One phrase, two readers — the trajectory and the attempt trigger below. Written once so
       // the ledger and the attempt log cannot describe the same round differently.
       const freshness = fresh.length ? `${fresh.length} previously unseen` : 'none previously unseen'
       rec.reviewTrajectory.push(`round ${rec.reviewTrajectory.length + 1}: ${review.findings.length} finding(s), ${freshness}`)
-      // The trajectory IS the per-round account the escalation is required to carry, so the reason
-      // below states only which bound fired and lets this say what each round actually brought.
-      // A reason that also summarised the rounds could contradict it, and did.
+      // The trajectory IS the per-round account the escalation carries, so the reason below states
+      // only which bound fired. A reason that also summarised the rounds could contradict it, and did.
       const trajectory = `Trajectory — ${rec.reviewTrajectory.join('; ')}.`
 
       // BOTH bounds are checked here, before this cycle's writer is dispatched, so nothing is
@@ -617,10 +505,9 @@ const runLane = async (lane, subResults) => {
       while (true) {
         round++
         const suffix = round > 1 ? `:r${round}` : ''
-        // A plain subagent with no persona and deliberately NO agentType, at the cheapest model
-        // and the lowest effort: loading a role definition to run one command is waste, and this
-        // gate runs up to SUITE_CEILING times. It is given a label, so it appears by name in the
-        // progress display and the logs. It never fixes, never commits, and never touches a file.
+        // No persona and deliberately no agent type — this is the one role with no definition, and
+        // loading one to run a single command is waste on a gate that runs up to SUITE_CEILING
+        // times. It is labelled, so it still appears by name. It never fixes, commits, or edits.
         const suite = await agent(mark(lane.issue, STAGE.SUITE) + suitePrompt(sub), {
           label: `suite:${tag}${suffix}`, phase: 'Suite', model: 'haiku', effort: 'low', schema: SUITE_SCHEMA,
         })
@@ -715,39 +602,24 @@ const runLane = async (lane, subResults) => {
   return { issue: lane.issue, mode: MODE, ending: rollUp ? { ...rollUp.ending } : null, crashed: false, notified: false, subResults }
 }
 
-// THE single wrapper every lane goes through, and the reason the lane body above is a named
-// function rather than the closure it used to be. A lane that throws is the returned-nothing rule
-// reaching the case it did not cover: a terminal error can reject the call rather than resolve it
-// to nothing, which unwinds the whole lane. So each lane's work is wrapped ONCE, and a throw is
-// caught and turned into a FAILED ending naming the issue and carrying the error message plus its
-// stack trace where one exists, with the lane's partial sub-results — attempt log included — coming
-// back beside it. A throw at any of the body's ending sites used to resolve the lane to nothing,
-// and the filter below then dropped it — so the issue vanished with no label, no comment and no
-// record of which one it was. One catch here covers every site, and it is also the one place an
-// ending-time dispatch hooks into: threading either through seventeen ending sites is how they
-// drift apart.
+// One catch for every ending site: a throw rejects the call rather than resolving it to nothing,
+// which would lose the whole lane. It becomes a FAILED ending naming the issue and carrying the
+// error, with partial sub-results beside it. Also the one place an ending-time dispatch hooks in.
 const laneThunk = lane => async () => {
   const subResults = []
   try {
     const result = await runLane(lane, subResults)
-    // Here, and not at any of the ending sites above: one dispatch per lane, because the label is
-    // per issue. It fires as THIS lane returns, so a lane that ends at minute three is written up
-    // then rather than waiting on a sibling that runs for another forty.
-    //
-    // Once per RUN, not once per layer. A lane whose sub-lanes span layers reaches this script
-    // again in the next layer; without lane.notified it would post a second ending comment,
-    // against the specification's one-comment-per-kind rule, and would then report notified:false
-    // to a host that had already been told true — earning the ended lane a second, contradicting
-    // label. The host carries the flag forward between layers; this honours it.
+    // Here and at no ending site above: one dispatch per lane, because the label is per issue, and
+    // it fires as THIS lane returns rather than waiting on a sibling. Once per RUN, not per layer —
+    // a lane spanning layers reaches this script again, and would otherwise comment twice.
     if (result.ending && !lane.notified) result.notified = await notify(lane, result.ending)
     else if (lane.notified) result.notified = true
     return result
   } catch (err) {
     const reason = crashReason(err)
-    // The sub-lane in flight when the throw happened is the one that crashed; sub-lanes already
-    // finished keep their own ending and their own terminal state. Everything unfinished takes
-    // the crash and reaches the terminal-state table, so the host can dispose of it like any
-    // other row rather than meeting a record with no `terminal` at Gate 2.
+    // The sub-lane in flight when the throw happened is the one that crashed; finished sub-lanes
+    // keep their own ending and terminal state. Everything unfinished takes the crash and reaches
+    // the terminal-state table, so no record meets Gate 2 without a `terminal`.
     for (const rec of subResults) {
       if (rec.terminal) continue
       if (!rec.ending) failed(rec, reason)
@@ -762,10 +634,9 @@ const laneThunk = lane => async () => {
 
 const laneResults = await parallel(input.lanes.map(laneThunk))
 
-// No filter: a requested issue leaves this script with an entry whatever happened to it. The
-// thunks above cannot throw, so a null here is the runner itself dropping a lane, which is exactly
-// as unattributable as the throw used to be — and is the same observation every stage above
-// reports through returnedNothing(), so it uses that helper rather than a second wording of it.
+// No filter: a requested issue leaves this script with an entry whatever happened to it. The thunks
+// above cannot throw, so a null here is the runner dropping a lane — the same observation every
+// stage reports through returnedNothing(), so it uses that helper rather than a second wording.
 const done = laneResults.map((lane, i) => lane || {
   issue: input.lanes[i].issue,
   mode: MODE,
