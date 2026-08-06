@@ -91,8 +91,8 @@ destination stays untouched by this effort entirely.
 | S-4 | The orchestrator owns "intake, gates, worktree provisioning, push, PRs, cleanup — and, under `unattended`, the notifications at your own boundaries" | `SKILL.md` | — | ☐ |
 | S-5 | "the **notifier**, is not one you dispatch: `phase-execute.js` dispatches it mid-script … because you are blind while a script runs" | `script` | #129 | ☐ |
 | S-6 | "`notifications.md` governs who writes what" — the pointer to the notifications specification | `agents/` | #129 | ☐ |
-| S-7 | "All agent returns are machine-readable — trust the contract keys (`STATUS/RESULT/VERDICT/OWNER`), not vibes" | `script` | #128 | ☐ |
-| S-8 | "The pipeline's state machine … is specified in `<this-skill-dir>/contracts.md` — normative for BOTH execution modes; read it before Phase B." | `deleted` | #128 | ☐ |
+| S-7 | "All agent returns are machine-readable — trust the contract keys (`STATUS/RESULT/VERDICT/OWNER`), not vibes" | `script` | #128 | ☑ phase-execute.js |
+| S-8 | "The pipeline's state machine … is specified in `<this-skill-dir>/contracts.md` — normative for BOTH execution modes; read it before Phase B." | `deleted` | #128 | ☑ |
 | S-9 | "This skill is repo- and machine-agnostic: it hardcodes no repository name, path, or project fact." | `SKILL.md` | — | ☐ |
 
 `S-8` is deleted because `contracts.md` ceases to exist: with one implementation the phase script is
@@ -298,7 +298,7 @@ dropped.
 | S-137 | "**This is yours in both modes, and it is decided ONCE per run, here, where lanes are built.**" and why a phase script cannot hold it | `ADR` | — | ☑ ADR-0003 |
 | S-138 | The per-lane stage order — "writer Mode 1 per commit → on FAILED the debugger diagnoses and routes → reviewer on the sub-lane's range … → fix cycles … → the suite gate … → commit-breakdown check" | `internals` | #125 | ☑ |
 | S-139 | "The Spec axis's per-criterion verdicts are reported and never blocking … under `unattended` they are read once more at the conclusion, where the terminal-state table drafts a pull request on any verdict that is not `met`." | `internals` | #125 | ☑ |
-| S-140 | "Every loop is bounded and every bound, route, and ending is in contracts.md — enforce them exactly." | `deleted` | #128 | ☐ |
+| S-140 | "Every loop is bounded and every bound, route, and ending is in contracts.md — enforce them exactly." | `deleted` | #128 | ☑ |
 | S-141 | "Each sub-lane finishes clean or ends carrying one of … two labels: **HALT** … or **FAILED** … the label explains and **decides nothing**" | `SKILL.md` | — | ☐ |
 | S-142 | "An ending ends its own sub-lane, so the lane's later sub-lanes still run and no ending kills the batch." | `internals` | #125 | ☑ |
 | S-143 | "**KEEP each layer's transcript directory too** … a lane whose sub-lanes span layers has its records spread across one directory per layer" | `SKILL.md` | — | ☐ |
@@ -416,7 +416,7 @@ attached: *a worktree still standing is one nothing proved done.*
 | S-226 | "The one-time ask-then-persist preconditions are not gates … **Every one of them belongs to a named step that performs it**" | `SKILL.md` | — | ☐ |
 | S-227 | "Never proceed past a gate without explicit user approval, unless the run mode is `unattended`." | `SKILL.md` | — | ☐ |
 | S-228 | "**Append-only, whoever is watching.** … may append to issues and pull requests …, may add and remove its own workflow labels and no others, and may set state only on artifacts it created … NEVER edits an issue body, NEVER ticks an acceptance-criteria checkbox, and NEVER converts a pull request a human opened." | `SKILL.md` | — | ☐ |
-| S-229 | "contracts.md's **Append-only invariant** carries the reasoning." | `ADR` | #128 | ☐ |
+| S-229 | "contracts.md's **Append-only invariant** carries the reasoning." | `ADR` | #128 | ☑ ADR-0008 |
 | S-230 | "NEVER remove, force-modify, or `rm -rf` the main worktree … Worktree removal applies only to worktrees under `<WORKTREES>`, and only via `git worktree remove` without `--force`." | `SKILL.md` | — | ☐ |
 | S-231 | "**Never force-push, whoever is watching.** Every push this pipeline makes is a fast-forward by construction … A rejected push is reported, never retried harder." | `SKILL.md` | — | ☐ |
 | S-232 | "**Push before you remove.** A worktree is removed only after a push of its branch succeeded" | `SKILL.md` | — | ☐ |
@@ -440,10 +440,10 @@ worktree removal, carried inside `S-170` and `S-230`.
 
 | ID | Rule | → | By | ✓ |
 |---|---|---|---|---|
-| C-1 | "This file is the single source of truth for the pipeline's role contracts, bounds, and endings." | `deleted` | #128 | ☐ |
+| C-1 | "This file is the single source of truth for the pipeline's role contracts, bounds, and endings." | `deleted` | #128 | ☑ |
 | C-2 | "Both execution modes implement it: **Mode W** … and **Mode A**" | `deleted` | #126 | ☑ |
 | C-3 | "Any behavior change edits THIS file first, then both implementations in the same change." | `deleted` | #126 | ☑ |
-| C-4 | "If an implementation and this file disagree, this file governs." | `deleted` | #128 | ☐ |
+| C-4 | "If an implementation and this file disagree, this file governs." | `deleted` | #128 | ☑ |
 
 `C-1` and `C-4` go because with one implementation the phase script *is* the specification: a prose
 contract that can disagree with it is the drift `#121` names.
@@ -457,7 +457,7 @@ contract that can disagree with it is the drift `#121` names.
 | C-7 | "**A role is therefore always resolved against a namespace and never written as a literal.**" | `SKILL.md` | — | ☐ |
 | C-8 | "The namespace is discovered once, at intake, by reading the roster the host already has in front of it" | `SKILL.md` | — | ☐ |
 | C-9 | "Mode A resolves it implicitly … Mode W cannot: a workflow script sees no registry." | `deleted` | #126 | ☑ |
-| C-10 | "A phase script carrying a bare literal **runs only for the maintainer** and dies on its first dispatch for everyone who installed the plugin." | `script` | #128 | ☐ |
+| C-10 | "A phase script carrying a bare literal **runs only for the maintainer** and dies on its first dispatch for everyone who installed the plugin." | `script` | #128 | ☑ phase-execute.js + phase-plan.js |
 
 ## B2. Append-only invariant
 
@@ -465,8 +465,8 @@ contract that can disagree with it is the drift `#121` names.
 |---|---|---|---|---|
 | C-11 | The three permissions — append to issues and pull requests; add and remove its own workflow labels and no others; set state only on artifacts it created | `SKILL.md` | #128 | ☐ |
 | C-12 | "It binds the host and every agent, identically in both modes — there is no ending, no ceiling and no absent human that relaxes it." | `SKILL.md` | #128 | ☐ |
-| C-13 | Why the label clause sits inside the invariant — "a label add or remove destroys nothing a human authored, and human intent is what the invariant guards" | `ADR` | #128 | ☐ |
-| C-14 | Why per-criterion verdicts are never written back to the issue's checklist — the closing keyword closes the issue on merge, the aggregate belongs to the pull request's state, and an issue body is the one artifact a human wrote by hand | `ADR` | #128 | ☐ |
+| C-13 | Why the label clause sits inside the invariant — "a label add or remove destroys nothing a human authored, and human intent is what the invariant guards" | `ADR` | #128 | ☑ ADR-0008 |
+| C-14 | Why per-criterion verdicts are never written back to the issue's checklist — the closing keyword closes the issue on merge, the aggregate belongs to the pull request's state, and an issue body is the one artifact a human wrote by hand | `ADR` | #128 | ☑ ADR-0008 |
 
 `C-11` and `C-12` are the duplicate #121 names: `SKILL.md`'s copy (`S-228`) stays, `contracts.md`'s
 goes, and the reasoning (`C-13`, `C-14`) lands in an ADR.
@@ -475,25 +475,25 @@ goes, and the reasoning (`C-13`, `C-14`) lands in an ADR.
 
 | ID | Rule | → | By | ✓ |
 |---|---|---|---|---|
-| C-15 | The five-row Receives / Reads / Returns table | `agents/` | #128 | ☐ |
+| C-15 | The five-row Receives / Reads / Returns table | `agents/` | #128 | ☑ agents/ — one row per role |
 | C-16 | "The pipeline passes references rather than content wherever a reference is enough, so the cost lives in the reads" | `internals` | #125 | ☑ |
 | C-17 | "The suite gate is the one stage that reads nothing … That is what makes it the cheapest stage in the pipeline." | `internals` | #125 | ☑ |
-| C-18 | "The architect alone sweeps the context documents and decision records … the plan's Hard constraints section is the only channel by which anything living in those documents reaches the writer" | `agents/` | #128 | ☐ |
+| C-18 | "The architect alone sweeps the context documents and decision records … the plan's Hard constraints section is the only channel by which anything living in those documents reaches the writer" | `agents/` | #128 | ☑ agents/architecture-engineer.md |
 | C-19 | "The architect's summary bullets are lane state, not gate state" | `SKILL.md` | — | ☐ |
 
 ## B4. Return contracts
 
 | ID | Rule | → | By | ✓ |
 |---|---|---|---|---|
-| C-20 | **architect** — `STATUS: READY\|BLOCKED` + `PLAN: <path>` + summary bullets + open questions | `agents/` | #128 | ☐ |
-| C-21 | **writer** — `RESULT: COMMITTED\|BLOCKED\|FAILED` + `COMMITS` + `VERIFIED` + `DEVIATIONS` + `DISPUTED` + `DIRTY` + `WORKTREE` + `FAILING` | `agents/` | #128 | ☐ |
-| C-22 | **reviewer** — `VERDICT` + `FINDINGS` + `CONTESTED` + `CRITERIA` (one verdict per criterion **the sub-lane owns**) + `NOTES`; "Zero findings ⇒ APPROVED, whatever the criterion verdicts say." | `agents/` | #128 | ☐ |
-| C-23 | **debugger** — `ROOT-CAUSE` + `OWNER: code-writer\|replan\|user\|retry` + `CONFIDENCE` + `REPRODUCED`; two routing values and two reporting values | `agents/` | #128 | ☐ |
-| C-24 | **suite gate** — `STATE` + `FAILING` + `OUTPUT`; "It is the one role with no agent definition to carry that format, so whichever mode dispatches it states the format itself" | `script` | #128 | ☐ |
+| C-20 | **architect** — `STATUS: READY\|BLOCKED` + `PLAN: <path>` + summary bullets + open questions | `agents/` | #128 | ☑ agents/architecture-engineer.md |
+| C-21 | **writer** — `RESULT: COMMITTED\|BLOCKED\|FAILED` + `COMMITS` + `VERIFIED` + `DEVIATIONS` + `DISPUTED` + `DIRTY` + `WORKTREE` + `FAILING` | `agents/` | #128 | ☑ agents/code-writer.md |
+| C-22 | **reviewer** — `VERDICT` + `FINDINGS` + `CONTESTED` + `CRITERIA` (one verdict per criterion **the sub-lane owns**) + `NOTES`; "Zero findings ⇒ APPROVED, whatever the criterion verdicts say." | `agents/` | #128 | ☑ agents/reviewer.md |
+| C-23 | **debugger** — `ROOT-CAUSE` + `OWNER: code-writer\|replan\|user\|retry` + `CONFIDENCE` + `REPRODUCED`; two routing values and two reporting values | `agents/` | #128 | ☑ agents/debugger.md |
+| C-24 | **suite gate** — `STATE` + `FAILING` + `OUTPUT`; "It is the one role with no agent definition to carry that format, so whichever mode dispatches it states the format itself" | `script` | #128 | ☑ phase-execute.js |
 | C-25 | **DIED** — "the call came back with nothing usable … Every DIED ends its sub-lane **FAILED** … an architect DIED is reported at Gate 1 with a re-run offer instead." | `internals` | #125 | ☑ |
-| C-26 | "**A stage that returned nothing is reported as exactly that, and never as an agent that died.**" | `script` | #128 | ☐ |
+| C-26 | "**A stage that returned nothing is reported as exactly that, and never as an agent that died.**" | `script` | #128 | ☑ phase-execute.js + phase-plan.js |
 | C-27 | "**The ending label is unchanged, and reclassifying a transient break is not to be re-proposed.** It stays **FAILED**, because that label answers exactly one question — *is this worth retrying?*" | `ADR` | #125 | ☑ ADR-0006 |
-| C-28 | "**A lane that throws is the same rule reaching the case it did not cover.** … each lane's work is wrapped once, and a throw is caught and turned into a **FAILED** ending naming the issue" | `script` | #128 | ☐ |
+| C-28 | "**A lane that throws is the same rule reaching the case it did not cover.** … each lane's work is wrapped once, and a throw is caught and turned into a **FAILED** ending naming the issue" | `script` | #128 | ☑ phase-execute.js |
 | C-29 | "This is **mode-neutral**: a lane vanishing is a bug under `gated` too" | `deleted` | #126 | ☑ |
 
 ## B5. Per-commit implement loop
@@ -513,7 +513,7 @@ goes, and the reasoning (`C-13`, `C-14`) lands in an ADR.
 | C-35 | "**bound: progress-sensitive, under a hard ceiling of 5 fix cycles**" and the six numbered steps | `internals` | #125 | ☑ |
 | C-36 | "On the sub-lane's exact range `<base>..<branch>` (the base may itself be a stacked feature branch — never review the base's own commits)" | `internals` | #125 | ☑ |
 | C-37 | "**Which criteria a sub-lane owns is a fact the plan states and the host applies**, never a judgement the reviewer makes at review time … Criteria the plan left unlisted fall to the **last sub-lane in plan order**" | `ADR` | — | ☑ ADR-0003 |
-| C-38 | "The reviewer judges every criterion it owns against its own range … an owned criterion it cannot find is **`not-met`**. It receives the issue body verbatim and whole regardless" | `agents/` | #128 | ☐ |
+| C-38 | "The reviewer judges every criterion it owns against its own range … an owned criterion it cannot find is **`not-met`**. It receives the issue body verbatim and whole regardless" | `agents/` | #128 | ☑ agents/reviewer.md |
 | C-39 | "the counter **advances by one unless a previously unseen finding appeared** — a new finding resets it to 1. At the repository profile's **Fix cycles** value the loop stops." | `internals` | #125 | ☑ |
 | C-40 | The two worked traces — the stuck case stopping at count 2, and the three-productive-cycles case resetting | `internals` | #125 | ☑ |
 | C-41 | "**The counter starts at 1, not 0** … So the threshold is a **position the counter reaches** … It follows that `1` behaves as `0` does" | `internals` | #125 | ☑ |
@@ -522,7 +522,7 @@ goes, and the reasoning (`C-13`, `C-14`) lands in an ADR.
 | C-44 | "The ceiling being 5 where the suite gate's is 8 encodes cost: a review cycle dispatches the two dearest agents in the pipeline" | `ADR` | #125 | ☑ ADR-0002 |
 | C-45 | "Two findings match when their **file and defect clause** match once normalised, **with the line number dropped** … Nothing else in a finding is compared" | `internals` | #125 | ☑ |
 | C-46 | "The comparison is deliberately conservative. Declaring two findings the same is what ends the loop early" | `internals` | #125 | ☑ |
-| C-47 | "**It is the host's own arithmetic, in plain code, and no agent is dispatched to do it** … The reviewer's return contract is unchanged" | `script` | #128 | ☐ |
+| C-47 | "**It is the host's own arithmetic, in plain code, and no agent is dispatched to do it** … The reviewer's return contract is unchanged" | `script` | #128 | ☑ phase-execute.js |
 | C-48 | "When the loop ends on either bound, the ending reason names **which bound fired** and states, per round, whether it brought previously-unseen findings or repeated prior ones." | `internals` | #125 | ☑ |
 | C-49 | "The `CRITERIA` verdicts pass straight through this loop untouched — the spec axis is **reported and never blocking** … and, under `unattended`, in the terminal-state table, which is the one place a verdict decides anything at all." | `internals` | #125 | ☑ |
 
@@ -533,7 +533,7 @@ goes, and the reasoning (`C-13`, `C-14`) lands in an ADR.
 | C-50 | "**bound: 8 rounds, and 2 rounds without a previously unseen failure**" | `internals` | #125 | ☑ |
 | C-51 | "**Once per sub-lane, not once per lane.** … every PR carries its own suite result." | `internals` | #125 | ☑ |
 | C-52 | "**The command is configuration, never discovery.** … With no command the gate reports **not run** and dispatches nothing to say so" | `internals` | #125 | ☑ |
-| C-53 | "**The agent is a plain subagent with no persona and deliberately no agent type**, at the cheapest model and the lowest effort … It is given a label, so it appears by name in the progress display" | `script` | #128 | ☐ |
+| C-53 | "**The agent is a plain subagent with no persona and deliberately no agent type**, at the cheapest model and the lowest effort … It is given a label, so it appears by name in the progress display" | `script` | #128 | ☑ phase-execute.js |
 | C-54 | Why the suite gate has **no agent definition** while the notifier has one — the asymmetry, recorded so it is not later "fixed" | `internals` | #125 | ☑ |
 | C-55 | "**Position: after the review loop, before the conclusion.** … A sub-lane whose review loop already ended it never reaches the gate" | `internals` | #125 | ☑ |
 | C-56 | "**A red suite is diagnosed, not handed straight to the writer** … A red result routes to the **debugger**" and the three reused routes | `internals` | #125 | ☑ |
@@ -625,7 +625,7 @@ the reasoning to an ADR.
 | C-104 | "**Removal destroys the worktree's ignored files, deliberately — and says which ones first.**" | `SKILL.md` | #128 | ☐ |
 | C-105 | The rejected alternatives — keeping the worktree strands one per sub-lane, and copying the files back writes throwaway output into the main checkout | `internals` | #125 | ☑ |
 | C-106 | "A path that must outlive its sub-lane is committed. Being tracked is what makes it survive, and it is also what takes it off this list." | `internals` | #125 | ☑ |
-| C-107 | "An architect writing a plan applies the same rule in advance — a gitignored touchpoint is named as work the sub-lane does, never as a deliverable" | `agents/` | #128 | ☐ |
+| C-107 | "An architect writing a plan applies the same rule in advance — a gitignored touchpoint is named as work the sub-lane does, never as a deliverable" | `agents/` | #128 | ☑ agents/architecture-engineer.md |
 
 ## B15. The terminal-state table
 
@@ -638,7 +638,7 @@ the reasoning to an ADR.
 | C-112 | "**A `partial` criterion drafts alongside a `not-met` one.** Nobody watched the run, so 'not demonstrably done' defaults to draft" | `internals` | #125 | ☑ |
 | C-113 | "A draft is the honest signal that the pipeline could not finish its own job, and one rule covers all four exhaustion paths" | `internals` | #125 | ☑ |
 | C-114 | "**Work that exists stays reviewable.** … Work that does not exist opens nothing — the last row, and a narrow case" | `internals` | #125 | ☑ |
-| C-115 | "**Every row is decided per sub-lane, from that sub-lane's own inputs.** … one sub-lane's draft never drafts another's." | `script` | #128 | ☐ |
+| C-115 | "**Every row is decided per sub-lane, from that sub-lane's own inputs.** … one sub-lane's draft never drafts another's." | `script` | #128 | ☑ phase-execute.js |
 | C-116 | "**The pipeline sets state only on pull requests it created** … The PR-comment input therefore needs no rule of its own here" | `SKILL.md` | — | ☐ |
 | C-117 | "**Git is the authority on the Push column.** … Nothing ahead ⇒ the last row, whatever was proposed." | `SKILL.md` | — | ☐ |
 
@@ -761,7 +761,7 @@ token names a class rather than a file — `ADR`, `agents/` — the tick cell na
 | #125 | 72 `internals` + 9 `docs/dev-loop.md` + 9 `ADR`, plus the 2 already carried by ADR-0003 | **92 / 92** |
 | #126 | 17 `deleted` + 4 `ADR` (0004) | **21 / 21** |
 | #127 | 15 `cleanup` + 1 `docs/dev-loop.md` (`S-214`, re-destined — see below) | **16 / 16** |
-| #128 | 8 `agents/` + 8 `script` + 4 `deleted` + 3 `ADR` | 0 / 23 |
+| #128 | 8 `agents/` + 8 `script` + 4 `deleted` + 3 `ADR` | **23 / 23** |
 | #129 | 5 `profile` + 4 `notifications.md` + 3 `agents/` + 1 `script` + 1 `deleted` | 0 / 14 |
 | #130 | rewrites what stays in `SKILL.md`; ticks nothing new | n/a |
 

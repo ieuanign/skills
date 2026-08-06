@@ -78,16 +78,19 @@ export const meta = {
 // The harness may deliver args as a JSON string; normalize to an object.
 const input = typeof args === 'string' ? JSON.parse(args) : args
 
-// A role is resolved, never named — contracts.md's Roles section is normative for why. The same
-// definition registers bare when it is linked into a repo's `.claude/agents/` and namespaced
-// `<plugin>:<name>` when the plugin is installed, and a workflow script sees neither registry, so
-// the host reads the namespace off its own roster and passes it. A trailing colon is tolerated
-// because writing one is a plausible reading of "namespace" and the failure it would otherwise
-// cause is total: every dispatch in the phase dies on an unresolvable type, so no lane gets past
-// its first commit. Absent ⇒ bare, the linked case and the pre-plugin behaviour.
+// A role is resolved, never named. The same definition registers bare when it is linked into a
+// repo's `.claude/agents/` and namespaced `<plugin>:<name>` when the plugin is installed — and the
+// plugin is the supported install path, so the namespaced form is the ordinary one and the bare
+// form is the maintainer's. A phase script carrying a bare literal therefore RUNS ONLY FOR THE
+// MAINTAINER and dies on its first dispatch for everyone who installed the plugin. A workflow
+// script sees neither registry, so the host reads the namespace off its own roster and passes it,
+// the same class of fact as skillDir. A trailing colon is tolerated because writing one is a
+// plausible reading of "namespace" and the failure it would otherwise cause is total: every
+// dispatch in the phase dies on an unresolvable type, so no lane gets past its first commit.
+// Absent ⇒ bare, the linked case and the pre-plugin behaviour.
 //
-// The suite gate is dispatched with no agentType at all and is deliberately absent below:
-// contracts.md gives it no role definition, so it has no name to resolve.
+// The suite gate is dispatched with no agentType at all and is deliberately absent below: it is
+// the one role with no agent definition, so it has no name to resolve.
 const NS = String(input.agentNamespace || '').trim().replace(/:+$/, '')
 const roleAgent = role => (NS ? `${NS}:${role}` : role)
 
@@ -103,10 +106,10 @@ const writerType = roleAgent('code-writer')
 const NO_PROGRESS_THRESHOLD = Number.isInteger(input.fixCycleThreshold) && input.fixCycleThreshold >= 0 ? input.fixCycleThreshold : 2
 
 // The review loop's hard ceiling, in fix cycles, applied whatever the trajectory says: a
-// mis-compared finding list would look new every round and reset the threshold forever. It is
-// STATED IN contracts.md TOO, and `npm run check` compares the two — the same drift hazard the
-// cost-stage vocabulary is checked for. Five rather than the suite gate's eight because a review
-// cycle dispatches the two dearest agents in the pipeline where a suite round is one cheap call.
+// mis-compared finding list would look new every round and reset the threshold forever. `npm run
+// check` compares it against the prose that states it — the same drift hazard the cost-stage
+// vocabulary is checked for. Five rather than the suite gate's eight because a review cycle
+// dispatches the two dearest agents in the pipeline where a suite round is one cheap call.
 const REVIEW_CEILING = 5
 
 // Passed in, never re-derived. Nothing here branches on it yet — the notifier and the unattended
@@ -129,9 +132,9 @@ const skillDir = String(input.skillDir || '').trim()
 // identifier gets a shorter ending comment, never a failed lane.
 const runHandle = String(input.runHandle || '').trim()
 
-// notifications.md states the rule that selects a label role, and contracts.md records that its
-// own two ending labels are selected by that same question — so this table is where those two
-// statements meet, and neither is restated here. Keeping it in the script rather than the prompt
+// notifications.md states the rule that selects a label role, and this script's own two ending
+// labels are selected by that same question — did something deliberately stop, or did something
+// break? — so this table is where the two meet. Keeping it in the script rather than the prompt
 // is what makes the mapping mechanical: the notifier is told which role to write, never asked.
 const ROLE_OF = { HALT: 'awaiting-human', FAILED: 'failed' }
 
@@ -154,6 +157,11 @@ const ROLE_OF = { HALT: 'awaiting-human', FAILED: 'failed' }
 const STAGE = { PLAN: 'plan', WRITE: 'write', REVIEW: 'review', SUITE: 'suite', NOTIFY: 'notify' }
 const mark = (issue, stage) => `[dev-loop lane=${issue} stage=${stage}]\n`
 
+// The return contracts, as JSON schemas the runner validates each dispatch against. All agent
+// returns are machine-readable and the CONTRACT KEYS are the contract — the writer's RESULT, the
+// reviewer's VERDICT, the debugger's OWNER, the gate's STATE — so every branch below splits on an
+// enum value and never on the prose an agent wrote around it. No verdict, no result: a call that
+// came back with nothing usable is not read for intent, and takes the returned-nothing path.
 const WRITER_SCHEMA = {
   type: 'object',
   properties: {
@@ -193,6 +201,11 @@ const REVIEW_SCHEMA = {
   },
   required: ['verdict', 'findings'],
 }
+// The suite gate's return contract — STATE + FAILING + OUTPUT. It is the one role with no agent
+// definition to carry that format, so whatever dispatches it states the format itself: this schema
+// and the prompt below are the whole of its specification. FAILING is the runner's own identifier
+// per failing test and is empty unless STATE is failed; not-run is a state of its own, never
+// reported as passed.
 const SUITE_SCHEMA = {
   type: 'object',
   properties: {
@@ -278,7 +291,7 @@ function suitePrompt(sub) {
 // to prevent.
 const isWip = line => /^\W*(?:[0-9a-f]{7,40}\b\W*)?wip[(:]/i.test(line)
 
-// Finding identity — contracts.md's "Finding identity" subsection is normative. A finding is
+// Finding identity — what makes two findings the same finding. A finding is
 // `file:line — defect — failure scenario — suggested fix`, and only the first two clauses identify
 // it: the line number is dropped because a fix shifts lines and a shifted line is not a new
 // defect, and the last two clauses are the reviewer's prose about a defect the first two name.
@@ -368,7 +381,7 @@ function terminalState(rec) {
   return { pr: 'draft', reasons }
 }
 
-// A stage that returned nothing, said honestly — contracts.md's DIED entry is normative for why.
+// A stage that returned nothing is reported as exactly that, and never as an agent that died.
 // From here a skip and a death after the runner's own retries are indistinguishable: both resolve
 // the call to nothing, and nothing is the whole of what this script sees. Asserting a death sends
 // a reader looking for a crash that may never have happened. The wording is the lane-level empty
@@ -494,8 +507,7 @@ const runLane = async (lane, subResults) => {
 
     // 2. Review → fix cycles (writer may dispute; contested disputes end the sub-lane)
     //
-    // The bound is PROGRESS-SENSITIVE under a hard ceiling, exactly as the suite gate's is —
-    // contracts.md's "The bound is progress-sensitive, under a hard ceiling" is normative. A flat
+    // The bound is PROGRESS-SENSITIVE under a hard ceiling, exactly as the suite gate's is. A flat
     // count cannot tell a loop that is stuck from one that is working, and the flat count this
     // replaces abandoned a lane one cycle from green.
     let cycles = 0                  // fix cycles spent — what the hard ceiling bounds
@@ -544,8 +556,7 @@ const runLane = async (lane, subResults) => {
       // finding is progress, and resets — a shrinking set of the same findings is not. The counter
       // is 1 after the FIRST round whether or not that round brought anything new, exactly as the
       // suite gate's is, so the threshold is a position it reaches and not a count of tolerated
-      // no-progress rounds. Said once here, and stated in contracts.md, because the arithmetic is
-      // easy to describe wrongly.
+      // no-progress rounds. Said once here, because the arithmetic is easy to describe wrongly.
       noProgressRounds = fresh.length ? 1 : noProgressRounds + 1
       // One phrase, two readers — the trajectory and the attempt trigger below. Written once so
       // the ledger and the attempt log cannot describe the same round differently.
@@ -606,6 +617,10 @@ const runLane = async (lane, subResults) => {
       while (true) {
         round++
         const suffix = round > 1 ? `:r${round}` : ''
+        // A plain subagent with no persona and deliberately NO agentType, at the cheapest model
+        // and the lowest effort: loading a role definition to run one command is waste, and this
+        // gate runs up to SUITE_CEILING times. It is given a label, so it appears by name in the
+        // progress display and the logs. It never fixes, never commits, and never touches a file.
         const suite = await agent(mark(lane.issue, STAGE.SUITE) + suitePrompt(sub), {
           label: `suite:${tag}${suffix}`, phase: 'Suite', model: 'haiku', effort: 'low', schema: SUITE_SCHEMA,
         })
@@ -701,11 +716,16 @@ const runLane = async (lane, subResults) => {
 }
 
 // THE single wrapper every lane goes through, and the reason the lane body above is a named
-// function rather than the closure it used to be. A throw at any of the body's ending sites used
-// to resolve the lane to nothing, and the filter below then dropped it — so the issue vanished
-// with no label, no comment and no record of which one it was. One catch here covers every site,
-// and it is also the one place an ending-time dispatch hooks into: threading either through
-// seventeen ending sites is how they drift apart.
+// function rather than the closure it used to be. A lane that throws is the returned-nothing rule
+// reaching the case it did not cover: a terminal error can reject the call rather than resolve it
+// to nothing, which unwinds the whole lane. So each lane's work is wrapped ONCE, and a throw is
+// caught and turned into a FAILED ending naming the issue and carrying the error message plus its
+// stack trace where one exists, with the lane's partial sub-results — attempt log included — coming
+// back beside it. A throw at any of the body's ending sites used to resolve the lane to nothing,
+// and the filter below then dropped it — so the issue vanished with no label, no comment and no
+// record of which one it was. One catch here covers every site, and it is also the one place an
+// ending-time dispatch hooks into: threading either through seventeen ending sites is how they
+// drift apart.
 const laneThunk = lane => async () => {
   const subResults = []
   try {

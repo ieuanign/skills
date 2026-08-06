@@ -24,13 +24,16 @@ const PLAN_SCHEMA = {
   required: ['status', 'planPath', 'summary', 'openQuestions'],
 }
 
-// A role is resolved, never named — contracts.md's Roles section is normative for why. The same
-// definition registers bare when it is linked into a repo's `.claude/agents/` and namespaced
-// `<plugin>:<name>` when the plugin is installed, and a workflow script sees neither registry, so
-// the host reads the namespace off its own roster and passes it. A trailing colon is tolerated
-// because writing one is a plausible reading of "namespace" and the failure it would otherwise
-// cause is total: every dispatch in the phase dies on an unresolvable type, so no plan is written
-// and every lane comes back DIED. Absent ⇒ bare, the linked case and the pre-plugin behaviour.
+// A role is resolved, never named. The same definition registers bare when it is linked into a
+// repo's `.claude/agents/` and namespaced `<plugin>:<name>` when the plugin is installed — and the
+// plugin is the supported install path, so the namespaced form is the ordinary one and the bare
+// form is the maintainer's. A phase script carrying a bare literal therefore RUNS ONLY FOR THE
+// MAINTAINER and dies on its first dispatch for everyone who installed the plugin. A workflow
+// script sees neither registry, so the host reads the namespace off its own roster and passes it.
+// A trailing colon is tolerated because writing one is a plausible reading of "namespace" and the
+// failure it would otherwise cause is total: every dispatch in the phase dies on an unresolvable
+// type, so no plan is written and every lane comes back DIED. Absent ⇒ bare, the linked case and
+// the pre-plugin behaviour.
 const NS = String(input.agentNamespace || '').trim().replace(/:+$/, '')
 const roleAgent = role => (NS ? `${NS}:${role}` : role)
 
@@ -89,8 +92,9 @@ const results = await parallel(input.issues.map(iss => async () => {
       { agentType, label: `plan:#${iss.number}`, phase: 'Plan', schema: PLAN_SCHEMA }
     )
     // A throw is the same outcome as an architect that returned nothing and takes the same entry.
-    // What that emptiness MEANT is not knowable from here — contracts.md's DIED entry is normative
-    // — so the summary says what happened rather than asserting a crash.
+    // What that emptiness MEANT is not knowable from here — a stage that returned nothing is
+    // reported as exactly that, and never as an agent that died — so the summary says what
+    // happened rather than asserting a crash.
     return r ? { issue: iss.number, ...r } : died(iss.number, "the architect returned nothing — it was skipped, or it died after the runner's retries; re-run this lane")
   } catch (err) {
     return died(iss.number, `architect threw — re-run this lane: ${crashLine(err)}`)

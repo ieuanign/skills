@@ -16,7 +16,8 @@
 // Nothing here asserts on an internal variable, a private helper, or prompt wording beyond an
 // input a contract requires to be present. A test that breaks when a loop is refactored but its
 // behaviour is unchanged is a bad test, and this file is meant to survive refactors of the file it
-// tests. `contracts.md` is what these scenarios encode; where the two disagree, that file governs.
+// tests. `phase-execute.js` is what these scenarios encode, and it is the specification — where its
+// behaviour and any prose disagree, the script governs; `docs/dev-loop-internals.md` explains why.
 //
 // Run: `node scripts/state-machine.mjs` (also a stage of `npm run check`). Every scenario runs
 // even when an earlier one fails, per the check script's convention; the exit code is non-zero if
@@ -116,7 +117,7 @@ const FINDING_C = 'src/b.ts:41 — the delay is unbounded — a slow peer hangs 
 
 // The one sentence every ending produced by an empty return has to carry. From where the pipeline
 // sits a skip and a death after the runner's retries are the same observation, so an ending may
-// not pick one — contracts.md's DIED entry is normative.
+// not pick one — see `docs/dev-loop-internals.md`, *A call that came back with nothing*.
 const EMPTY_RETURN = /returned nothing — it was skipped, or it died after the runner's retries/
 
 // --- the scenario registry ---------------------------------------------------

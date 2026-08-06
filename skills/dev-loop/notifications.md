@@ -1,6 +1,6 @@
 # /dev-loop notifications — the normative specification both writers implement
 
-This file is the single source of truth for what an unattended run writes to the outside world as it goes: its workflow labels, its issue comments, and its messages. Two writers emit them — the **host**, at its own boundaries, and the **notifier** subagent, from inside a running phase script — and each implements this file rather than restating it. It is normative for its subject the way `contracts.md` is normative for the state machine: the role contracts, the endings and their labels, the findings ledger and the append-only invariant are `contracts.md`'s, and this file names them without redefining them. If an implementation and this file disagree, this file governs.
+This file is the single source of truth for what an unattended run writes to the outside world as it goes: its workflow labels, its issue comments, and its messages. Two writers emit them — the **host**, at its own boundaries, and the **notifier** subagent, from inside a running phase script — and each implements this file rather than restating it. It is normative for its subject alone: the endings and their labels, the findings ledger and the append-only invariant are `SKILL.md`'s, and the role contracts are the roster agents' own, so this file names all of them without redefining any. If an implementation and this file disagree, this file governs.
 
 **Nothing here fires in gated mode** (the supervised run, where a human concludes the lane).
 
@@ -35,7 +35,7 @@ One question selects the role: **did the run reach a reasoned conclusion, or did
 
 The first two rows overlap, because a break now opens a draft pull request too. **failed wins**: a break is a break whatever it produced, and the question that role answers is the one a dead reviewer leaves open.
 
-The in-progress role is removed in every one of the three, including the one that applies nothing. Which endings open a ready pull request rather than a draft one is `contracts.md`'s **terminal-state table**, which reads a sub-lane's ending — never its label, which decides nothing.
+The in-progress role is removed in every one of the three, including the one that applies nothing. Which endings open a ready pull request rather than a draft one is the phase script's **terminal-state table**, already applied to each sub-lane before the host sees its result; it reads a sub-lane's ending — never its label, which decides nothing.
 
 Two properties fall out of that question rather than being designed in:
 
@@ -65,7 +65,7 @@ Every message is composed freshly by whoever writes it, so without a stated shap
 | ending | notifier, mid-lane | `halt`, `failed` |
 | completion | host, after the phase script | `draft`, `ready` |
 
-The two ending tokens are `contracts.md`'s two ending labels in lower case, so there is no second vocabulary to keep in step with that file.
+The two ending tokens are `SKILL.md`'s two ending labels in lower case, so there is no second vocabulary to keep in step with it.
 
 **The shape is the issue number, the state token, the reason where one exists, then the link** — the pull request link where a pull request exists, the issue link otherwise:
 
