@@ -81,7 +81,7 @@ destination stays untouched by this effort entirely.
 | ID | Rule | → | By | ✓ |
 |---|---|---|---|---|
 | S-1 | The `description` is the skill's discovery cost — carried in every session on the machine, not only on runs that invoke it. One line, one trigger per branch, no synonyms. | `SKILL.md` | #130 | ☐ |
-| S-2 | `"…or says `/dev-loop cleanup`"` — the cleanup trigger in the description | `cleanup` | #127 | ☐ |
+| S-2 | `"…or says `/dev-loop cleanup`"` — the cleanup trigger in the description | `cleanup` | #127 | ☑ |
 
 ## A1. Preamble
 
@@ -106,7 +106,7 @@ the specification, and the half the orchestrator evaluates moves into `SKILL.md`
 | S-11 | "`auto` — optional leading token … Modes lead and dials trail" | `SKILL.md` | — | ☐ |
 | S-12 | "One issue = one lane; several = parallel lanes." | `SKILL.md` | — | ☐ |
 | S-13 | "`project:<slug>` — optional project slug passed to the architect for the plan path" | `SKILL.md` | — | ☐ |
-| S-14 | "`/dev-loop cleanup` — run Cleanup mode (bottom) instead of the pipeline." | `cleanup` | #127 | ☐ |
+| S-14 | "`/dev-loop cleanup` — run Cleanup mode (bottom) instead of the pipeline." | `cleanup` | #127 | ☑ |
 
 ## A3. Run mode — `gated` or `unattended`
 
@@ -337,7 +337,7 @@ dropped.
 | S-171 | Step 3 — "A refusal means work was left behind — report `git -C <wt> status --porcelain` verbatim and keep that worktree; that refusal IS the dirty-work guard, so never argue with it." | `SKILL.md` | — | ☐ |
 | S-172 | Step 3 — "NEVER target MAIN: before any removal, confirm the path is NOT the first entry of `git worktree list`." | `SKILL.md` | — | ☐ |
 | S-173 | Step 3 — "The local branch and the plan file stay" | `SKILL.md` | — | ☐ |
-| S-174 | Step 3 — "(`/dev-loop cleanup` reaps those once the PR merges)" | `cleanup` | #127 | ☐ |
+| S-174 | Step 3 — "(`/dev-loop cleanup` reaps those once the PR merges)" | `cleanup` | #127 | ☑ |
 | S-175 | Step 3 — the four worktree rows: clean ⇒ removed after push and PR; ended under `unattended` ⇒ removed after push; ended under `gated` ⇒ **kept**; held or push-failed ⇒ kept | `SKILL.md` | #128 | ☐ |
 | S-176 | Step 3 — "So an `unattended` run ends with ONLY the main worktree remaining unless a removal was refused or a push failed" | `docs/dev-loop.md` | #125 | ☑ |
 | S-177 | Step 3 — "**Name what the removal destroys, then remove.** … read the plan's **File touchpoints** and report every one that `git -C <wt> check-ignore -q <path>` calls ignored and that exists in the worktree" | `SKILL.md` | — | ☐ |
@@ -387,19 +387,19 @@ Every rule in this section moves whole to the new skill. None is deleted and non
 
 | ID | Rule | → | By | ✓ |
 |---|---|---|---|---|
-| S-212 | "Cleanup reaps what has an exact done-signal and **lists** what does not. It is safe to run at any time, including while another batch is mid-layer" | `cleanup` | #127 | ☐ |
-| S-213 | "**It removes no worktree.** … a worktree still standing is one nothing proved done." | `cleanup` | #127 | ☐ |
-| S-214 | Why the old merged-based scan was wrong — "a branch merges the moment its PR lands, which says nothing about whether the run holding that checkout has finished with it" | `cleanup` | #127 | ☐ |
-| S-215 | "`git fetch origin <DEFAULT>`." | `cleanup` | #127 | ☐ |
-| S-216 | "**Reap, by the exact signal.** A lane is done when its PR is merged (`gh pr view <branch> --json state,mergedAt`) or its branch is fully merged into `origin/<DEFAULT>`. **The `gh` arm is the load-bearing one, and the git arm is the fallback**" | `cleanup` | #127 | ☐ |
-| S-217 | Why the git arm alone is not enough — squash and rebase replay the work under new shas, so the branch's commits are never ancestors of the default branch | `cleanup` | #127 | ☐ |
-| S-218 | "For each done lane: delete the local branch, and delete the lane's plan file `.scratch/*/plans/<n>-*.md`" | `cleanup` | #127 | ☐ |
-| S-219 | "Delete with `git branch -d` … Only when `-d` refuses AND the merged check above passed, re-run it as `git branch -D` … Never reach for `-D` in any other situation" | `cleanup` | #127 | ☐ |
-| S-220 | "**A branch checked out in a surviving worktree cannot be deleted** … List it alongside that worktree instead of working around it; the plan file still goes." | `cleanup` | #127 | ☐ |
-| S-221 | "**List every worktree under `<WORKTREES>`; remove none.** Per worktree, say why it is still here" — uncommitted work, nothing on the remote, or pushed with its PR still open | `cleanup` | #127 | ☐ |
-| S-222 | "give them the `git worktree remove <path>` line to run if they agree, and never run it for them" | `cleanup` | #127 | ☐ |
-| S-223 | "NEVER touch MAIN (the first entry of `git worktree list`) — it is not a candidate under any condition" | `cleanup` | #127 | ☐ |
-| S-224 | "Report the two apart … **reaped** (branch, plan file) and **needs attention** (worktree, why it is lingering, the removal command). An empty second table is the good outcome." | `cleanup` | #127 | ☐ |
+| S-212 | "Cleanup reaps what has an exact done-signal and **lists** what does not. It is safe to run at any time, including while another batch is mid-layer" | `cleanup` | #127 | ☑ |
+| S-213 | "**It removes no worktree.** … a worktree still standing is one nothing proved done." | `cleanup` | #127 | ☑ |
+| S-214 | Why the old merged-based scan was wrong — "a branch merges the moment its PR lands, which says nothing about whether the run holding that checkout has finished with it" | `cleanup` | #127 | ☑ |
+| S-215 | "`git fetch origin <DEFAULT>`." | `cleanup` | #127 | ☑ |
+| S-216 | "**Reap, by the exact signal.** A lane is done when its PR is merged (`gh pr view <branch> --json state,mergedAt`) or its branch is fully merged into `origin/<DEFAULT>`. **The `gh` arm is the load-bearing one, and the git arm is the fallback**" | `cleanup` | #127 | ☑ |
+| S-217 | Why the git arm alone is not enough — squash and rebase replay the work under new shas, so the branch's commits are never ancestors of the default branch | `cleanup` | #127 | ☑ |
+| S-218 | "For each done lane: delete the local branch, and delete the lane's plan file `.scratch/*/plans/<n>-*.md`" | `cleanup` | #127 | ☑ |
+| S-219 | "Delete with `git branch -d` … Only when `-d` refuses AND the merged check above passed, re-run it as `git branch -D` … Never reach for `-D` in any other situation" | `cleanup` | #127 | ☑ |
+| S-220 | "**A branch checked out in a surviving worktree cannot be deleted** … List it alongside that worktree instead of working around it; the plan file still goes." | `cleanup` | #127 | ☑ |
+| S-221 | "**List every worktree under `<WORKTREES>`; remove none.** Per worktree, say why it is still here" — uncommitted work, nothing on the remote, or pushed with its PR still open | `cleanup` | #127 | ☑ |
+| S-222 | "give them the `git worktree remove <path>` line to run if they agree, and never run it for them" | `cleanup` | #127 | ☑ |
+| S-223 | "NEVER touch MAIN (the first entry of `git worktree list`) — it is not a candidate under any condition" | `cleanup` | #127 | ☑ |
+| S-224 | "Report the two apart … **reaped** (branch, plan file) and **needs attention** (worktree, why it is lingering, the removal command). An empty second table is the good outcome." | `cleanup` | #127 | ☑ |
 
 ## A17. Hard rules
 
@@ -753,7 +753,7 @@ token names a class rather than a file — `ADR`, `agents/` — the tick cell na
 | #132 | this file | n/a |
 | #125 | 72 `internals` + 9 `docs/dev-loop.md` + 9 `ADR`, plus the 2 already carried by ADR-0003 | **92 / 92** |
 | #126 | 17 `deleted` + 4 `ADR` (0004) | **21 / 21** |
-| #127 | 16 `cleanup` | 0 / 16 |
+| #127 | 16 `cleanup` | **16 / 16** |
 | #128 | 8 `agents/` + 8 `script` + 4 `deleted` + 3 `ADR` | 0 / 23 |
 | #129 | 5 `profile` + 4 `notifications.md` + 3 `agents/` + 1 `script` + 1 `deleted` | 0 / 14 |
 | #130 | rewrites what stays in `SKILL.md`; ticks nothing new | n/a |
