@@ -44,8 +44,16 @@ The vocabulary is #121's Destinations table verbatim, plus `deleted`. Nothing is
 
 **ADR numbering is reserved, not sequential by landing order.** #121 and #126 both name
 `docs/adr/0004-*.md` as the home for deleting Mode A, and #125 lands first. So **0004 is reserved for
-Mode A** and #125's rationale ADRs take **0005–0008**. Recorded here because a reader who sees 0005
+Mode A** and #125's rationale ADRs take **0005–0007**. Recorded here because a reader who sees 0005
 land before 0004 would otherwise read it as a mistake.
+
+Three ADRs rather than the four #125 names, because one of the four decisions **already had a record**:
+the implement loop keeping a flat bound where the review loop is progress-sensitive is
+[ADR-0002](./adr/0002-review-loop-progress-sensitive-bound.md)'s "Why the two loops differ" section,
+written when the review loop's bound changed. `C-34`, `C-43` and `C-44` are ticked against it rather
+than duplicated into a fourth file — a derived copy with no invalidation is exactly what ADR-0001's
+first corollary forbids. The three that were genuinely unrecorded are 0005 (no token ceiling), 0006
+(empty returns stay `FAILED`) and 0007 (per-commit push is not implementable).
 
 ## Ticket key
 
@@ -117,7 +125,7 @@ the specification, and the half the orchestrator evaluates moves into `SKILL.md`
 | S-25 | "Touchpoint intersection, sub-lane splitting, the profile's Constraints, the push and the PR itself are gate *work*, and happen identically under both modes." | `SKILL.md` | — | ☐ |
 | S-26 | "The one-time ask-then-persist preconditions are not gates and fire under both — including Act 0's step 9" | `SKILL.md` | — | ☐ |
 | S-27 | "every sub-lane result carries a `terminal` of `{pr, push, reasons}`, so under `unattended` you open what it names rather than deciding it here" — the orchestrator obeys the value and does not re-derive draft-versus-ready | `SKILL.md` | — | ☐ |
-| S-28 | The terminal-state table's own derivation — how a `terminal` row is computed | `internals` | #125 | ☐ |
+| S-28 | The terminal-state table's own derivation — how a `terminal` row is computed | `internals` | #125 | ☑ |
 
 ## A4. How you write a ⟨notify⟩ event — the mechanism only
 
@@ -151,11 +159,11 @@ payment #121 names.
 |---|---|---|---|---|
 | S-41 | "**Varies per run → argument. Varies per repository → profile. Does not vary → constant.**" | `SKILL.md` | — | ☐ |
 | S-42 | The four-home table — argument, repository profile, phase-script constant, skill constant | `SKILL.md` | — | ☐ |
-| S-43 | "These are **homes, not an inventory** … which is the point of a rule over a list" | `docs/dev-loop.md` | #125 | ☐ |
-| S-44 | "**No per-repository effort tiers.** … a tier is a phase-script constant or it is nothing." | `docs/dev-loop.md` | #125 | ☐ |
-| S-45 | "**No per-run overrides of gates, stages, or cost behaviour.**" | `docs/dev-loop.md` | #125 | ☐ |
-| S-46 | "**The cost reporting target stays a constant** — it was measured as a single median across repositories" | `docs/dev-loop.md` | #125 | ☐ |
-| S-47 | "Each refusal is a cheap promotion from constant to profile key if a repository ever actually needs one." | `docs/dev-loop.md` | #125 | ☐ |
+| S-43 | "These are **homes, not an inventory** … which is the point of a rule over a list" | `docs/dev-loop.md` | #125 | ☑ |
+| S-44 | "**No per-repository effort tiers.** … a tier is a phase-script constant or it is nothing." | `docs/dev-loop.md` | #125 | ☑ |
+| S-45 | "**No per-run overrides of gates, stages, or cost behaviour.**" | `docs/dev-loop.md` | #125 | ☑ |
+| S-46 | "**The cost reporting target stays a constant** — it was measured as a single median across repositories" | `docs/dev-loop.md` | #125 | ☑ |
+| S-47 | "Each refusal is a cheap promotion from constant to profile key if a repository ever actually needs one." | `docs/dev-loop.md` | #125 | ☑ |
 
 `S-43`–`S-47` bind a **maintainer**, not a run. The orchestrator never evaluates them, so they are
 reader load whatever file they are in today.
@@ -173,7 +181,7 @@ reader load whatever file they are in today.
 | S-54 | **Setup command** key — "what a cold checkout runs before its tests pass … Asked at the first provisioning." | `SKILL.md` | — | ☐ |
 | S-55 | **Full-suite command** key — "the ONE command that runs the repo's whole test suite from a provisioned worktree … `none` is a real answer … Configuration, never discovery" | `SKILL.md` | — | ☐ |
 | S-56 | **Fix cycles** key — the review loop's no-progress threshold, default `2`, asked by Act 0's step 9 and nowhere else | `SKILL.md` | — | ☐ |
-| S-57 | The Fix cycles counter's arithmetic — "starts at 1 … advances by one on every round that brings nothing previously unseen … resets to 1 whenever a round brings something new … a position the counter reaches rather than a count of tolerated rounds" | `internals` | #125 | ☐ |
+| S-57 | The Fix cycles counter's arithmetic — "starts at 1 … advances by one on every round that brings nothing previously unseen … resets to 1 whenever a round brings something new … a position the counter reaches rather than a count of tolerated rounds" | `internals` | #125 | ☑ |
 | S-58 | **Constraints** key — "free-form repo cautions … Honor them when deciding lanes vs layers (Gate 1) and when provisioning (Act 2)." | `SKILL.md` | — | ☐ |
 
 ## A8. Execution modes
@@ -198,7 +206,7 @@ dropped.
 | S-65 | Step 1 — "Parse the arguments … This is the ONLY place the run mode is derived — carry that one value from here." | `SKILL.md` | — | ☐ |
 | S-66 | Step 1 — "Then detect the execution mode, which is a toolset check and costs nothing." | `deleted` | #126 | ☐ |
 | S-67 | Step 1 — "read the **agent namespace** off your own roster … find `code-writer` among your available agent types — listed bare, the namespace is the empty string; listed as `<prefix>:code-writer`, it is `<prefix>` … This is the ONLY place it is derived … Never write it as a literal and never derive it from a path, a package name or a manifest" | `SKILL.md` | — | ☐ |
-| S-68 | Why a role is resolved rather than named — the same definition registers bare when linked and namespaced when the plugin is installed | `internals` | #125 | ☐ |
+| S-68 | Why a role is resolved rather than named — the same definition registers bare when linked and namespaced when the plugin is installed | `internals` | #125 | ☑ |
 | S-69 | Step 2 — a session with no Workflow tool is refused; tell them `"enableWorkflows": true` in `~/.claude/settings.json` and that **a restart is required** | `SKILL.md` | #126 | ☐ |
 | S-70 | Step 2 — the ask-then-persist arms: key absent ⇒ ask once, Yes writes `true`, No writes `false`; key present ⇒ do not ask, `true` means restart, `false` means name the file and key | `SKILL.md` | #126 | ☐ |
 | S-71 | Step 2 — "This is per-machine, so it persists to the per-machine settings and never to the repo profile or a setup skill" | `SKILL.md` | #126 | ☐ |
@@ -206,7 +214,7 @@ dropped.
 | S-73 | Step 2 — "A `gated` run with no Workflow tool is untouched and runs Mode A exactly as before." | `deleted` | #126 | ☐ |
 | S-74 | Step 3 — "Compute the Derived facts and read the repo profile (first run in a repo: ask-then-persist the branch template)." | `SKILL.md` | — | ☐ |
 | S-75 | Step 4 — "Both gitignore checks **probe a path underneath the directory, never the directory itself**." | `SKILL.md` | — | ☐ |
-| S-76 | Step 4 — why the probe must be a child: `git check-ignore` cannot classify a bare path as a directory unless it exists on disk, so a correctly-configured repo reports as unignored | `docs/dev-loop.md` | #125 | ☐ |
+| S-76 | Step 4 — why the probe must be a child: `git check-ignore` cannot classify a bare path as a directory unless it exists on disk, so a correctly-configured repo reports as unignored | `docs/dev-loop.md` | #125 | ☑ |
 | S-77 | Step 4 — "`.claude/worktrees` not gitignored … → append `.claude/worktrees/` to `.gitignore` and tell the user" | `SKILL.md` | — | ☐ |
 | S-78 | Step 4 — "`.scratch` not gitignored … → append `.scratch/` … plans live there" | `SKILL.md` | — | ☐ |
 | S-79 | Step 4 — "**Neither remedy appends a line `.gitignore` already carries** — read the file first" | `SKILL.md` | — | ☐ |
@@ -233,9 +241,9 @@ dropped.
 | S-95 | "run the Workflow tool with `scriptPath: <this-skill-dir>/phase-plan.js` and `args: { issues: [{number, title, project, answers?}], agentNamespace }` — … passed verbatim (the empty string when the roster lists the roles bare)" | `SKILL.md` | — | ☐ |
 | S-96 | "One architect per issue, parallel. Each returns `{status, planPath, summary, openQuestions}`." | `SKILL.md` | — | ☐ |
 | S-97 | "A lane returning `status: DIED` … report it at Gate 1 and offer a re-run; never silently drop a requested issue." | `SKILL.md` | — | ☐ |
-| S-98 | "**Report it as what it is and never as a crash**: from here a skipped agent and a dead one are indistinguishable" | `internals` | #125 | ☐ |
+| S-98 | "**Report it as what it is and never as a crash**: from here a skipped agent and a dead one are indistinguishable" | `internals` | #125 | ☑ |
 | S-99 | "**KEEP the transcript directory this invocation reports** … alongside every later one, **including any re-run**" | `SKILL.md` | — | ☐ |
-| S-100 | "planning … is roughly three tenths of a lane and it lands in a different directory from execution's" | `docs/dev-loop.md` | #125 | ☐ |
+| S-100 | "planning … is roughly three tenths of a lane and it lands in a different directory from execution's" | `docs/dev-loop.md` | #125 | ☑ |
 | S-101 | "KEEP each lane's `summary` bullets for the rest of the run … Gate 2 puts them in the PR body's Context section — so they must survive whether or not Gate 1 fires" | `SKILL.md` | — | ☐ |
 | S-102 | "**⟨notify⟩ Plan comment.** Per lane, comment the plan's summary bullets and the architect's open questions on the issue … Pass `planPath` in the comment" | `SKILL.md` | — | ☐ |
 | S-103 | "**Never the plan file** — it survives on disk at tens of kilobytes, no agent ever reads this comment … and inlining it buries the thread to serve nobody." | `notifications.md` | #129 | ☐ |
@@ -255,7 +263,7 @@ dropped.
 | S-112 | Outcome 3 — "AskUserQuestion per case, with **'stack B on A's branch' as the first/recommended option** and 'defer B out of this batch' as the alternative" | `SKILL.md` | — | ☐ |
 | S-113 | "Outcomes 2 and 3 produce the same branch shape … and differ only in what is asserted about it. Only 3 posts the comment, and only 3 asks anything." | `SKILL.md` | — | ☐ |
 | S-114 | "**The classification itself is identical under both modes** … Only outcome 3's question is suppressed under `unattended` … the comment is a machine action and is posted the same in both." | `SKILL.md` | — | ☐ |
-| S-115 | Why the classification is the host's — one architect runs per issue and none can see another lane's plan, so no agent in this pipeline holds the inputs | `internals` | #125 | ☐ |
+| S-115 | Why the classification is the host's — one architect runs per issue and none can see another lane's plan, so no agent in this pipeline holds the inputs | `internals` | #125 | ☑ |
 | S-116 | "**Profile Constraints**: apply them now — lanes a constraint forbids from running concurrently go into separate layers (or one is deferred), and say so." | `SKILL.md` | — | ☐ |
 | S-117 | "**Multi-PR plans**: the lane splits into sub-lanes, sequential, in the plan's order … First sub-lane branch from the branch template, later ones with the `-<area>` suffix, each based on the previous sub-lane's branch when the plan says the code depends on it, else `origin/<DEFAULT>`." | `SKILL.md` | — | ☐ |
 | S-118 | "Only lanes the user approves proceed. Drop the rest with a note." | `SKILL.md` | — | ☐ |
@@ -287,18 +295,18 @@ dropped.
 | S-134 | "A lane's subLanes array contains only THIS layer's sub-lanes — later-layer sub-lanes of the same issue go into the next layer's args." | `SKILL.md` | — | ☐ |
 | S-135 | "Build each sub-lane's `commits` from the plan's `## Commit / PR breakdown` … `ordinal` = 1-based position within the whole breakdown; `message` verbatim … Omit commits Act 0 already found in the branch's git log" | `SKILL.md` | — | ☐ |
 | S-136 | "Build each sub-lane's `ownedCriteria` from that SAME section … **Anything the plan left unlisted falls to the LAST sub-lane in plan order**" | `SKILL.md` | — | ☐ |
-| S-137 | "**This is yours in both modes, and it is decided ONCE per run, here, where lanes are built.**" and why a phase script cannot hold it | `ADR` | — | ☐ |
-| S-138 | The per-lane stage order — "writer Mode 1 per commit → on FAILED the debugger diagnoses and routes → reviewer on the sub-lane's range … → fix cycles … → the suite gate … → commit-breakdown check" | `internals` | #128 | ☐ |
-| S-139 | "The Spec axis's per-criterion verdicts are reported and never blocking … under `unattended` they are read once more at the conclusion, where the terminal-state table drafts a pull request on any verdict that is not `met`." | `internals` | #128 | ☐ |
+| S-137 | "**This is yours in both modes, and it is decided ONCE per run, here, where lanes are built.**" and why a phase script cannot hold it | `ADR` | — | ☑ ADR-0003 |
+| S-138 | The per-lane stage order — "writer Mode 1 per commit → on FAILED the debugger diagnoses and routes → reviewer on the sub-lane's range … → fix cycles … → the suite gate … → commit-breakdown check" | `internals` | #125 | ☑ |
+| S-139 | "The Spec axis's per-criterion verdicts are reported and never blocking … under `unattended` they are read once more at the conclusion, where the terminal-state table drafts a pull request on any verdict that is not `met`." | `internals` | #125 | ☑ |
 | S-140 | "Every loop is bounded and every bound, route, and ending is in contracts.md — enforce them exactly." | `deleted` | #128 | ☐ |
 | S-141 | "Each sub-lane finishes clean or ends carrying one of … two labels: **HALT** … or **FAILED** … the label explains and **decides nothing**" | `SKILL.md` | — | ☐ |
-| S-142 | "An ending ends its own sub-lane, so the lane's later sub-lanes still run and no ending kills the batch." | `internals` | #128 | ☐ |
+| S-142 | "An ending ends its own sub-lane, so the lane's later sub-lanes still run and no ending kills the batch." | `internals` | #125 | ☑ |
 | S-143 | "**KEEP each layer's transcript directory too** … a lane whose sub-lanes span layers has its records spread across one directory per layer" | `SKILL.md` | — | ☐ |
 | S-144 | "per-LANE result carries two flags Gate 2's step 4 reads and nothing else does: `crashed` … and `notified` … Each lane's arg accepts `notified` back" | `SKILL.md` | — | ☐ |
 | S-145 | "per-sub-lane result carries a `terminal` of `{pr: 'ready'\|'draft'\|'none', reasons}` … Carry it to Gate 2 unchanged … It carries no push column, because git decides that" | `SKILL.md` | — | ☐ |
 | S-146 | "Mode A needs no equivalent, and neither does a `gated` run" | `deleted` | #126 | ☐ |
 | S-147 | "The commit-breakdown check is YOUR work, not an agent's … carry the result as `<n> planned, <m> made` … A mismatch never halts the lane and never triggers a fix cycle" | `SKILL.md` | — | ☐ |
-| S-148 | Why a mismatch is never a halt — "fix cycles legitimately append commits and a writer may legitimately split one" | `internals` | #128 | ☐ |
+| S-148 | Why a mismatch is never a halt — "fix cycles legitimately append commits and a writer may legitimately split one" | `internals` | #125 | ☑ |
 | S-149 | "Between layers …: run Gate 2 for the layer's finished lanes FIRST … then ask authorization to proceed" | `SKILL.md` | — | ☐ |
 | S-150 | "The user may inspect the finished worktrees at leisure — the loop waits, and findings they raise go to the writer's Mode 2 before any dependent layer starts." | `SKILL.md` | — | ☐ |
 | S-151 | "Only after authorization, provision the next layer's worktrees (Act 2) from the completed bases." | `SKILL.md` | — | ☐ |
@@ -316,7 +324,7 @@ dropped.
 | S-158 | Step 1 — "`git -C <worktree> rev-list --count <base>..<branch>` … then `git -C <worktree> push -u origin <branch>` when the count is non-zero — **never `--force`, never `--force-with-lease`**" | `SKILL.md` | — | ☐ |
 | S-159 | Step 1 — "Zero means nothing landed … so there is nothing to push and no PR to open … under `unattended` `gh issue comment <n>` the ending's explanation first, because this is the one ending in the pipeline with no pull request to carry it." | `SKILL.md` | — | ☐ |
 | S-160 | Step 1 — "Ask git, never the reported commit list … the count settles the push AND overrides the sub-lane's proposed PR state in step 2." | `SKILL.md` | — | ☐ |
-| S-161 | Step 1 — "This is each sub-lane's ONE push: … why per-commit push is not implementable, so do not reach for it." | `ADR` | #125 | ☐ |
+| S-161 | Step 1 — "This is each sub-lane's ONE push: … why per-commit push is not implementable, so do not reach for it." | `ADR` | #125 | ☑ ADR-0007 |
 | S-162 | Step 1 — "A rejected push stops this sub-lane's conclusion here — report git's message verbatim as a **FAILED** ending … open no PR, keep that worktree, and move to the next." | `SKILL.md` | — | ☐ |
 | S-163 | Step 2 — "`gh pr create --head <branch> --base <base-branch> --title … --body …` — `<base-branch>` is `<DEFAULT>` for default-based lanes (NEVER `origin/<DEFAULT>` — gh rejects remote-tracking refs) or the stack base's branch name" | `SKILL.md` | — | ☐ |
 | S-164 | Step 2 — "Under `unattended`, **whether that command carries `--draft` is the sub-lane's `terminal.pr`** … a `none` whose count came back non-zero … opens `--draft`, never ready." | `SKILL.md` | — | ☐ |
@@ -331,10 +339,10 @@ dropped.
 | S-173 | Step 3 — "The local branch and the plan file stay" | `SKILL.md` | — | ☐ |
 | S-174 | Step 3 — "(`/dev-loop cleanup` reaps those once the PR merges)" | `cleanup` | #127 | ☐ |
 | S-175 | Step 3 — the four worktree rows: clean ⇒ removed after push and PR; ended under `unattended` ⇒ removed after push; ended under `gated` ⇒ **kept**; held or push-failed ⇒ kept | `SKILL.md` | #128 | ☐ |
-| S-176 | Step 3 — "So an `unattended` run ends with ONLY the main worktree remaining unless a removal was refused or a push failed" | `docs/dev-loop.md` | #125 | ☐ |
+| S-176 | Step 3 — "So an `unattended` run ends with ONLY the main worktree remaining unless a removal was refused or a push failed" | `docs/dev-loop.md` | #125 | ☑ |
 | S-177 | Step 3 — "**Name what the removal destroys, then remove.** … read the plan's **File touchpoints** and report every one that `git -C <wt> check-ignore -q <path>` calls ignored and that exists in the worktree" | `SKILL.md` | — | ☐ |
 | S-178 | Step 3 — "That same list is step 2's **Local-only artifacts** section" | `SKILL.md` | — | ☐ |
-| S-179 | Step 3 — "nothing is copied out and nothing is kept, because a path that must outlive its sub-lane has to be committed" | `internals` | #125 | ☐ |
+| S-179 | Step 3 — "nothing is copied out and nothing is kept, because a path that must outlive its sub-lane has to be committed" | `internals` | #125 | ☑ |
 | S-180 | Step 3 — "Never `--ignored=matching` — its every line would be the dependencies and copied-in config that provisioning put there on purpose." | `SKILL.md` | — | ☐ |
 | S-181 | Step 4 — "**⟨notify⟩ Lane conclusion.** … Per lane, not per sub-lane … and at the lane's LAST layer" | `SKILL.md` | — | ☐ |
 | S-182 | Step 4 — "**Remove the in-progress label, without exception**: finished, ended or thrown, the lane is no longer in progress." | `SKILL.md` | — | ☐ |
@@ -343,7 +351,7 @@ dropped.
 | S-185 | Step 4 — "Then **send exactly one closing message** … Unconditional, including for a lane with no PR at all" | `SKILL.md` | — | ☐ |
 | S-186 | Step 4 — "paired with Act 0's started message it is the run's dead-session signal" | `notifications.md` | #129 | ☐ |
 | S-187 | Step 4 — "A lane whose sub-lanes span layers reaches this step once, at its last. Carry its `notified` forward into the next layer's args" | `SKILL.md` | — | ☐ |
-| S-188 | Step 4 — "**What this cannot cover** is the session itself stopping … A watchdog is deliberately out of scope" | `docs/dev-loop.md` | #125 | ☐ |
+| S-188 | Step 4 — "**What this cannot cover** is the session itself stopping … A watchdog is deliberately out of scope" | `docs/dev-loop.md` | #125 | ☑ |
 | S-189 | Step 5 — "**Stack linking.** Once per BATCH, at its LAST Gate 2." | `SKILL.md` | — | ☐ |
 | S-190 | Step 5 — "**This step is identical under both modes and asks nothing**, so gate suppression does not touch it … It has no row in the suppression table because it has no question to suppress." | `SKILL.md` | — | ☐ |
 | S-191 | Step 5 — "Keep each sub-lane's PR number from step 2 as you go — the number, not the URL … read it back with `gh pr view <branch> --json number -q .number`" | `SKILL.md` | — | ☐ |
@@ -354,9 +362,9 @@ dropped.
 | S-196 | Step 5 — "Report the script's one `STACK:` line per chain … `linked` records the stack, `skipped` is the machine having no extension and is not a problem to raise, and `failed` is reported with its message and then left alone." | `SKILL.md` | — | ☐ |
 | S-197 | Step 5 — "**A `failed` is never fatal and never retried**" | `SKILL.md` | — | ☐ |
 | S-198 | Step 5 — "Never pass a branch name and never pass the ready-for-review flag" | `SKILL.md` | — | ☐ |
-| S-199 | Step 5 — why numbers rather than branch names, and why ready-for-review is never requested | `internals` | #125 | ☐ |
+| S-199 | Step 5 — why numbers rather than branch names, and why ready-for-review is never requested | `internals` | #125 | ☑ |
 | S-200 | "Stacked lanes: a lane in the bottom layer bases its PR on the trunk (`<DEFAULT>`); every layer above bases its PR on the branch of the layer below. Note the stack in the body" | `SKILL.md` | — | ☐ |
-| S-201 | "Removing a lower layer's worktree does not affect the layer above it — that layer branches from the base's _branch_, which survives worktree removal." | `internals` | #125 | ☐ |
+| S-201 | "Removing a lower layer's worktree does not affect the layer above it — that layer branches from the base's _branch_, which survives worktree removal." | `internals` | #125 | ☑ |
 | S-202 | "Ended sub-lanes: report the label …, the stage, the reason (verbatim contract lines), the diagnosis …, the attempt log in order, and the exact resume command — `/dev-loop <n>` re-derives everything." | `SKILL.md` | — | ☐ |
 
 ## A15. Act 4 — the cost log
@@ -407,7 +415,7 @@ Every rule in this section moves whole to the new skill. None is deleted and non
 | S-232 | "**Push before you remove.** A worktree is removed only after a push of its branch succeeded" | `SKILL.md` | — | ☐ |
 | S-233 | "A lane worktree is a cold checkout plus its `.worktreeinclude` files and whatever the Setup command installs. Everything else an agent needs … it already has" | `SKILL.md` | — | ☐ |
 | S-234 | "**Never halt, warn, or change a lane's behaviour because of what it costs.** … No argument, profile key or ending unlocks this." | `SKILL.md` | — | ☐ |
-| S-235 | "contracts.md carries why a ceiling could not work and why a lane is already bounded without one" | `ADR` | #125 | ☐ |
+| S-235 | "contracts.md carries why a ceiling could not work and why a lane is already bounded without one" | `ADR` | #125 | ☑ ADR-0005 |
 | S-236 | "Never run agents for work you can do with one Bash command (provisioning, pushing), and never do agent work (planning, coding, reviewing) yourself." | `SKILL.md` | — | ☐ |
 | S-237 | "Plan paths passed to agents are always ABSOLUTE." | `SKILL.md` | — | ☐ |
 | S-238 | "If the session dies mid-run, `/dev-loop <same issues>` resumes from artifacts — do not keep separate state files." | `SKILL.md` | — | ☐ |
@@ -437,8 +445,8 @@ contract that can disagree with it is the drift `#121` names.
 
 | ID | Rule | → | By | ✓ |
 |---|---|---|---|---|
-| C-5 | The five-row roles table — architect, writer, reviewer, debugger, suite gate — with each role's product and whether it mutates the repo | `internals` | #125 | ☐ |
-| C-6 | "**The Agent column names each role's definition, not the string that dispatches it.**" — bare when linked, namespaced when the plugin is installed | `internals` | #125 | ☐ |
+| C-5 | The five-row roles table — architect, writer, reviewer, debugger, suite gate — with each role's product and whether it mutates the repo | `internals` | #125 | ☑ |
+| C-6 | "**The Agent column names each role's definition, not the string that dispatches it.**" — bare when linked, namespaced when the plugin is installed | `internals` | #125 | ☑ |
 | C-7 | "**A role is therefore always resolved against a namespace and never written as a literal.**" | `SKILL.md` | — | ☐ |
 | C-8 | "The namespace is discovered once, at intake, by reading the roster the host already has in front of it" | `SKILL.md` | — | ☐ |
 | C-9 | "Mode A resolves it implicitly … Mode W cannot: a workflow script sees no registry." | `deleted` | #126 | ☐ |
@@ -461,8 +469,8 @@ goes, and the reasoning (`C-13`, `C-14`) lands in an ADR.
 | ID | Rule | → | By | ✓ |
 |---|---|---|---|---|
 | C-15 | The five-row Receives / Reads / Returns table | `agents/` | #128 | ☐ |
-| C-16 | "The pipeline passes references rather than content wherever a reference is enough, so the cost lives in the reads" | `internals` | #125 | ☐ |
-| C-17 | "The suite gate is the one stage that reads nothing … That is what makes it the cheapest stage in the pipeline." | `internals` | #125 | ☐ |
+| C-16 | "The pipeline passes references rather than content wherever a reference is enough, so the cost lives in the reads" | `internals` | #125 | ☑ |
+| C-17 | "The suite gate is the one stage that reads nothing … That is what makes it the cheapest stage in the pipeline." | `internals` | #125 | ☑ |
 | C-18 | "The architect alone sweeps the context documents and decision records … the plan's Hard constraints section is the only channel by which anything living in those documents reaches the writer" | `agents/` | #128 | ☐ |
 | C-19 | "The architect's summary bullets are lane state, not gate state" | `SKILL.md` | — | ☐ |
 
@@ -475,9 +483,9 @@ goes, and the reasoning (`C-13`, `C-14`) lands in an ADR.
 | C-22 | **reviewer** — `VERDICT` + `FINDINGS` + `CONTESTED` + `CRITERIA` (one verdict per criterion **the sub-lane owns**) + `NOTES`; "Zero findings ⇒ APPROVED, whatever the criterion verdicts say." | `agents/` | #128 | ☐ |
 | C-23 | **debugger** — `ROOT-CAUSE` + `OWNER: code-writer\|replan\|user\|retry` + `CONFIDENCE` + `REPRODUCED`; two routing values and two reporting values | `agents/` | #128 | ☐ |
 | C-24 | **suite gate** — `STATE` + `FAILING` + `OUTPUT`; "It is the one role with no agent definition to carry that format, so whichever mode dispatches it states the format itself" | `script` | #128 | ☐ |
-| C-25 | **DIED** — "the call came back with nothing usable … Every DIED ends its sub-lane **FAILED** … an architect DIED is reported at Gate 1 with a re-run offer instead." | `internals` | #125 | ☐ |
+| C-25 | **DIED** — "the call came back with nothing usable … Every DIED ends its sub-lane **FAILED** … an architect DIED is reported at Gate 1 with a re-run offer instead." | `internals` | #125 | ☑ |
 | C-26 | "**A stage that returned nothing is reported as exactly that, and never as an agent that died.**" | `script` | #128 | ☐ |
-| C-27 | "**The ending label is unchanged, and reclassifying a transient break is not to be re-proposed.** It stays **FAILED**, because that label answers exactly one question — *is this worth retrying?*" | `ADR` | #125 | ☐ |
+| C-27 | "**The ending label is unchanged, and reclassifying a transient break is not to be re-proposed.** It stays **FAILED**, because that label answers exactly one question — *is this worth retrying?*" | `ADR` | #125 | ☑ ADR-0006 |
 | C-28 | "**A lane that throws is the same rule reaching the case it did not cover.** … each lane's work is wrapped once, and a throw is caught and turned into a **FAILED** ending naming the issue" | `script` | #128 | ☐ |
 | C-29 | "This is **mode-neutral**: a lane vanishing is a bug under `gated` too" | `deleted` | #126 | ☐ |
 
@@ -485,53 +493,53 @@ goes, and the reasoning (`C-13`, `C-14`) lands in an ADR.
 
 | ID | Rule | → | By | ✓ |
 |---|---|---|---|---|
-| C-30 | "**bound: 2 debug+fix attempts**" and the four numbered steps, including the OWNER routing (`retry` / `code-writer` / `replan` or `user`) | `internals` | #125 | ☐ |
-| C-31 | "The writer call of the **final permitted** debug+fix attempt, and no earlier one, carries one extra instruction: … commit what exists as `wip(<scope>): #<n> - commit <k> FAILED - <reason>` and return `FAILED` anyway." | `internals` | #125 | ☐ |
-| C-32 | "It is evidence, not work — listed among the sub-lane's commits so the human sees it, excluded from the made count" | `internals` | #125 | ☐ |
-| C-33 | "The instruction does not exempt that commit from the writer's own pre-commit hooks … nothing downstream may assume the commit exists: the push decision asks git whether the branch is ahead of its base" | `internals` | #125 | ☐ |
-| C-34 | Why the implement loop keeps a flat bound where the review loop is progress-sensitive — the give-up clause must know at dispatch time that an attempt is the last | `ADR` | #125 | ☐ |
+| C-30 | "**bound: 2 debug+fix attempts**" and the four numbered steps, including the OWNER routing (`retry` / `code-writer` / `replan` or `user`) | `internals` | #125 | ☑ |
+| C-31 | "The writer call of the **final permitted** debug+fix attempt, and no earlier one, carries one extra instruction: … commit what exists as `wip(<scope>): #<n> - commit <k> FAILED - <reason>` and return `FAILED` anyway." | `internals` | #125 | ☑ |
+| C-32 | "It is evidence, not work — listed among the sub-lane's commits so the human sees it, excluded from the made count" | `internals` | #125 | ☑ |
+| C-33 | "The instruction does not exempt that commit from the writer's own pre-commit hooks … nothing downstream may assume the commit exists: the push decision asks git whether the branch is ahead of its base" | `internals` | #125 | ☑ |
+| C-34 | Why the implement loop keeps a flat bound where the review loop is progress-sensitive — the give-up clause must know at dispatch time that an attempt is the last | `ADR` | #125 | ☑ ADR-0002 |
 
 ## B6. Review loop
 
 | ID | Rule | → | By | ✓ |
 |---|---|---|---|---|
-| C-35 | "**bound: progress-sensitive, under a hard ceiling of 5 fix cycles**" and the six numbered steps | `internals` | #125 | ☐ |
-| C-36 | "On the sub-lane's exact range `<base>..<branch>` (the base may itself be a stacked feature branch — never review the base's own commits)" | `internals` | #125 | ☐ |
-| C-37 | "**Which criteria a sub-lane owns is a fact the plan states and the host applies**, never a judgement the reviewer makes at review time … Criteria the plan left unlisted fall to the **last sub-lane in plan order**" | `ADR` | — | ☐ |
+| C-35 | "**bound: progress-sensitive, under a hard ceiling of 5 fix cycles**" and the six numbered steps | `internals` | #125 | ☑ |
+| C-36 | "On the sub-lane's exact range `<base>..<branch>` (the base may itself be a stacked feature branch — never review the base's own commits)" | `internals` | #125 | ☑ |
+| C-37 | "**Which criteria a sub-lane owns is a fact the plan states and the host applies**, never a judgement the reviewer makes at review time … Criteria the plan left unlisted fall to the **last sub-lane in plan order**" | `ADR` | — | ☑ ADR-0003 |
 | C-38 | "The reviewer judges every criterion it owns against its own range … an owned criterion it cannot find is **`not-met`**. It receives the issue body verbatim and whole regardless" | `agents/` | #128 | ☐ |
-| C-39 | "the counter **advances by one unless a previously unseen finding appeared** — a new finding resets it to 1. At the repository profile's **Fix cycles** value the loop stops." | `internals` | #125 | ☐ |
-| C-40 | The two worked traces — the stuck case stopping at count 2, and the three-productive-cycles case resetting | `internals` | #125 | ☐ |
-| C-41 | "**The counter starts at 1, not 0** … So the threshold is a **position the counter reaches** … It follows that `1` behaves as `0` does" | `internals` | #125 | ☐ |
-| C-42 | "A hard ceiling of 5 fix cycles applies regardless of progress … It is stated here and held as a constant in the phase script, and the two are compared by a drift check" | `internals` | #125 | ☐ |
-| C-43 | "**Expect this to behave as a flat bound of 5 on most runs.** … so that nobody later 'fixes' the counter for not advancing." | `ADR` | #125 | ☐ |
-| C-44 | "The ceiling being 5 where the suite gate's is 8 encodes cost: a review cycle dispatches the two dearest agents in the pipeline" | `ADR` | #125 | ☐ |
-| C-45 | "Two findings match when their **file and defect clause** match once normalised, **with the line number dropped** … Nothing else in a finding is compared" | `internals` | #125 | ☐ |
-| C-46 | "The comparison is deliberately conservative. Declaring two findings the same is what ends the loop early" | `internals` | #125 | ☐ |
+| C-39 | "the counter **advances by one unless a previously unseen finding appeared** — a new finding resets it to 1. At the repository profile's **Fix cycles** value the loop stops." | `internals` | #125 | ☑ |
+| C-40 | The two worked traces — the stuck case stopping at count 2, and the three-productive-cycles case resetting | `internals` | #125 | ☑ |
+| C-41 | "**The counter starts at 1, not 0** … So the threshold is a **position the counter reaches** … It follows that `1` behaves as `0` does" | `internals` | #125 | ☑ |
+| C-42 | "A hard ceiling of 5 fix cycles applies regardless of progress … It is stated here and held as a constant in the phase script, and the two are compared by a drift check" | `internals` | #125 | ☑ |
+| C-43 | "**Expect this to behave as a flat bound of 5 on most runs.** … so that nobody later 'fixes' the counter for not advancing." | `ADR` | #125 | ☑ ADR-0002 |
+| C-44 | "The ceiling being 5 where the suite gate's is 8 encodes cost: a review cycle dispatches the two dearest agents in the pipeline" | `ADR` | #125 | ☑ ADR-0002 |
+| C-45 | "Two findings match when their **file and defect clause** match once normalised, **with the line number dropped** … Nothing else in a finding is compared" | `internals` | #125 | ☑ |
+| C-46 | "The comparison is deliberately conservative. Declaring two findings the same is what ends the loop early" | `internals` | #125 | ☑ |
 | C-47 | "**It is the host's own arithmetic, in plain code, and no agent is dispatched to do it** … The reviewer's return contract is unchanged" | `script` | #128 | ☐ |
-| C-48 | "When the loop ends on either bound, the ending reason names **which bound fired** and states, per round, whether it brought previously-unseen findings or repeated prior ones." | `internals` | #125 | ☐ |
-| C-49 | "The `CRITERIA` verdicts pass straight through this loop untouched — the spec axis is **reported and never blocking** … and, under `unattended`, in the terminal-state table, which is the one place a verdict decides anything at all." | `internals` | #125 | ☐ |
+| C-48 | "When the loop ends on either bound, the ending reason names **which bound fired** and states, per round, whether it brought previously-unseen findings or repeated prior ones." | `internals` | #125 | ☑ |
+| C-49 | "The `CRITERIA` verdicts pass straight through this loop untouched — the spec axis is **reported and never blocking** … and, under `unattended`, in the terminal-state table, which is the one place a verdict decides anything at all." | `internals` | #125 | ☑ |
 
 ## B7. Suite gate
 
 | ID | Rule | → | By | ✓ |
 |---|---|---|---|---|
-| C-50 | "**bound: 8 rounds, and 2 rounds without a previously unseen failure**" | `internals` | #125 | ☐ |
-| C-51 | "**Once per sub-lane, not once per lane.** … every PR carries its own suite result." | `internals` | #125 | ☐ |
-| C-52 | "**The command is configuration, never discovery.** … With no command the gate reports **not run** and dispatches nothing to say so" | `internals` | #125 | ☐ |
+| C-50 | "**bound: 8 rounds, and 2 rounds without a previously unseen failure**" | `internals` | #125 | ☑ |
+| C-51 | "**Once per sub-lane, not once per lane.** … every PR carries its own suite result." | `internals` | #125 | ☑ |
+| C-52 | "**The command is configuration, never discovery.** … With no command the gate reports **not run** and dispatches nothing to say so" | `internals` | #125 | ☑ |
 | C-53 | "**The agent is a plain subagent with no persona and deliberately no agent type**, at the cheapest model and the lowest effort … It is given a label, so it appears by name in the progress display" | `script` | #128 | ☐ |
-| C-54 | Why the suite gate has **no agent definition** while the notifier has one — the asymmetry, recorded so it is not later "fixed" | `internals` | #125 | ☐ |
-| C-55 | "**Position: after the review loop, before the conclusion.** … A sub-lane whose review loop already ended it never reaches the gate" | `internals` | #125 | ☐ |
-| C-56 | "**A red suite is diagnosed, not handed straight to the writer** … A red result routes to the **debugger**" and the three reused routes | `internals` | #125 | ☐ |
-| C-57 | "Ordinary review findings still go straight to the writer: they already arrive with a failure scenario and a suggested fix" | `internals` | #125 | ☐ |
-| C-58 | "Accepted cost, recorded rather than solved: the fix commits a red suite produces land **after** the review loop has closed, so a lane's final commits are never reviewed." | `internals` | #125 | ☐ |
-| C-59 | The round counter and its two traces, plus "A hard ceiling of **8** rounds applies regardless of progress … Both bounds are checked before the round's debugger is dispatched" | `internals` | #125 | ☐ |
-| C-60 | The gate's four endings and their labels — counter at 2 or the 8-round ceiling ⇒ HALT; `replan`/`user` ⇒ HALT; a writer `BLOCKED` ⇒ HALT, `FAILED` or nothing ⇒ FAILED; the gate or debugger returning nothing ⇒ FAILED | `internals` | #125 | ☐ |
+| C-54 | Why the suite gate has **no agent definition** while the notifier has one — the asymmetry, recorded so it is not later "fixed" | `internals` | #125 | ☑ |
+| C-55 | "**Position: after the review loop, before the conclusion.** … A sub-lane whose review loop already ended it never reaches the gate" | `internals` | #125 | ☑ |
+| C-56 | "**A red suite is diagnosed, not handed straight to the writer** … A red result routes to the **debugger**" and the three reused routes | `internals` | #125 | ☑ |
+| C-57 | "Ordinary review findings still go straight to the writer: they already arrive with a failure scenario and a suggested fix" | `internals` | #125 | ☑ |
+| C-58 | "Accepted cost, recorded rather than solved: the fix commits a red suite produces land **after** the review loop has closed, so a lane's final commits are never reviewed." | `internals` | #125 | ☑ |
+| C-59 | The round counter and its two traces, plus "A hard ceiling of **8** rounds applies regardless of progress … Both bounds are checked before the round's debugger is dispatched" | `internals` | #125 | ☑ |
+| C-60 | The gate's four endings and their labels — counter at 2 or the 8-round ceiling ⇒ HALT; `replan`/`user` ⇒ HALT; a writer `BLOCKED` ⇒ HALT, `FAILED` or nothing ⇒ FAILED; the gate or debugger returning nothing ⇒ FAILED | `internals` | #125 | ☑ |
 
 ## B8. Commit-breakdown check
 
 | ID | Rule | → | By | ✓ |
 |---|---|---|---|---|
-| C-61 | "the host compares two lists it already holds … This is a list diff in plain code — no agent is dispatched to notice it, and none is paid to." | `internals` | #125 | ☐ |
+| C-61 | "the host compares two lists it already holds … This is a list diff in plain code — no agent is dispatched to notice it, and none is paid to." | `internals` | #125 | ☑ |
 | C-62 | "The result is carried as `<n> planned, <m> made`, both scoped to the ordinals this run was asked to make … A mismatch is **reported and never blocks**" | `SKILL.md` | — | ☐ |
 
 ## B9. HALT and FAILED
@@ -540,8 +548,8 @@ goes, and the reasoning (`C-13`, `C-14`) lands in an ADR.
 |---|---|---|---|---|
 | C-63 | "one question selects it: **did something deliberately stop, or did something break?**" — HALT and FAILED defined | `SKILL.md` | #128 | ☐ |
 | C-64 | "**The label decides nothing.** Nothing in this pipeline branches on it" | `SKILL.md` | #128 | ☐ |
-| C-65 | "**An ending ends its sub-lane, not its lane.** … The lane's own label is a roll-up for reporting only — `FAILED` if any sub-lane ended `FAILED`, else `HALT` if any ended `HALT`, else clean." | `internals` | #125 | ☐ |
-| C-66 | "**A sub-lane runs no stage after the one that ended it**, with no exceptions to remember" | `internals` | #125 | ☐ |
+| C-65 | "**An ending ends its sub-lane, not its lane.** … The lane's own label is a roll-up for reporting only — `FAILED` if any sub-lane ended `FAILED`, else `HALT` if any ended `HALT`, else clean." | `internals` | #125 | ☑ |
+| C-66 | "**A sub-lane runs no stage after the one that ended it**, with no exceptions to remember" | `internals` | #125 | ☑ |
 | C-67 | "Every loop above is bounded — nothing retries indefinitely — and no ending kills the batch. Every ending reports its label, its stage, the verbatim contract lines that produced it, its attempt log, and the exact resume command" | `SKILL.md` | — | ☐ |
 | C-68 | "A lane whose base lane ended — or was held by the user — never runs at all, so it ends **HALT** with that reason." | `SKILL.md` | — | ☐ |
 
@@ -550,8 +558,8 @@ goes, and the reasoning (`C-13`, `C-14`) lands in an ADR.
 | ID | Rule | → | By | ✓ |
 |---|---|---|---|---|
 | C-69 | "**No lane halts, warns, or changes its behaviour because of what it costs.** There is no token ceiling, no per-lane budget and no cost-triggered ending anywhere in this pipeline" | `SKILL.md` | #128 | ☐ |
-| C-70 | "A ceiling was specified once and dropped, because it could not work." — the budget total is unset unless a human typed a directive; the spend figure is turn-wide; it counts output tokens; the transcripts are unreachable from a workflow script | `ADR` | #125 | ☐ |
-| C-71 | "**It was also unnecessary, and this is the load-bearing half.** A lane is already bounded in agent invocations from five directions" | `ADR` | #125 | ☐ |
+| C-70 | "A ceiling was specified once and dropped, because it could not work." — the budget total is unset unless a human typed a directive; the spend figure is turn-wide; it counts output tokens; the transcripts are unreachable from a workflow script | `ADR` | #125 | ☑ ADR-0005 |
+| C-71 | "**It was also unnecessary, and this is the load-bearing half.** A lane is already bounded in agent invocations from five directions" | `ADR` | #125 | ☑ ADR-0005 |
 
 `C-69` is the second duplicate #121 names: `SKILL.md`'s copy (`S-234`) stays and this one goes, with
 the reasoning to an ADR.
@@ -561,8 +569,8 @@ the reasoning to an ADR.
 | ID | Rule | → | By | ✓ |
 |---|---|---|---|---|
 | C-72 | "**the only branch point in this file** … Every other section of this contract is single-version" | `deleted` | #126 | ☐ |
-| C-73 | The gated / unattended table — Push, Pull request, Explanation | `internals` | #125 | ☐ |
-| C-74 | "The explanation is identical in both: what stopped or what broke, its stage, the diagnosis …, and the attempt log in order. Mode changes where it is written, never what it says." | `internals` | #125 | ☐ |
+| C-73 | The gated / unattended table — Push, Pull request, Explanation | `internals` | #125 | ☑ |
+| C-74 | "The explanation is identical in both: what stopped or what broke, its stage, the diagnosis …, and the attempt log in order. Mode changes where it is written, never what it says." | `internals` | #125 | ☑ |
 | C-75 | "**One exception, and only one.** A sub-lane where nothing landed at all … has no branch ahead of its base … This is the only ending in the pipeline that opens no pull request." | `SKILL.md` | — | ☐ |
 | C-76 | **gated** — "A clean sub-lane reaches Gate 2 for push/PR approval … an ended sub-lane is *offered* there rather than pushed around it" and the human's arbitration of contested findings | `SKILL.md` | — | ☐ |
 | C-77 | "Gate 2 for a layer fires before the next layer is provisioned, so a dependent layer is never built on a base the human has not vetted." | `SKILL.md` | — | ☐ |
@@ -576,9 +584,9 @@ the reasoning to an ADR.
 | C-80 | "A sub-lane's branch reaches the remote exactly once, and never before its own work is finished." | `SKILL.md` | — | ☐ |
 | C-81 | "**The push is guarded on the branch being ahead of its base, read from git.**" | `SKILL.md` | — | ☐ |
 | C-82 | "**Never a force-push, in either mode.** … A rejected push stops that sub-lane's conclusion where it stands: no pull request is created, the worktree is **kept**, and git's own message is reported verbatim. It is reported **FAILED**" | `SKILL.md` | — | ☐ |
-| C-83 | "In a repository whose habit is to rebase, the commonest real cause is a human having rebased or amended inside the lane's worktree while it ran." | `internals` | #125 | ☐ |
-| C-84 | "**Per-commit push is not implementable, and is not to be re-proposed.**" — the whole commit loop runs inside one workflow call and a workflow script has no shell | `ADR` | #125 | ☐ |
-| C-85 | "**Accepted cost, recorded rather than solved.** This version is always one layer, so the end of a layer is the end of the run" | `internals` | #125 | ☐ |
+| C-83 | "In a repository whose habit is to rebase, the commonest real cause is a human having rebased or amended inside the lane's worktree while it ran." | `internals` | #125 | ☑ |
+| C-84 | "**Per-commit push is not implementable, and is not to be re-proposed.**" — the whole commit loop runs inside one workflow call and a workflow script has no shell | `ADR` | #125 | ☑ ADR-0007 |
+| C-85 | "**Accepted cost, recorded rather than solved.** This version is always one layer, so the end of a layer is the end of the run" | `internals` | #125 | ☑ |
 
 ## B13. Stack linking
 
@@ -588,9 +596,9 @@ the reasoning to an ADR.
 | C-87 | "**One call per chain, not one per batch.** … the host walks each maximal chain of the base relation and links that chain. A chain of **fewer than two** pull requests is not a stack and is skipped" | `SKILL.md` | #128 | ☐ |
 | C-88 | "**A gap in a chain is shown, never closed up.** … the walk **stops at a sub-lane with no pull request**" | `SKILL.md` | #128 | ☐ |
 | C-89 | "**The pull requests are identified by number, bottom to top.** Never by branch name." | `SKILL.md` | #128 | ☐ |
-| C-90 | Why branch names would make the tool a second, competing author — it would push, open its own pull requests, and overwrite the title, body and `Closes #<n>` | `internals` | #125 | ☐ |
+| C-90 | Why branch names would make the tool a second, competing author — it would push, open its own pull requests, and overwrite the title, body and `Closes #<n>` | `internals` | #125 | ☑ |
 | C-91 | "**Ready-for-review is never requested.** … a batch-wide flag applied at link time would override every one of those decisions from the wrong place" | `SKILL.md` | #128 | ☐ |
-| C-92 | "**No local state, in either direction.** … Linked worktrees share one common git directory, so any command that *did* keep local stack state would have every concurrent lane racing over the same files" | `internals` | #125 | ☐ |
+| C-92 | "**No local state, in either direction.** … Linked worktrees share one common git directory, so any command that *did* keep local stack state would have every concurrent lane racing over the same files" | `internals` | #125 | ☑ |
 | C-93 | "**A machine without the tool behaves exactly as it does today.** … No gate checks for it, no precondition asks about it, no run fails or prompts for want of it" | `SKILL.md` | #128 | ☐ |
 | C-94 | "**A failed link is reported and costs nothing else.** … Losing the stack never costs the run the work." | `SKILL.md` | #128 | ☐ |
 | C-95 | "Neither mode is exempt and neither differs: this subsection is single-version" | `deleted` | #126 | ☐ |
@@ -603,26 +611,26 @@ the reasoning to an ADR.
 | C-97 | The five-row state table — concluded clean, ended unattended, ended gated, held at Gate 2, removal refused | `SKILL.md` | #128 | ☐ |
 | C-98 | "**Push succeeds first, remove second.** … Nothing removes a worktree it did not just watch a push succeed for." | `SKILL.md` | #128 | ☐ |
 | C-99 | "**A dirty worktree keeps itself.** … that refusal *is* the guard — the pipeline never passes `--force`, so it can never talk its way past one." | `SKILL.md` | #128 | ☐ |
-| C-100 | "The invariant's **second** condition is what keeps a `gated` ended sub-lane's worktree" | `internals` | #125 | ☐ |
-| C-101 | "The held row falls out of the **first** condition rather than needing a rule of its own" | `internals` | #125 | ☐ |
+| C-100 | "The invariant's **second** condition is what keeps a `gated` ended sub-lane's worktree" | `internals` | #125 | ☑ |
+| C-101 | "The held row falls out of the **first** condition rather than needing a rule of its own" | `internals` | #125 | ☑ |
 | C-102 | "**The main worktree is never a removal candidate** — not under any state above, in either mode, and not in cleanup mode either." | `SKILL.md` | #128 | ☐ |
-| C-103 | "A removed worktree is not lost work **for anything tracked**: a resumed lane re-provisions from the branch" | `internals` | #125 | ☐ |
+| C-103 | "A removed worktree is not lost work **for anything tracked**: a resumed lane re-provisions from the branch" | `internals` | #125 | ☑ |
 | C-104 | "**Removal destroys the worktree's ignored files, deliberately — and says which ones first.**" | `SKILL.md` | #128 | ☐ |
-| C-105 | The rejected alternatives — keeping the worktree strands one per sub-lane, and copying the files back writes throwaway output into the main checkout | `internals` | #125 | ☐ |
-| C-106 | "A path that must outlive its sub-lane is committed. Being tracked is what makes it survive, and it is also what takes it off this list." | `internals` | #125 | ☐ |
+| C-105 | The rejected alternatives — keeping the worktree strands one per sub-lane, and copying the files back writes throwaway output into the main checkout | `internals` | #125 | ☑ |
+| C-106 | "A path that must outlive its sub-lane is committed. Being tracked is what makes it survive, and it is also what takes it off this list." | `internals` | #125 | ☑ |
 | C-107 | "An architect writing a plan applies the same rule in advance — a gitignored touchpoint is named as work the sub-lane does, never as a deliverable" | `agents/` | #128 | ☐ |
 
 ## B15. The terminal-state table
 
 | ID | Rule | → | By | ✓ |
 |---|---|---|---|---|
-| C-108 | The seven-row table — clean; suite not-run with nothing open; open findings; suite still red; a criterion not met; ended with commits; ended with nothing landed | `internals` | #125 | ☐ |
-| C-109 | "**The ready predicate is one expression**: the sub-lane **concluded clean**, and its **findings are resolved**, and the **suite passed or did not run**, and **every acceptance criterion the sub-lane owns is met**." | `internals` | #125 | ☐ |
-| C-110 | "It is written as that four-way conjunction and not reduced to the shortest expression equivalent to it today." | `internals` | #125 | ☐ |
-| C-111 | "**An ended sub-lane is never ready**, whatever its ledger says." | `internals` | #125 | ☐ |
-| C-112 | "**A `partial` criterion drafts alongside a `not-met` one.** Nobody watched the run, so 'not demonstrably done' defaults to draft" | `internals` | #125 | ☐ |
-| C-113 | "A draft is the honest signal that the pipeline could not finish its own job, and one rule covers all four exhaustion paths" | `internals` | #125 | ☐ |
-| C-114 | "**Work that exists stays reviewable.** … Work that does not exist opens nothing — the last row, and a narrow case" | `internals` | #125 | ☐ |
+| C-108 | The seven-row table — clean; suite not-run with nothing open; open findings; suite still red; a criterion not met; ended with commits; ended with nothing landed | `internals` | #125 | ☑ |
+| C-109 | "**The ready predicate is one expression**: the sub-lane **concluded clean**, and its **findings are resolved**, and the **suite passed or did not run**, and **every acceptance criterion the sub-lane owns is met**." | `internals` | #125 | ☑ |
+| C-110 | "It is written as that four-way conjunction and not reduced to the shortest expression equivalent to it today." | `internals` | #125 | ☑ |
+| C-111 | "**An ended sub-lane is never ready**, whatever its ledger says." | `internals` | #125 | ☑ |
+| C-112 | "**A `partial` criterion drafts alongside a `not-met` one.** Nobody watched the run, so 'not demonstrably done' defaults to draft" | `internals` | #125 | ☑ |
+| C-113 | "A draft is the honest signal that the pipeline could not finish its own job, and one rule covers all four exhaustion paths" | `internals` | #125 | ☑ |
+| C-114 | "**Work that exists stays reviewable.** … Work that does not exist opens nothing — the last row, and a narrow case" | `internals` | #125 | ☑ |
 | C-115 | "**Every row is decided per sub-lane, from that sub-lane's own inputs.** … one sub-lane's draft never drafts another's." | `script` | #128 | ☐ |
 | C-116 | "**The pipeline sets state only on pull requests it created** … The PR-comment input therefore needs no rule of its own here" | `SKILL.md` | — | ☐ |
 | C-117 | "**Git is the authority on the Push column.** … Nothing ahead ⇒ the last row, whatever was proposed." | `SKILL.md` | — | ☐ |
@@ -633,8 +641,8 @@ the reasoning to an ADR.
 |---|---|---|---|---|
 | C-118 | The ledger's categories — fixed, won't-fix, arbitrated, acceptance criteria, reviewer NOTES, review trajectory, suite, attempt log | `SKILL.md` | #128 | ☐ |
 | C-119 | "**arbitrated** … Always empty under unattended mode, where nobody rules — no conditional needed." | `SKILL.md` | #128 | ☐ |
-| C-120 | "**attempt log** — everything the pipeline did *after* something first went wrong, in order … Stages that worked are already in the commit list … Recorded on every sub-lane and rendered only on one that ended" | `internals` | #125 | ☐ |
-| C-121 | "**review trajectory** … Recorded on every sub-lane and rendered only where a bound ended one, like the attempt log." | `internals` | #125 | ☐ |
+| C-120 | "**attempt log** — everything the pipeline did *after* something first went wrong, in order … Stages that worked are already in the commit list … Recorded on every sub-lane and rendered only on one that ended" | `internals` | #125 | ☑ |
+| C-121 | "**review trajectory** … Recorded on every sub-lane and rendered only where a bound ended one, like the attempt log." | `internals` | #125 | ☑ |
 
 ## B17. The whole-issue roll-up
 
@@ -642,7 +650,7 @@ the reasoning to an ADR.
 |---|---|---|---|---|
 | C-122 | "The **last sub-lane of a lane** therefore carries, in its pull request body beneath its own criteria section, every acceptance criterion of the issue with its verdict and the sub-lane that judged it." | `profile` | #129 | ☐ |
 | C-123 | "**The host assembles it from sub-lane records it already holds**, so no agent is dispatched and no stage is added to any loop." | `SKILL.md` | — | ☐ |
-| C-124 | "**It is reporting only.** It feeds no predicate, changes no terminal-state row, and decides nothing" | `internals` | #125 | ☐ |
+| C-124 | "**It is reporting only.** It feeds no predicate, changes no terminal-state row, and decides nothing" | `internals` | #125 | ☑ |
 | C-125 | "**Omitted on a lane with a single sub-lane**, where the whole issue is that sub-lane's and the roll-up would repeat the section above it verbatim." | `profile` | #129 | ☐ |
 | C-126 | "Single-version: both execution modes compose it identically, because the pull request body is the host's in both." | `deleted` | #126 | ☐ |
 
@@ -650,7 +658,7 @@ the reasoning to an ADR.
 
 | ID | Rule | → | By | ✓ |
 |---|---|---|---|---|
-| C-127 | "Lanes run in parallel. Within a lane: sub-lanes sequential, and within a sub-lane: plan commits sequential → review loop → suite gate → commit-breakdown check … The breakdown check stays last so that it counts whatever the gate appended." | `internals` | #125 | ☐ |
+| C-127 | "Lanes run in parallel. Within a lane: sub-lanes sequential, and within a sub-lane: plan commits sequential → review loop → suite gate → commit-breakdown check … The breakdown check stays last so that it counts whatever the gate appended." | `internals` | #125 | ☑ |
 | C-128 | "**Layers and stacks are different shapes, and the pipeline has both.**" — a layer is horizontal, a stack vertical, with a trunk, a bottom and a top | `SKILL.md` | — | ☐ |
 | C-129 | "**The layer rule**: anything based on the trunk runs in **layer 1**; anything based on a branch that receives its commits in **layer N** runs in **layer N+1**." | `SKILL.md` | — | ☐ |
 
@@ -660,20 +668,20 @@ the reasoning to an ADR.
 |---|---|---|---|---|
 | C-130 | The three-outcome table with its Outcome / What it is / Layer / Based on / Dependency claimed columns | `SKILL.md` | #128 | ☐ |
 | C-131 | "**The classification is the host's own work, in plain reading, and no agent is dispatched to do it.**" | `SKILL.md` | #128 | ☐ |
-| C-132 | "**Additive co-touch stays parallel and accepts the rebase.** … Serialising them would cost a whole layer of wall-clock to avoid that." | `internals` | #125 | ☐ |
+| C-132 | "**Additive co-touch stays parallel and accepts the rebase.** … Serialising them would cost a whole layer of wall-clock to avoid that." | `internals` | #125 | ☑ |
 | C-133 | "**The line between the first two outcomes is the repository's to move, and only that line** … in the **Overlapping changes** section of its `.claude/rules/pr-separation.md`" | `SKILL.md` | #128 | ☐ |
 | C-134 | The declaration table — `additive` (the default), `strict`, `parallel`, and where each puts the line | `SKILL.md` | #128 | ☐ |
 | C-135 | "**A real dependency is never declarable and never moves.** … the alternative is a pull request that does not build against its base." | `SKILL.md` | #128 | ☐ |
-| C-136 | "`parallel` is the one value that ships a known conflict rather than avoiding one … it is not the default for the same reason it is not free." | `internals` | #125 | ☐ |
+| C-136 | "`parallel` is the one value that ships a known conflict rather than avoiding one … it is not the default for the same reason it is not free." | `internals` | #125 | ☑ |
 | C-137 | "The declaration reaches the host ambiently: project rules load at launch, so no step fetches this file and no profile key mirrors it." | `SKILL.md` | #128 | ☐ |
 | C-138 | "**The last two outcomes are physically identical and differ in what they claim.**" | `SKILL.md` | #128 | ☐ |
-| C-139 | "That distinction is the point of having three outcomes rather than two." — collapsing either way loses something real | `internals` | #125 | ☐ |
+| C-139 | "That distinction is the point of having three outcomes rather than two." — collapsing either way loses something real | `internals` | #125 | ☑ |
 | C-140 | "**A same-region co-touch says so where a human can see it.** … sequenced to avoid a textual conflict, not because one lane needs the other" | `SKILL.md` | #128 | ☐ |
-| C-141 | "Sequencing a same-region co-touch is what *avoids* the conflict rather than merely deferring it" | `internals` | #125 | ☐ |
+| C-141 | "Sequencing a same-region co-touch is what *avoids* the conflict rather than merely deferring it" | `internals` | #125 | ☑ |
 | C-142 | "an unattended run performs the same intersection over the same File touchpoints, applies the same three outcomes, and reaches the same layer assignment … **The dependency case takes the option the supervised path already marks recommended: B is stacked on A.**" | `SKILL.md` | #128 | ☐ |
-| C-143 | "**The defer remedy is absent, and this is the reason rather than an oversight.** … deferring a lane the developer explicitly asked for would silently return less work than was requested." | `internals` | #125 | ☐ |
+| C-143 | "**The defer remedy is absent, and this is the reason rather than an oversight.** … deferring a lane the developer explicitly asked for would silently return less work than was requested." | `internals` | #125 | ☑ |
 | C-144 | "**The discovered-blocker comment is posted identically.** … The same-region outcome still posts nothing" | `SKILL.md` | #128 | ☐ |
-| C-145 | "**Two accepted costs, recorded rather than solved.**" — a misclassified dependency surfaces as a red suite or failed writer in B's lane; a same-region co-touch read as additive conflicts at merge time | `internals` | #125 | ☐ |
+| C-145 | "**Two accepted costs, recorded rather than solved.**" — a misclassified dependency surfaces as a red suite or failed writer in B's lane; a same-region co-touch read as additive conflicts at merge time | `internals` | #125 | ☑ |
 
 ## B20. Mode implementations
 
@@ -732,3 +740,23 @@ decision.
 
 A ticket ticks an entry when the rule is present at its destination in that ticket's commit. #131
 verifies that every entry is ticked, or explicitly marked dropped with a reason.
+
+**Where a ticked entry landed** is the destination token, plus one convention: `docs/dev-loop.md` and
+`docs/dev-loop-internals.md` are organised under headings that mirror this file's own section names,
+so an entry from `B7. Suite gate` landed under the internals doc's *The suite gate* heading. Where a
+token names a class rather than a file — `ADR`, `agents/` — the tick cell names the specific file.
+
+### Progress
+
+| Ticket | Entries it lands | Ticked |
+|---|---|---|
+| #132 | this file | n/a |
+| #125 | 72 `internals` + 9 `docs/dev-loop.md` + 9 `ADR`, plus the 2 already carried by ADR-0003 | **92 / 92** |
+| #126 | 17 `deleted` + 4 `ADR` (0004) | 0 / 21 |
+| #127 | 16 `cleanup` | 0 / 16 |
+| #128 | 8 `agents/` + 8 `script` + 4 `deleted` + 3 `ADR` | 0 / 23 |
+| #129 | 5 `profile` + 4 `notifications.md` + 3 `agents/` + 1 `script` + 1 `deleted` | 0 / 14 |
+| #130 | rewrites what stays in `SKILL.md`; ticks nothing new | n/a |
+
+The 223 `SKILL.md` entries are not ticked by any ticket: they are the steps, and they stay. #131
+verifies they are still present rather than that they moved.
