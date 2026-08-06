@@ -328,7 +328,10 @@ async function notify(lane, ending) {
       (runHandle ? `Run handle (goes on the ending comment, never in the message): ${runHandle}\n` : '') +
       `The specification governing every write you make: ${skillDir}/notifications.md — read it first.\n` +
       `The send mechanism, which reads its payload on standard input: ${skillDir}/notify.sh`,
-      { agentType: roleAgent('notifier'), label: `notify:#${lane.issue}`, phase: 'Notify', model: 'haiku', effort: 'low', schema: NOTIFY_SCHEMA }
+      // No model or effort here: the notifier has an agent definition, and its frontmatter carries
+      // both. Setting them again at the dispatch is a second copy that can only drift. Contrast the
+      // suite gate below, which has no definition by design, so its dispatch is the only home for its.
+      { agentType: roleAgent('notifier'), label: `notify:#${lane.issue}`, phase: 'Notify', schema: NOTIFY_SCHEMA }
     )
     // Dispatched is not written. Only an APPLIED label makes the host stand back — a notifier
     // that died, failed its edit, or found no string for the role leaves the label to the host,

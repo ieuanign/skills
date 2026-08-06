@@ -103,6 +103,40 @@ _Avoid_: session resume id, run id.
 
 The five subagents this plugin ships from `agents/` at its root: `architecture-engineer`, `code-writer`, `reviewer`, `debugger`, and `notifier`. They install with the plugin and are dispatched by name; nothing is copied into the consuming repo. The first four are dispatched by the orchestrator or a phase script for the work they do; `notifier` alone is dispatched only from inside a running phase script, and only under an unattended run, because that is the one moment the orchestrator has no shell.
 
+## Discovery cost
+
+What a skill costs a session that never invokes it: its `name` and `description`, loaded from every
+installed skill so the model can decide whether to reach for one. Paid in every session on the machine,
+which is what makes a skill's description its most expensive line.
+
+_Avoid_: install cost, overhead.
+
+## Host load
+
+What the orchestrator carries for a whole run: the files it loads into its own context, measured with
+`wc -c` over exactly those files. `SKILL.md` is the whole of it — a file the orchestrator does not load
+is not host load however normative it is, which is why relocating a rule to `docs/` or to an agent
+definition reduces it and rewriting a rule in place does not.
+
+_Avoid_: skill size, context cost.
+
+## Agent load
+
+What one dispatched subagent carries: its own definition, plus whatever its prompt hands it. Paid once
+per dispatch rather than once per run, and paid by the subagent's context rather than the
+orchestrator's — so moving a rule from host load to agent load is free to the run that never dispatches
+that agent.
+
+_Avoid_: prompt size.
+
+## Run spend
+
+The tokens a run actually consumes end to end, across the orchestrator and every agent it dispatches,
+reported per lane by the cost log. The only one of these four measured after the fact rather than
+before; the other three are properties of the files, and this one is a property of the run.
+
+_Avoid_: cost, token count — both ambiguous across the four terms above.
+
 ## Smell override
 
 A recorded exception to the smell baseline: a pattern this repository uses deliberately that would otherwise be reported as a code smell. Overrides live in `docs/agents/smell-overrides.md`, read by the `reviewer` agent and the code-review Standards axis. They are written from findings a human rejected, never distilled from `CLAUDE.md` — a repository where nothing has recurred yet correctly has no file at all.
