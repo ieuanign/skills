@@ -99,7 +99,7 @@ Adding a value to this pipeline? The rule decides its home:
 These are **homes, not an inventory**: a value this pipeline does not have yet still has its home decided here. **What the rule refuses**, so it does not creep back:
 
 - **No per-repository effort tiers** — a tier is a phase-script constant or it is nothing.
-- **No per-run overrides of gates, stages, or cost behaviour.** The run mode is the only argument that changes pipeline behaviour, and all it selects is the Lane conclusion branch.
+- **No per-run overrides of gates, stages, or cost reporting.** The run mode is the only argument that changes pipeline behaviour, and all it selects is the Lane conclusion branch.
 - **The cost reporting target stays a constant.** Promote it if one repository's lanes prove consistently larger.
 
 ## Repo profile — `docs/agents/dev-loop.md` (ask-then-persist)
