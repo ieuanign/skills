@@ -48,6 +48,12 @@ one in every other project on the machine — personal scope overrides project s
 copy wins wherever you go. Keeping the links here confines that to the repo they belong to. Both
 destinations are gitignored and every link is relative, so the checkout stays clean and movable.
 
+## Temporary files
+
+Every throwaway artifact goes under `.scratch/` at the repo root — scratch scripts, intermediate
+output, working notes, a `/dev-loop` run's plans. Create it if missing; it is gitignored. Reach for
+`.scratch/` where you would otherwise reach for `/tmp` or a system temp dir.
+
 ## Portability rule
 
 Every skill here must stay repo- and machine-agnostic — no repository name, absolute path, or
