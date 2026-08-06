@@ -43,9 +43,9 @@ The vocabulary is #121's Destinations table verbatim, plus `deleted`. Nothing is
 | `deleted` | the rule stops applying. Every such entry names its ticket and says why. |
 
 **ADR numbering is reserved, not sequential by landing order.** #121 and #126 both name
-`docs/adr/0004-*.md` as the home for deleting Mode A, and #125 lands first. So **0004 is reserved for
-Mode A** and #125's rationale ADRs take **0005–0007**. Recorded here because a reader who sees 0005
-land before 0004 would otherwise read it as a mistake.
+`docs/adr/0004-*.md` as the home for deleting Mode A, and #125 lands first. So **0004 was reserved for
+Mode A** and #125's rationale ADRs took **0005–0007**; #126 has since filled the reservation. Recorded
+here because a reader who sees 0005 land before 0004 would otherwise read it as a mistake.
 
 Three ADRs rather than the four #125 names, because one of the four decisions **already had a record**:
 the implement loop keeping a flat bound where the review loop is progress-sensitive is
@@ -113,7 +113,7 @@ the specification, and the half the orchestrator evaluates moves into `SKILL.md`
 | ID | Rule | → | By | ✓ |
 |---|---|---|---|---|
 | S-15 | "`auto` present ⇒ **unattended**; absent ⇒ **gated**. Act 0 parses it ONCE and carries it as a single value for the whole run — no later stage re-derives it" | `SKILL.md` | — | ☐ |
-| S-16 | "It is contracts.md's **Lane conclusion** branch" — the framing of the run mode as a contract branch point | `deleted` | #126 | ☐ |
+| S-16 | "It is contracts.md's **Lane conclusion** branch" — the framing of the run mode as a contract branch point | `deleted` | #126 | ☑ |
 | S-17 | **Gate suppression.** "Both gates raise their questions under `gated`, and neither raises any under `unattended`. This line is the only place that is decided: no argument and no profile key overrides it." | `SKILL.md` | — | ☐ |
 | S-18 | **Notifications.** "Under `unattended` you emit … the host-owned events, at the three boundaries marked **⟨notify⟩** … each ⟨notify⟩ boundary says *what* to run and never *whether*" | `SKILL.md` | — | ☐ |
 | S-19 | "`notifications.md` governs what each event says, which label role it writes, and in what order" — the specification itself | `agents/` | #129 | ☐ |
@@ -189,11 +189,11 @@ reader load whatever file they are in today.
 | ID | Rule | → | By | ✓ |
 |---|---|---|---|---|
 | S-59 | "**Mode W** — the Workflow tool is in your toolset: run the phase scripts exactly as Act 1 / Act 3 describe." | `SKILL.md` | #126 | ☐ |
-| S-60 | "**Mode A** — no Workflow tool: you drive the same state machine yourself with the Agent tool" — the whole Agent-tool orchestration path | `deleted` | #126 | ☐ |
-| S-61 | "Behavior changes edit contracts.md FIRST, then both implementations (the phase scripts and Mode A) in the same change." | `deleted` | #126 | ☐ |
-| S-62 | "Every mode difference lives in one place: contracts.md's **Lane conclusion** section … Mode A never implements it." | `deleted` | #126 | ☐ |
+| S-60 | "**Mode A** — no Workflow tool: you drive the same state machine yourself with the Agent tool" — the whole Agent-tool orchestration path | `deleted` | #126 | ☑ |
+| S-61 | "Behavior changes edit contracts.md FIRST, then both implementations (the phase scripts and Mode A) in the same change." | `deleted` | #126 | ☑ |
+| S-62 | "Every mode difference lives in one place: contracts.md's **Lane conclusion** section … Mode A never implements it." | `deleted` | #126 | ☑ |
 | S-63 | "**Push, pull requests and stack linking are the host's** … a phase script never pushes, never opens a pull request and never links a stack, having no shell." | `SKILL.md` | #126 | ☐ |
-| S-64 | Mode A's tier-lock — "the direct Agent tool has no effort parameter, so this mode cannot vary effort" | `ADR` | #126 | ☐ |
+| S-64 | Mode A's tier-lock — "the direct Agent tool has no effort parameter, so this mode cannot vary effort" | `ADR` | #126 | ☑ ADR-0004 |
 
 `S-59` survives as a **precondition** rather than a mode: after #126 the Workflow tool is required for
 any run, and there is no second branch to name. `S-63` survives with its "in both modes" framing
@@ -204,14 +204,14 @@ dropped.
 | ID | Rule | → | By | ✓ |
 |---|---|---|---|---|
 | S-65 | Step 1 — "Parse the arguments … This is the ONLY place the run mode is derived — carry that one value from here." | `SKILL.md` | — | ☐ |
-| S-66 | Step 1 — "Then detect the execution mode, which is a toolset check and costs nothing." | `deleted` | #126 | ☐ |
+| S-66 | Step 1 — "Then detect the execution mode, which is a toolset check and costs nothing." | `deleted` | #126 | ☑ |
 | S-67 | Step 1 — "read the **agent namespace** off your own roster … find `code-writer` among your available agent types — listed bare, the namespace is the empty string; listed as `<prefix>:code-writer`, it is `<prefix>` … This is the ONLY place it is derived … Never write it as a literal and never derive it from a path, a package name or a manifest" | `SKILL.md` | — | ☐ |
 | S-68 | Why a role is resolved rather than named — the same definition registers bare when linked and namespaced when the plugin is installed | `internals` | #125 | ☑ |
 | S-69 | Step 2 — a session with no Workflow tool is refused; tell them `"enableWorkflows": true` in `~/.claude/settings.json` and that **a restart is required** | `SKILL.md` | #126 | ☐ |
 | S-70 | Step 2 — the ask-then-persist arms: key absent ⇒ ask once, Yes writes `true`, No writes `false`; key present ⇒ do not ask, `true` means restart, `false` means name the file and key | `SKILL.md` | #126 | ☐ |
 | S-71 | Step 2 — "This is per-machine, so it persists to the per-machine settings and never to the repo profile or a setup skill" | `SKILL.md` | #126 | ☐ |
 | S-72 | Step 2 — refuse "before a single agent is dispatched and before this Act asks the user anything else" | `SKILL.md` | #126 | ☐ |
-| S-73 | Step 2 — "A `gated` run with no Workflow tool is untouched and runs Mode A exactly as before." | `deleted` | #126 | ☐ |
+| S-73 | Step 2 — "A `gated` run with no Workflow tool is untouched and runs Mode A exactly as before." | `deleted` | #126 | ☑ |
 | S-74 | Step 3 — "Compute the Derived facts and read the repo profile (first run in a repo: ask-then-persist the branch template)." | `SKILL.md` | — | ☐ |
 | S-75 | Step 4 — "Both gitignore checks **probe a path underneath the directory, never the directory itself**." | `SKILL.md` | — | ☐ |
 | S-76 | Step 4 — why the probe must be a child: `git check-ignore` cannot classify a bare path as a directory unless it exists on disk, so a correctly-configured repo reports as unignored | `docs/dev-loop.md` | #125 | ☑ |
@@ -230,7 +230,7 @@ dropped.
 | S-89 | Step 9 — "It is **not a gate**. It raises no question about this batch's work … It sits here, at intake, because it is the last point at which a human who typed `auto` is reliably still watching." | `SKILL.md` | — | ☐ |
 | S-90 | Step 9 — the Full-suite ask's shape: offer plausible options, never persist a discovered command, offer `none` as a real option, declined ⇒ persist `none` | `SKILL.md` | — | ☐ |
 | S-91 | Step 9 — the Fix cycles ask's shape: state the arithmetic, say what it is *not*, offer `2` / a higher value / `0`, declined ⇒ `2` persisted | `SKILL.md` | — | ☐ |
-| S-92 | Step 9 — "**This step is host work in both execution modes** — Act 3 passes the two values into the phase scripts under Mode W and Mode A reads the same two off the same profile" | `deleted` | #126 | ☐ |
+| S-92 | Step 9 — "**This step is host work in both execution modes** — Act 3 passes the two values into the phase scripts under Mode W and Mode A reads the same two off the same profile" | `deleted` | #126 | ☑ |
 | S-93 | Step 10 — "**⟨notify⟩ Lane start.** For every lane that survived steps 6–8 … add the in-progress label and send the started message, per lane. This is the LAST step of Act 0, and that position is the point" | `SKILL.md` | — | ☐ |
 | S-94 | Step 10 — "The label is also a claim marker … `notifications.md` records the hazard that comes with it — do not solve it here." | `notifications.md` | #129 | ☐ |
 
@@ -304,7 +304,7 @@ dropped.
 | S-143 | "**KEEP each layer's transcript directory too** … a lane whose sub-lanes span layers has its records spread across one directory per layer" | `SKILL.md` | — | ☐ |
 | S-144 | "per-LANE result carries two flags Gate 2's step 4 reads and nothing else does: `crashed` … and `notified` … Each lane's arg accepts `notified` back" | `SKILL.md` | — | ☐ |
 | S-145 | "per-sub-lane result carries a `terminal` of `{pr: 'ready'\|'draft'\|'none', reasons}` … Carry it to Gate 2 unchanged … It carries no push column, because git decides that" | `SKILL.md` | — | ☐ |
-| S-146 | "Mode A needs no equivalent, and neither does a `gated` run" | `deleted` | #126 | ☐ |
+| S-146 | "Mode A needs no equivalent, and neither does a `gated` run" | `deleted` | #126 | ☑ |
 | S-147 | "The commit-breakdown check is YOUR work, not an agent's … carry the result as `<n> planned, <m> made` … A mismatch never halts the lane and never triggers a fix cycle" | `SKILL.md` | — | ☐ |
 | S-148 | Why a mismatch is never a halt — "fix cycles legitimately append commits and a writer may legitimately split one" | `internals` | #125 | ☑ |
 | S-149 | "Between layers …: run Gate 2 for the layer's finished lanes FIRST … then ask authorization to proceed" | `SKILL.md` | — | ☐ |
@@ -434,8 +434,8 @@ worktree removal, carried inside `S-170` and `S-230`.
 | ID | Rule | → | By | ✓ |
 |---|---|---|---|---|
 | C-1 | "This file is the single source of truth for the pipeline's role contracts, bounds, and endings." | `deleted` | #128 | ☐ |
-| C-2 | "Both execution modes implement it: **Mode W** … and **Mode A**" | `deleted` | #126 | ☐ |
-| C-3 | "Any behavior change edits THIS file first, then both implementations in the same change." | `deleted` | #126 | ☐ |
+| C-2 | "Both execution modes implement it: **Mode W** … and **Mode A**" | `deleted` | #126 | ☑ |
+| C-3 | "Any behavior change edits THIS file first, then both implementations in the same change." | `deleted` | #126 | ☑ |
 | C-4 | "If an implementation and this file disagree, this file governs." | `deleted` | #128 | ☐ |
 
 `C-1` and `C-4` go because with one implementation the phase script *is* the specification: a prose
@@ -449,7 +449,7 @@ contract that can disagree with it is the drift `#121` names.
 | C-6 | "**The Agent column names each role's definition, not the string that dispatches it.**" — bare when linked, namespaced when the plugin is installed | `internals` | #125 | ☑ |
 | C-7 | "**A role is therefore always resolved against a namespace and never written as a literal.**" | `SKILL.md` | — | ☐ |
 | C-8 | "The namespace is discovered once, at intake, by reading the roster the host already has in front of it" | `SKILL.md` | — | ☐ |
-| C-9 | "Mode A resolves it implicitly … Mode W cannot: a workflow script sees no registry." | `deleted` | #126 | ☐ |
+| C-9 | "Mode A resolves it implicitly … Mode W cannot: a workflow script sees no registry." | `deleted` | #126 | ☑ |
 | C-10 | "A phase script carrying a bare literal **runs only for the maintainer** and dies on its first dispatch for everyone who installed the plugin." | `script` | #128 | ☐ |
 
 ## B2. Append-only invariant
@@ -487,7 +487,7 @@ goes, and the reasoning (`C-13`, `C-14`) lands in an ADR.
 | C-26 | "**A stage that returned nothing is reported as exactly that, and never as an agent that died.**" | `script` | #128 | ☐ |
 | C-27 | "**The ending label is unchanged, and reclassifying a transient break is not to be re-proposed.** It stays **FAILED**, because that label answers exactly one question — *is this worth retrying?*" | `ADR` | #125 | ☑ ADR-0006 |
 | C-28 | "**A lane that throws is the same rule reaching the case it did not cover.** … each lane's work is wrapped once, and a throw is caught and turned into a **FAILED** ending naming the issue" | `script` | #128 | ☐ |
-| C-29 | "This is **mode-neutral**: a lane vanishing is a bug under `gated` too" | `deleted` | #126 | ☐ |
+| C-29 | "This is **mode-neutral**: a lane vanishing is a bug under `gated` too" | `deleted` | #126 | ☑ |
 
 ## B5. Per-commit implement loop
 
@@ -568,14 +568,14 @@ the reasoning to an ADR.
 
 | ID | Rule | → | By | ✓ |
 |---|---|---|---|---|
-| C-72 | "**the only branch point in this file** … Every other section of this contract is single-version" | `deleted` | #126 | ☐ |
+| C-72 | "**the only branch point in this file** … Every other section of this contract is single-version" | `deleted` | #126 | ☑ |
 | C-73 | The gated / unattended table — Push, Pull request, Explanation | `internals` | #125 | ☑ |
 | C-74 | "The explanation is identical in both: what stopped or what broke, its stage, the diagnosis …, and the attempt log in order. Mode changes where it is written, never what it says." | `internals` | #125 | ☑ |
 | C-75 | "**One exception, and only one.** A sub-lane where nothing landed at all … has no branch ahead of its base … This is the only ending in the pipeline that opens no pull request." | `SKILL.md` | — | ☐ |
 | C-76 | **gated** — "A clean sub-lane reaches Gate 2 for push/PR approval … an ended sub-lane is *offered* there rather than pushed around it" and the human's arbitration of contested findings | `SKILL.md` | — | ☐ |
 | C-77 | "Gate 2 for a layer fires before the next layer is provisioned, so a dependent layer is never built on a base the human has not vetted." | `SKILL.md` | — | ☐ |
 | C-78 | **unattended** — "there is no human to conclude the lane, so the table above happens unprompted and notifications fire" | `SKILL.md` | — | ☐ |
-| C-79 | "**Mode A implements the gated half only, and never the unattended half.**" | `deleted` | #126 | ☐ |
+| C-79 | "**Mode A implements the gated half only, and never the unattended half.**" | `deleted` | #126 | ☑ |
 
 ## B12. Push
 
@@ -601,7 +601,7 @@ the reasoning to an ADR.
 | C-92 | "**No local state, in either direction.** … Linked worktrees share one common git directory, so any command that *did* keep local stack state would have every concurrent lane racing over the same files" | `internals` | #125 | ☑ |
 | C-93 | "**A machine without the tool behaves exactly as it does today.** … No gate checks for it, no precondition asks about it, no run fails or prompts for want of it" | `SKILL.md` | #128 | ☐ |
 | C-94 | "**A failed link is reported and costs nothing else.** … Losing the stack never costs the run the work." | `SKILL.md` | #128 | ☐ |
-| C-95 | "Neither mode is exempt and neither differs: this subsection is single-version" | `deleted` | #126 | ☐ |
+| C-95 | "Neither mode is exempt and neither differs: this subsection is single-version" | `deleted` | #126 | ☑ |
 
 ## B14. The worktree invariant
 
@@ -652,7 +652,7 @@ the reasoning to an ADR.
 | C-123 | "**The host assembles it from sub-lane records it already holds**, so no agent is dispatched and no stage is added to any loop." | `SKILL.md` | — | ☐ |
 | C-124 | "**It is reporting only.** It feeds no predicate, changes no terminal-state row, and decides nothing" | `internals` | #125 | ☑ |
 | C-125 | "**Omitted on a lane with a single sub-lane**, where the whole issue is that sub-lane's and the roll-up would repeat the section above it verbatim." | `profile` | #129 | ☐ |
-| C-126 | "Single-version: both execution modes compose it identically, because the pull request body is the host's in both." | `deleted` | #126 | ☐ |
+| C-126 | "Single-version: both execution modes compose it identically, because the pull request body is the host's in both." | `deleted` | #126 | ☑ |
 
 ## B18. Sequencing
 
@@ -688,10 +688,10 @@ the reasoning to an ADR.
 | ID | Rule | → | By | ✓ |
 |---|---|---|---|---|
 | C-146 | "**Mode W**: `phase-plan.js` (Phase A) and `phase-execute.js` (Phase B) run on the Workflow tool with the args documented in SKILL.md; their embedded JSON schemas mirror the return contracts above." | `SKILL.md` | #126 | ☐ |
-| C-147 | "**Mode A**: the orchestrator drives the Agent tool directly — one background agent per parallel unit …, sequential awaits inside a lane." | `deleted` | #126 | ☐ |
-| C-148 | "**Mode A is tier-locked, by construction.** … This is a property of the mode, not an oversight." | `ADR` | #126 | ☐ |
-| C-149 | "**Unattended mode runs only under Mode W.**" and the three independently sufficient reasons — per-stage effort is impossible; the notifier fires from inside the phase script; "**Bound enforcement is mechanical in a script and merely remembered by a model otherwise.**" | `ADR` | #126 | ☐ |
-| C-150 | "Mode A is kept for the supervised run, where none of the three bites. Its one real firing was a manual-recovery path … It is not a fallback for a missing tool." | `ADR` | #126 | ☐ |
+| C-147 | "**Mode A**: the orchestrator drives the Agent tool directly — one background agent per parallel unit …, sequential awaits inside a lane." | `deleted` | #126 | ☑ |
+| C-148 | "**Mode A is tier-locked, by construction.** … This is a property of the mode, not an oversight." | `ADR` | #126 | ☑ ADR-0004 |
+| C-149 | "**Unattended mode runs only under Mode W.**" and the three independently sufficient reasons — per-stage effort is impossible; the notifier fires from inside the phase script; "**Bound enforcement is mechanical in a script and merely remembered by a model otherwise.**" | `ADR` | #126 | ☑ ADR-0004 |
+| C-150 | "Mode A is kept for the supervised run, where none of the three bites. Its one real firing was a manual-recovery path … It is not a fallback for a missing tool." | `ADR` | #126 | ☑ ADR-0004 |
 
 ---
 
@@ -752,7 +752,7 @@ token names a class rather than a file — `ADR`, `agents/` — the tick cell na
 |---|---|---|
 | #132 | this file | n/a |
 | #125 | 72 `internals` + 9 `docs/dev-loop.md` + 9 `ADR`, plus the 2 already carried by ADR-0003 | **92 / 92** |
-| #126 | 17 `deleted` + 4 `ADR` (0004) | 0 / 21 |
+| #126 | 17 `deleted` + 4 `ADR` (0004) | **21 / 21** |
 | #127 | 16 `cleanup` | 0 / 16 |
 | #128 | 8 `agents/` + 8 `script` + 4 `deleted` + 3 `ADR` | 0 / 23 |
 | #129 | 5 `profile` + 4 `notifications.md` + 3 `agents/` + 1 `script` + 1 `deleted` | 0 / 14 |

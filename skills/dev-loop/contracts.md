@@ -1,6 +1,6 @@
 # /dev-loop contracts — the normative state machine
 
-This file is the single source of truth for the pipeline's role contracts, bounds, and endings. Both execution modes implement it: **Mode W** (Workflow tool running `phase-plan.js` / `phase-execute.js`) and **Mode A** (direct Agent-tool orchestration). Any behavior change edits THIS file first, then both implementations in the same change. If an implementation and this file disagree, this file governs.
+This file is the single source of truth for the pipeline's role contracts, bounds, and endings. If an implementation and this file disagree, this file governs.
 
 ## Roles
 
@@ -14,11 +14,11 @@ This file is the single source of truth for the pipeline's role contracts, bound
 
 **The Agent column names each role's definition, not the string that dispatches it.** The same definition is registered under two different names depending on how it arrived: bare (`code-writer`) when it is linked into a repo's own `.claude/agents/`, and namespaced `<plugin>:<name>` (`ieuanign-skills:code-writer`) when the plugin is installed — which is the supported install path, so the namespaced form is the ordinary one and the bare form is the maintainer's. **A role is therefore always resolved against a namespace and never written as a literal.** The namespace is discovered once, at intake, by reading the roster the host already has in front of it; nothing derives it from a path, a package name or a manifest, so renaming the plugin or the marketplace needs no edit here.
 
-Mode A resolves it implicitly — the host dispatches by the name its own roster lists, which is already correct, and there is nothing to pass. Mode W cannot: a workflow script sees no registry. The host passes the discovered namespace in the phase scripts' args, for the same reason it passes `skillDir` — both are facts the host can see and a script cannot. A phase script carrying a bare literal **runs only for the maintainer** and dies on its first dispatch for everyone who installed the plugin.
+A workflow script sees no registry. The host passes the discovered namespace in the phase scripts' args, for the same reason it passes `skillDir` — both are facts the host can see and a script cannot. A phase script carrying a bare literal **runs only for the maintainer** and dies on its first dispatch for everyone who installed the plugin.
 
 ## Append-only invariant
 
-What the pipeline may write outside its own worktrees and `.scratch/`. It binds the host and every agent, identically in both modes — there is no ending, no ceiling and no absent human that relaxes it.
+What the pipeline may write outside its own worktrees and `.scratch/`. It binds the host and every agent — there is no ending, no ceiling and no absent human that relaxes it.
 
 - **Append** to issues and pull requests. Comments only.
 - **Add and remove its own workflow labels**, and no others. This clause writes to an issue a human filed, and it is inside the invariant because the write is additive and reversible: a label add or remove destroys nothing a human authored, and human intent is what the invariant guards.
@@ -46,20 +46,20 @@ The architect's summary bullets are lane state, not gate state: retained from Ph
 
 ## Return contracts
 
-Agents end with machine-readable leading lines; Mode W enforces the equivalent JSON schemas in the phase scripts, Mode A parses the lines. The keys are the contract — no verdict, no result.
+Agents end with machine-readable leading lines; the phase scripts enforce the equivalent JSON schemas. The keys are the contract — no verdict, no result.
 
 - **architect**: `STATUS: READY|BLOCKED` + `PLAN: <path>` + summary bullets + open questions (BLOCKED only). The agent definition also carries a Mode 2 conformance sign-off; this pipeline never dispatches it.
 - **writer**: `RESULT: COMMITTED|BLOCKED|FAILED` + `COMMITS` + `VERIFIED` + `DEVIATIONS` + `DISPUTED` (with each disputed finding restated with refuting evidence) + `DIRTY` + `WORKTREE` + `FAILING` (FAILED only).
 - **reviewer**: `VERDICT: APPROVED|CHANGES_REQUESTED|ERROR` + `FINDINGS` (each: `file:line — defect — failure scenario — suggested fix`) + `CONTESTED` (disputed findings it still confirms) + `CRITERIA` (one `met|partial|not-met` verdict per acceptance criterion **the sub-lane owns**, in the issue's order, each with its evidence; empty when no issue body was passed, or when the sub-lane owns none) + `NOTES`. Zero findings ⇒ APPROVED, whatever the criterion verdicts say.
 - **debugger**: `ROOT-CAUSE` + `OWNER: code-writer|replan|user|retry` + `CONFIDENCE` + `REPRODUCED`; when OWNER=code-writer, a finding in the reviewer's finding shape. `OWNER` carries **two routing values** — `code-writer` and `retry`, each naming the stage that runs next — and **two reporting values**, `replan` and `user`, which end the sub-lane identically and differ only in where they send the reader: `replan` back to the plan, `user` to their own machine, credentials or CI. Same pipeline behaviour, opposite next actions, which is why both are kept.
-- **suite gate**: `STATE: passed|failed|not-run` + `FAILING` (the runner's own identifier per failing test — empty unless STATE is `failed`) + `OUTPUT` (the command's output). It is the one role with no agent definition to carry that format, so whichever mode dispatches it states the format itself — Mode W in its schema, Mode A in the prompt.
+- **suite gate**: `STATE: passed|failed|not-run` + `FAILING` (the runner's own identifier per failing test — empty unless STATE is `failed`) + `OUTPUT` (the command's output). It is the one role with no agent definition to carry that format, so whatever dispatches it states the format itself — the phase script, in its schema.
 - **DIED** (any role): the call came back with nothing usable — nothing at all, or nothing parseable. Every DIED ends its sub-lane **FAILED** — a break, never a verdict. The architect is the one role that runs before any sub-lane exists: an architect DIED is reported at Gate 1 with a re-run offer instead. Never silently drop a requested issue.
 
   **A stage that returned nothing is reported as exactly that, and never as an agent that died.** From where the pipeline sits the two are indistinguishable: an agent skipped mid-run and an agent dead after the runner's own retries both resolve the call to nothing, and nothing is the whole of what the pipeline sees. So every ending produced by an empty return says the stage returned nothing and that it was skipped or died after the runner's retries — the same wording a lane whose result came back empty already carries, so one condition speaks with one voice. Asserting a death instead sends the reader looking for a crash that may never have happened, and it is the same restraint the crash handler already shows when it declines to promise a stack trace it does not hold.
 
   **The ending label is unchanged, and reclassifying a transient break is not to be re-proposed.** It stays **FAILED**, because that label answers exactly one question — *is this worth retrying?* — and a transport timeout is its clearest affirmative. There is no new label, no classification stage, and no agent dispatched to adjudicate a transport failure it could not reproduce. Calling it a halt would assert that something deliberately stopped, which is the one thing here known not to have happened.
 
-  **A lane that throws is the same rule reaching the case it did not cover.** A terminal error can reject the call rather than return nothing, which unwinds the whole lane — so each lane's work is wrapped once, and a throw is caught and turned into a **FAILED** ending naming the issue and carrying the error message plus its stack trace where one exists. A dead agent frequently throws neither, and the reason says so rather than promising a trace that is empty. The lane's partial sub-results come back with it, attempt log included — that is the record most worth keeping from a lane that crashed mid-recovery — and each unfinished sub-lane takes the same ending, so it reaches the terminal-state table like any other. A thrown architect takes the DIED entry above for its issue. This is **mode-neutral**: a lane vanishing is a bug under `gated` too, where it shows up as a lane silently missing from the Gate 2 report. What the crashed lane's branch then *does* is Lane conclusion's, exactly as for every other ending — the label decides nothing here either, and `FAILED` answers only *is this worth retrying?*, to which a host throw is the case that most often says yes.
+  **A lane that throws is the same rule reaching the case it did not cover.** A terminal error can reject the call rather than return nothing, which unwinds the whole lane — so each lane's work is wrapped once, and a throw is caught and turned into a **FAILED** ending naming the issue and carrying the error message plus its stack trace where one exists. A dead agent frequently throws neither, and the reason says so rather than promising a trace that is empty. The lane's partial sub-results come back with it, attempt log included — that is the record most worth keeping from a lane that crashed mid-recovery — and each unfinished sub-lane takes the same ending, so it reaches the terminal-state table like any other. A thrown architect takes the DIED entry above for its issue. A lane vanishing is a bug under `gated` too, where it shows up as a lane silently missing from the Gate 2 report. What the crashed lane's branch then *does* is Lane conclusion's, exactly as for every other ending — the label decides nothing here either, and `FAILED` answers only *is this worth retrying?*, to which a host throw is the case that most often says yes.
 
 ## Per-commit implement loop — bound: 2 debug+fix attempts
 
@@ -75,7 +75,7 @@ For each plan commit, in order:
 
 The writer call of the **final permitted** debug+fix attempt, and no earlier one, carries one extra instruction: if it still cannot get green, commit what exists as `wip(<scope>): #<n> - commit <k> FAILED - <reason>` and return `FAILED` anyway. It is the only call after which the pipeline is certain to give up — on an earlier attempt the sub-lane may still succeed, and a `wip:` commit on a succeeding sub-lane would break what the rest of this file rests on: a `wip:` commit means an ended sub-lane with an incomplete commit list, which is why it is never reviewed and never gated. It is evidence, not work — listed among the sub-lane's commits so the human sees it, excluded from the made count, which would otherwise read `1 planned, 2 made` for a sub-lane that made one. The `replan`/`user` route carries no such instruction: no writer call follows it, and inventing one costs an agent call to produce a commit nobody asked for.
 
-The instruction does not exempt that commit from the writer's own pre-commit hooks, and no mode may bypass them for it. In a repository whose hook demands a green suite the evidence commit cannot land, the writer returns `FAILED` with the work left dirty in its worktree, and the sub-lane ends exactly as it would have without the instruction — the evidence survives on the machine rather than on the branch. That is a smaller benefit, not a different ending, and it is the reason nothing downstream may assume the commit exists: the push decision asks git whether the branch is ahead of its base, never the reported commit list.
+The instruction does not exempt that commit from the writer's own pre-commit hooks, and nothing may bypass them for it. In a repository whose hook demands a green suite the evidence commit cannot land, the writer returns `FAILED` with the work left dirty in its worktree, and the sub-lane ends exactly as it would have without the instruction — the evidence survives on the machine rather than on the branch. That is a smaller benefit, not a different ending, and it is the reason nothing downstream may assume the commit exists: the push decision asks git whether the branch is ahead of its base, never the reported commit list.
 
 ## Review loop — bound: progress-sensitive, under a hard ceiling of 5 fix cycles
 
@@ -98,7 +98,7 @@ The reviewer judges every criterion it owns against its own range — one range,
 
 A flat count cannot tell a loop that is stuck from one that is working, and the flat count this replaces abandoned a lane one cycle from green. So the loop takes the shape the suite gate already has.
 
-After a `CHANGES_REQUESTED` review the counter **advances by one unless a previously unseen finding appeared** — a new finding resets it to 1. At the repository profile's **Fix cycles** value the loop stops. That key is the **no-progress threshold**, not a flat cap; its default is `2`, and `0` still spends no fix cycle at all — its first `CHANGES_REQUESTED` ends the sub-lane with the findings open. It is a repository fact and reaches both implementations as a value, never as a literal.
+After a `CHANGES_REQUESTED` review the counter **advances by one unless a previously unseen finding appeared** — a new finding resets it to 1. At the repository profile's **Fix cycles** value the loop stops. That key is the **no-progress threshold**, not a flat cap; its default is `2`, and `0` still spends no fix cycle at all — its first `CHANGES_REQUESTED` ends the sub-lane with the findings open. It is a repository fact and reaches the phase script as a value, never as a literal.
 
 ```
 cycle 1: {A, B, C}   all unseen                    → count 1
@@ -140,7 +140,7 @@ The `CRITERIA` verdicts pass straight through this loop untouched — the spec a
 
 ## Suite gate — bound: 8 rounds, and 2 rounds without a previously unseen failure
 
-The writer runs lint and tests **scoped to the module it touched**, and nothing else in this pipeline runs the repository's own suite. So once a sub-lane's review loop settles, the lane runs that suite once, inside that sub-lane's worktree, before it concludes: a commit that reddened a module it never touched is caught here or nowhere. It runs in **both** modes.
+The writer runs lint and tests **scoped to the module it touched**, and nothing else in this pipeline runs the repository's own suite. So once a sub-lane's review loop settles, the lane runs that suite once, inside that sub-lane's worktree, before it concludes: a commit that reddened a module it never touched is caught here or nowhere.
 
 **Once per sub-lane, not once per lane.** Sub-lanes are separate branches, worktrees and pull requests and can span layers, so every PR carries its own suite result. A lane with one sub-lane — the common case — runs it exactly once.
 
@@ -212,7 +212,7 @@ Every loop above is bounded — nothing retries indefinitely — and no ending k
 
 ## Token spend is reported, never enforced
 
-**No lane halts, warns, or changes its behaviour because of what it costs.** There is no token ceiling, no per-lane budget and no cost-triggered ending anywhere in this pipeline, and nothing in the sections above may gain one. This binds both modes, which is why it sits here rather than in **Lane conclusion**: it describes something neither mode does. What exists instead is reporting — a per-lane cost log the host writes, which reads and prints and touches nothing. *When* it writes one is a host concern and not this file's; nothing in the pipeline's behaviour turns on it either way.
+**No lane halts, warns, or changes its behaviour because of what it costs.** There is no token ceiling, no per-lane budget and no cost-triggered ending anywhere in this pipeline, and nothing in the sections above may gain one. It sits here rather than in **Lane conclusion** because it describes something the pipeline does not do. What exists instead is reporting — a per-lane cost log the host writes, which reads and prints and touches nothing. *When* it writes one is a host concern and not this file's; nothing in the pipeline's behaviour turns on it either way.
 
 A ceiling was specified once and dropped, because it could not work. The runner's budget total is unset unless a human typed a budget directive, so it silently never fires under exactly the unattended run it was meant to guard — the worst failure mode a safety stop can have. Its spend figure is turn-wide and shared across the host and every lane, while the measured baseline is per-lane, so with parallel lanes there is nothing to attribute and one shared ceiling would halt every lane together. And it counts output tokens, which is not the metric the baseline was measured on. The obvious repair — reading the per-agent transcripts the way the baseline analysis did — is unavailable from where the enforcement would live, a workflow script having no filesystem access.
 
@@ -220,7 +220,7 @@ A ceiling was specified once and dropped, because it could not work. The runner'
 
 ## Lane conclusion — the only branch point in this file
 
-Every other section of this contract is single-version: both modes implement it identically. This section is the one place the two are described separately, and a behaviour change that differs by mode belongs here or nowhere. It is also where an ending's label stops mattering: nothing below reads it, and a sub-lane that stopped and one that broke are disposed of identically.
+This is where an ending's label stops mattering: nothing below reads it, and a sub-lane that stopped and one that broke are disposed of identically.
 
 An ended sub-lane's disposition is decided by mode, and decided per sub-lane. The two modes are **gated** and **unattended** — `auto` is the token a developer types for the unattended one.
 
@@ -242,9 +242,7 @@ The explanation is identical in both: what stopped or what broke, its stage, the
 
 **unattended** — there is no human to conclude the lane, so the table above happens unprompted and notifications fire. Read `notifications.md` before emitting any notification: it governs every one of them, and nothing here restates it. Which endings open a **ready** pull request rather than a **draft** one is the terminal-state table below.
 
-**Mode A implements the gated half only, and never the unattended half.** The unattended half therefore has exactly one implementation, which is what keeps this file's rule — a behaviour change edits the contract first, then both implementations in the same change — cheap to honour.
-
-The four subsections that follow are not part of that branch. Push, stack linking and the worktree invariant are single-version and bind both modes; the terminal-state table is read only where the unattended half sends it.
+The four subsections that follow are not part of that branch. Push, stack linking and the worktree invariant bind both modes; the terminal-state table is read only where the unattended half sends it.
 
 ### Push — once per sub-lane, at the end of its layer
 
@@ -278,7 +276,7 @@ A batch whose sub-lanes stack finishes by telling GitHub they form a stack, so t
 
 **A failed link is reported and costs nothing else.** It leaves every pull request exactly as the run created it — title, body, draft state and base — because the tool either records the stack or does not, and never half-edits the pull requests to get there. The failure is reported with the tool's own message verbatim; no sub-lane's ending changes, no worktree decision changes, and nothing is retried. Losing the stack never costs the run the work.
 
-Neither mode is exempt and neither differs: this subsection is single-version, and the two conclusions call the same script with the same arguments.
+The two conclusions call the same script with the same arguments.
 
 ### The worktree invariant
 
@@ -367,7 +365,7 @@ Scoping each reviewer to the criteria its sub-lane owns leaves every pull reques
 
 **Omitted on a lane with a single sub-lane**, where the whole issue is that sub-lane's and the roll-up would repeat the section above it verbatim.
 
-Single-version: both execution modes compose it identically, because the pull request body is the host's in both.
+The pull request body is the host's.
 
 ## Sequencing
 
@@ -403,7 +401,7 @@ What puts a sub-lane in a layer above the bottom is this classification, so it b
 
 `parallel` is the one value that ships a known conflict rather than avoiding one — the same cost this file already accepts under **Two accepted costs** for a misclassified overlap, chosen deliberately there instead of discovered. It is offered because the cost is bounded and lands where a merge conflict always lands, and it is not the default for the same reason it is not free.
 
-The declaration reaches the host ambiently: project rules load at launch, so no step fetches this file and no profile key mirrors it. **The classification stays single-version across both execution modes** — it is the host's plain reading either way, and the declaration changes which outcome an overlap sorts into, never who does the sorting.
+The declaration reaches the host ambiently: project rules load at launch, so no step fetches this file and no profile key mirrors it. **The classification is the host's plain reading**, and the declaration changes which outcome an overlap sorts into, never who does the sorting.
 
 **The last two outcomes are physically identical and differ in what they claim.** Both put the later lane in the next layer, based on the branch below, so both produce the same branch shape and the same pull request base — and both therefore reach the same stack. What separates them is the assertion: a **real dependency** posts the discovered-blocker comment to the dependent issue, recording *why* the lane was stacked where the work is tracked; a **same-region co-touch** posts nothing, because there is no blocker to discover. B does not need A. It merely cannot edit the same lines at the same time.
 
@@ -423,7 +421,7 @@ This is smaller than it looks, because the supervised path never asked a human t
 
 **The discovered-blocker comment is posted identically.** It was already a machine action under supervision, and it carries over unchanged — so the reason a lane was stacked is recorded where the work is tracked, on a run nobody watched. The same-region outcome still posts nothing, for the same reason it posts nothing under supervision.
 
-The batch's conclusion then links the stack through the same script, with the same absent-extension fallback, per **Stack linking** above — that subsection is single-version and neither mode is exempt from it.
+The batch's conclusion then links the stack through the same script, with the same absent-extension fallback, per **Stack linking** above — neither mode is exempt from it.
 
 **Two accepted costs, recorded rather than solved.** Both are real, both are bounded, and neither is worth an engineering answer:
 
@@ -432,14 +430,7 @@ The batch's conclusion then links the stack through the same script, with the sa
 
 Neither cost is unique to unattended mode; what is unique is that nobody is watching when it happens, which is why both are named here rather than left to be discovered.
 
-## Mode implementations
+## Phase scripts
 
-- **Mode W**: `phase-plan.js` (Phase A) and `phase-execute.js` (Phase B) run on the Workflow tool with the args documented in SKILL.md; their embedded JSON schemas mirror the return contracts above.
-- **Mode A**: the orchestrator drives the Agent tool directly — one background agent per parallel unit (architects in Phase A, lanes in Phase B), sequential awaits inside a lane. Instruct each agent to end with its machine-readable leading lines exactly as its agent definition specifies, parse those as the contract keys, and enforce every bound, route, and ending in this file yourself.
-- **Mode A is tier-locked, by construction.** Effort is settable only in an agent's frontmatter or in Mode W's per-call options, and the direct Agent tool has no effort parameter — so Mode A has no mechanism for varying effort and any future cost dial is Mode W-only. This is a property of the mode, not an oversight.
-- **Unattended mode runs only under Mode W.** Intake refuses it in Mode A rather than degrading into it. Three reasons, each independently sufficient, recorded here so the rule is not re-litigated:
-  1. **Per-stage effort is impossible in Mode A**, by the tier-lock above. An unattended run there would plan, write and review at exactly the tiers a supervised run uses — precisely the cost baseline it exists to beat. The effort dials *are* the cost thesis.
-  2. **The notifier fires from inside the phase script**, because the host is blind while a script runs — a workflow script has no shell. Mode A's host is never blind, so the same notifications would need a second, differently shaped implementation.
-  3. **Bound enforcement is mechanical in a script and merely remembered by a model otherwise.** Acceptable when a human is watching; not when nobody is.
-
-  Mode A is kept for the supervised run, where none of the three bites. Its one real firing was a manual-recovery path — a human had driven a step by hand and the orchestrator continued in this mode, under these same contracts, to finish the lane. It is not a fallback for a missing tool.
+- `phase-plan.js` (Phase A) and `phase-execute.js` (Phase B) run on the Workflow tool with the args documented in SKILL.md; their embedded JSON schemas mirror the return contracts above.
+- **The Workflow tool is a precondition of the whole pipeline.** A session without it is refused at intake — there is no second dispatch path. SKILL.md's Act 0 owns the refusal, the setting it names and the once-per-machine persistence.

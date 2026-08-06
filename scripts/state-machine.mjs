@@ -2,7 +2,7 @@
 //
 // /dev-loop's execution state machine, driven end to end with NO agent dispatched.
 //
-// `skills/dev-loop/phase-execute.js` is the whole of Mode W's state machine — every loop, every
+// `skills/dev-loop/phase-execute.js` is the whole of the state machine — every loop, every
 // bound, every ending — and its one outside dependency is the `agent()` global the Workflow runner
 // supplies. That is the seam, and it is the highest one available: above every loop, above every
 // bound, above every ending. Compiling the script with the shared shim and handing it a SCRIPTED
