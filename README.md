@@ -143,6 +143,17 @@ nothing added to your repo. The skill is repo- and machine-agnostic; per-repo se
 > your git config for stacked branches, keeping working material out of the repo, and making comments
 > earn their space.
 
+Further reading, none of which a run loads:
+
+- [**How a run works**](./docs/dev-loop.md) — the narrative. Run shapes (single lane, parallel lanes,
+  stacked lanes, split issue, resume, cleanup), prerequisites, common questions, and an "it's working
+  if" section.
+- [**Internals**](./docs/dev-loop-internals.md) — what `phase-execute.js` enforces: the per-commit
+  implement loop, the review loop and its progress-sensitive bound, the suite gate, the return
+  contracts, the ending labels, and how the terminal-state table is derived.
+- [**Architecture decisions**](./docs/adr/) — the calls that were hard to reverse, surprising without
+  context, and the result of a real trade-off.
+
 ### [`/dev-loop-cleanup`](./skills/dev-loop-cleanup/SKILL.md) — reap merged work
 
 `/dev-loop-cleanup` deletes the local branch and the plan file for every lane whose pull request has
@@ -197,6 +208,11 @@ in the repo, plugin or no plugin — see
   `npm run version`, never needed by hand.
 - Versioned with [changesets](https://github.com/changesets/changesets); see `CLAUDE.md` for the
   add-a-skill checklist.
+- [`docs/dev-loop-rule-inventory.md`](./docs/dev-loop-rule-inventory.md) — every normative statement
+  the pre-compression `SKILL.md` and `contracts.md` carried, 389 of them, each with a destination and
+  a tick. The instrument for proving a later cut drops nothing silently.
+- [`docs/dev-loop-verification.md`](./docs/dev-loop-verification.md) — what that compression was
+  actually proven to preserve, and, as plainly, what it was not.
 
 ## Acknowledgements
 

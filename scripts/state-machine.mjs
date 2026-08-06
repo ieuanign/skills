@@ -16,8 +16,11 @@
 // Nothing here asserts on an internal variable, a private helper, or prompt wording beyond an
 // input a contract requires to be present. A test that breaks when a loop is refactored but its
 // behaviour is unchanged is a bad test, and this file is meant to survive refactors of the file it
-// tests. `phase-execute.js` is what these scenarios encode, and it is the specification — where its
-// behaviour and any prose disagree, the script governs; `docs/dev-loop-internals.md` explains why.
+// tests. `phase-execute.js` is the specification **as against the prose**: with one implementation
+// left, a document that disagrees with the script is the document's bug, and
+// `docs/dev-loop-internals.md` explains why. That does not extend to this harness — these scenarios
+// are the behaviour the script is held to, so a failing scenario is the script's bug until somebody
+// changes the scenario on purpose.
 //
 // Run: `node scripts/state-machine.mjs` (also a stage of `npm run check`). Every scenario runs
 // even when an earlier one fails, per the check script's convention; the exit code is non-zero if
