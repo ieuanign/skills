@@ -357,6 +357,18 @@ A draft is the honest signal that the pipeline could not finish its own job, and
 - **suite** — the gate's state: `passed`, `failed` with its failing test identifiers, or `not run` with why it did not. Never `passed` for a suite that did not run.
 - **attempt log** — everything the pipeline did *after* something first went wrong, in order: each debug+fix attempt, each retry, each review fix cycle, each suite round, carrying what triggered it, what the debugger said, and how it ended. Stages that worked are already in the commit list and the categories above; repeating them buries the one entry that matters. Recorded on every sub-lane and rendered only on one that ended, so the loops append without branching.
 
+### The whole-issue roll-up — the last sub-lane's pull request body only
+
+Scoping each reviewer to the criteria its sub-lane owns leaves every pull request body listing only its own slice, and the pipeline never ticks the issue's own checklist. So on a split issue nothing would show the issue's completeness in one place — on exactly the unattended runs where nobody watched. The **last sub-lane of a lane** therefore carries, in its pull request body beneath its own criteria section, every acceptance criterion of the issue with its verdict and the sub-lane that judged it.
+
+**The host assembles it from sub-lane records it already holds**, so no agent is dispatched and no stage is added to any loop. A lane whose sub-lanes span layers has records in more than one, which the host is already carrying forward for other reasons.
+
+**It is reporting only.** It feeds no predicate, changes no terminal-state row, and decides nothing: every row stays decided per sub-lane from that sub-lane's own inputs, and a sibling's unmet criterion never drafts another sub-lane's pull request — the sub-lane that owns the gap has already drafted for it. Letting the roll-up decide the last pull request's state was considered and rejected on exactly those two counts.
+
+**Omitted on a lane with a single sub-lane**, where the whole issue is that sub-lane's and the roll-up would repeat the section above it verbatim.
+
+Single-version: both execution modes compose it identically, because the pull request body is the host's in both.
+
 ## Sequencing
 
 Lanes run in parallel. Within a lane: sub-lanes sequential, and within a sub-lane: plan commits sequential → review loop → suite gate → commit-breakdown check, then the lane conclusion. The breakdown check stays last so that it counts whatever the gate appended.
