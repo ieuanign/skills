@@ -389,7 +389,7 @@ Every rule in this section moves whole to the new skill. None is deleted and non
 |---|---|---|---|---|
 | S-212 | "Cleanup reaps what has an exact done-signal and **lists** what does not. It is safe to run at any time, including while another batch is mid-layer" | `cleanup` | #127 | ☑ |
 | S-213 | "**It removes no worktree.** … a worktree still standing is one nothing proved done." | `cleanup` | #127 | ☑ |
-| S-214 | Why the old merged-based scan was wrong — "a branch merges the moment its PR lands, which says nothing about whether the run holding that checkout has finished with it" | `cleanup` | #127 | ☑ |
+| S-214 | Why the old merged-based scan was wrong — "a branch merges the moment its PR lands, which says nothing about whether the run holding that checkout has finished with it" | `docs/dev-loop.md` | #127 | ☑ |
 | S-215 | "`git fetch origin <DEFAULT>`." | `cleanup` | #127 | ☑ |
 | S-216 | "**Reap, by the exact signal.** A lane is done when its PR is merged (`gh pr view <branch> --json state,mergedAt`) or its branch is fully merged into `origin/<DEFAULT>`. **The `gh` arm is the load-bearing one, and the git arm is the fallback**" | `cleanup` | #127 | ☑ |
 | S-217 | Why the git arm alone is not enough — squash and rebase replay the work under new shas, so the branch's commits are never ancestors of the default branch | `cleanup` | #127 | ☑ |
@@ -400,6 +400,13 @@ Every rule in this section moves whole to the new skill. None is deleted and non
 | S-222 | "give them the `git worktree remove <path>` line to run if they agree, and never run it for them" | `cleanup` | #127 | ☑ |
 | S-223 | "NEVER touch MAIN (the first entry of `git worktree list`) — it is not a candidate under any condition" | `cleanup` | #127 | ☑ |
 | S-224 | "Report the two apart … **reaped** (branch, plan file) and **needs attention** (worktree, why it is lingering, the removal command). An empty second table is the good outcome." | `cleanup` | #127 | ☑ |
+
+`S-214` is **re-destined from `cleanup` to `docs/dev-loop.md`**. It is the only entry in this group that
+is pure rationale — why the *previous* implementation's merged-based worktree scan was unsafe — and a
+skill is not where a superseded design is argued with. It already reads verbatim at
+`docs/dev-loop.md`'s **Cleanup** section, so the re-destination records where it actually landed rather
+than moving anything. The rule it justifies, `S-213`, stays in the skill with its operative clause
+attached: *a worktree still standing is one nothing proved done.*
 
 ## A17. Hard rules
 
@@ -703,10 +710,10 @@ the reasoning to an ADR.
 | `internals` | 72 |
 | `deleted` | 22 |
 | `ADR` | 18 |
-| `cleanup` | 16 |
+| `cleanup` | 15 |
 | `agents/` | 11 |
+| `docs/dev-loop.md` | 10 |
 | `script` | 9 |
-| `docs/dev-loop.md` | 9 |
 | `profile` | 5 |
 | `notifications.md` | 4 |
 | **total** | **389** |
@@ -753,7 +760,7 @@ token names a class rather than a file — `ADR`, `agents/` — the tick cell na
 | #132 | this file | n/a |
 | #125 | 72 `internals` + 9 `docs/dev-loop.md` + 9 `ADR`, plus the 2 already carried by ADR-0003 | **92 / 92** |
 | #126 | 17 `deleted` + 4 `ADR` (0004) | **21 / 21** |
-| #127 | 16 `cleanup` | **16 / 16** |
+| #127 | 15 `cleanup` + 1 `docs/dev-loop.md` (`S-214`, re-destined — see below) | **16 / 16** |
 | #128 | 8 `agents/` + 8 `script` + 4 `deleted` + 3 `ADR` | 0 / 23 |
 | #129 | 5 `profile` + 4 `notifications.md` + 3 `agents/` + 1 `script` + 1 `deleted` | 0 / 14 |
 | #130 | rewrites what stays in `SKILL.md`; ticks nothing new | n/a |
