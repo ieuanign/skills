@@ -1,5 +1,113 @@
 # ieuanign-skills
 
+## 0.12.0
+
+### Minor Changes
+
+- [#110](https://github.com/ieuanign/skills/pull/110) [`0edbc67`](https://github.com/ieuanign/skills/commit/0edbc67789eb6870e9b7f0b465d3f560ba7ca35a) Thanks [@ieuanign](https://github.com/ieuanign)! - `/dev-loop`'s review loop stops abandoning lanes that are still converging.
+
+  Its bound was a flat count, so it could not tell a loop that is stuck from one that is working. On the run that prompted this, three reviews produced three findings at three different lines, disjoint on every round, the third a regression created by the fix for the second — every cycle doing real work — and the bound fired anyway. The developer ran the next cycle by hand and it went green.
+
+  **The loop takes the progress-sensitive shape the suite gate already had.** After a `CHANGES_REQUESTED` review the counter advances by one unless a previously unseen finding appeared, and a new finding resets it to 1. At the repository profile's **Fix cycles** value the loop stops — that key is now the **no-progress threshold** rather than a flat cap, default `2`, and `0` still spends no fix cycle at all.
+
+  ```
+  cycle 1: {A, B, C}   all unseen                    → count 1
+  cycle 2: {A, B}      subset, nothing new           → count 2 → stop
+
+  cycle 1: {A}                                       → count 1
+  cycle 2: {B}         B unseen                      → reset to 1
+  cycle 3: {C}         C unseen (regression from B)  → reset to 1
+  cycle 4: {}          approved                      → done
+  ```
+
+  The first trace is the stuck case, and note it now stops **earlier** than the flat bound it replaces: the threshold catches a loop repeating itself, and a hard ceiling of **5 fix cycles** does the ordinary bounding. Both are checked before a cycle's writer is dispatched, so nothing is spent on a cycle that cannot run.
+
+  **Finding identity** is the normalised file and defect clause, with the line number dropped as the volatile part — a fix shifts lines, and a shifted line is not a new defect. A round counts as no-progress only when _every_ finding in it matches a prior round's. It is deliberately conservative, because declaring sameness is what ends the loop early, and it is host arithmetic in plain code: no agent is dispatched to decide it and the reviewer's return contract is unchanged.
+
+  **The escalation carries the trajectory.** An ending on either bound names which bound fired and states, per round, whether it brought previously-unseen findings or repeated prior ones — in the ending reason, in the findings ledger, and in the attempt log. That is what tells a reader whether one more cycle was worth running before they read a line of the diff.
+
+  **Expect this to behave as a flat bound of 5 on most runs.** Independent reviewer invocations rarely word the same defect identically, so the threshold fires rarely. That is the design, recorded in [ADR-0002](docs/adr/0002-review-loop-progress-sensitive-bound.md) so nobody later "fixes" the counter for not advancing.
+
+  **The per-commit implement loop is deliberately unchanged.** Its give-up clause instructs the writer of the final permitted attempt, and no earlier one, to commit abandoned work as evidence — which needs the last attempt known at dispatch time, and a progress-sensitive counter cannot supply that. `contracts.md` records the divergence so it is not tidied away.
+
+  The contract was edited first and both execution modes in the same change. The ceiling is stated in the contract's prose and held as a phase-script constant, and `npm run check` compares them — the same drift check the cost-stage vocabulary already gets. Eight harness scenarios cover the motivating case, the stuck case, the ceiling, a threshold of `0`, a raised threshold, the trajectory, and that a re-confirmed dispute still ends a sub-lane immediately.
+
+- [#112](https://github.com/ieuanign/skills/pull/112) [`09af8d9`](https://github.com/ieuanign/skills/commit/09af8d90df18942d2a1edc1af3594a3a9c057746) Thanks [@ieuanign](https://github.com/ieuanign)! - An unattended `/dev-loop` run now carries a **run handle** — the identifier that locates its own transcript.
+
+  Endings already carried a resume command that re-derives everything from artifacts. That is correct, and it is not the same thing as being able to see what the reviewer actually said on cycle two: reconstructing that meant reading commit timestamps and inferring where one cycle ended and the next began. The evidence for the review-loop change in this same release had to be recovered exactly that way.
+
+  The host reads the session identifier from its environment at intake and passes it into the phase scripts' arguments — the same class of fact as the skill directory and the agent namespace, both of which the host can see and a script cannot. It needs no new principle, only one more argument.
+
+  **It is written in exactly two places.** The **ending comment on the issue**, by the notifier mid-lane and by the host for a lane that threw, where no notifier ever ran — which also closes a hole, because that lane was owed an ending comment nothing was writing. And the **pull request body** of an ended sub-lane, which is the only copy that outlives the run.
+
+  **It is deliberately not in the message.** That is one line for triage from a phone; a handle in it would crowd out the reason, which is the thing the line exists to carry.
+
+  **Where the environment shows no identifier the handle is omitted silently** — a missing line, never an error, never a question, and no lane's outcome changes.
+
+  **It is a run handle and not a resume identifier**, and the distinction is load-bearing: an unattended conclusion removes an ended sub-lane's worktree, so the state a session resume would restore is the state the conclusion just deleted. `/dev-loop <n>` is unchanged and remains the resume mechanism.
+
+### Patch Changes
+
+- [#111](https://github.com/ieuanign/skills/pull/111) [`477fb4c`](https://github.com/ieuanign/skills/commit/477fb4c4d4adad175cc0bb1ccd69efba5334161c) Thanks [@ieuanign](https://github.com/ieuanign)! - `/dev-loop` now actually asks for the two repository-profile keys Phase B needs.
+
+  **Full-suite command** and **Fix cycles** were both documented as asked before a repository's first execution phase, and no step performed either ask. The obligation was asserted in passive voice in two places and implemented by none, so every repository has silently run on the defaults since the keys were introduced — including this one, whose profile carried one of the two only because somebody typed it by hand. That is why the bound which ended the motivating lane was never a number anyone chose.
+
+  **Act 0 gains step 9, and it is the only place either is asked.** It skips entirely unless the run will reach Phase B, and skips any key the profile already carries — a persisted value is an answer, and `none` and `0` are answers like any other, so the ordinary run asks nothing and a repository is asked at most once ever. It is not a gate: it raises no question about the batch's work, so gate suppression does not touch it, and it sits at intake because that is the last point at which a human who typed `auto` is reliably still watching.
+
+  The **Fix cycles** prompt describes the no-progress threshold it now is, not the flat cap it was — a higher answer buys tolerance for a repository whose reviews repeat themselves, not more cycles for one that is converging. Both prompts state the default that applies if declined, so a repository can decline and still run.
+
+  The passive assertions that a value was "ask-then-persisted before this first runs" are replaced by references to the step that now does it, and the hard rule about one-time preconditions gains the general form: **every one of them belongs to a named step that performs it**, because an obligation carried only by a key's own description is one nothing does.
+
+  This repository's own profile gains its **Fix cycles** answer.
+
+- [#113](https://github.com/ieuanign/skills/pull/113) [`4f74466`](https://github.com/ieuanign/skills/commit/4f74466e09990d72d7c4424f54a48530549c32a7) Thanks [@ieuanign](https://github.com/ieuanign)! - `/dev-loop`'s unattended messages now have a stated format.
+
+  The specification stated a content requirement — an ending says why in one line, so it can be triaged from a phone — and the skill stated the mechanism. Nothing stated the **shape**, so every message was composed freshly and drifted between runs.
+
+  **Five state tokens partition across the three message events** already in the event table, so no message carries two axes at once. That partition is load-bearing rather than tidy: an ended sub-lane opens a _draft_ pull request, so a single enum spanning endings and pull-request states would force one token to say both.
+
+  | Message    | Writer                       | Tokens           |
+  | ---------- | ---------------------------- | ---------------- |
+  | started    | host, at intake              | `start`          |
+  | ending     | notifier, mid-lane           | `halt`, `failed` |
+  | completion | host, after the phase script | `draft`, `ready` |
+
+  The shape is the issue number, the state token, the reason where one exists, then the link — the pull request link where a pull request exists, the issue link otherwise:
+
+  ```
+  [#105](https://github.com/ieuanign/skills/issues/105) start: <issue link>
+  [#105](https://github.com/ieuanign/skills/issues/105) halt: still CHANGES_REQUESTED after 2 fix cycles — 3 findings open
+  <issue link>
+  [#105](https://github.com/ieuanign/skills/issues/105) draft: 2 findings open, suite green
+  <pr link>
+  [#105](https://github.com/ieuanign/skills/issues/105) ready:
+  <pr link>
+  ```
+
+  The reason is retained because triage from a phone is that line's whole purpose. A lane with one sub-lane — the common case — emits the single-line shape exactly; a lane with several emits one line per sub-lane under a shared header. No message carries the run handle, and the two ending tokens are the ending labels in lower case, so there is no second vocabulary to keep in step with `contracts.md`.
+
+  The format is stated in `notifications.md` and nowhere else — the skill's mechanism section still states only the command for each event. The four closing tokens being exhaustive is what makes the existing one-closing-message-per-lane property readable by inspection: a `start` with none of them after it is a run that died.
+
+- [#108](https://github.com/ieuanign/skills/pull/108) [`f209df8`](https://github.com/ieuanign/skills/commit/f209df8bc501d69b8cbefb658e29b347f972b800) Thanks [@ieuanign](https://github.com/ieuanign)! - `/dev-loop`'s execution state machine now has a test harness, tracked in the repository and run by `npm run check`. No behaviour changed: `contracts.md`, `notifications.md` and both phase scripts are untouched, and the harness passes against the implementation as it stands.
+
+  **The seam already existed and was already used.** A phase script is not a module — the Workflow tool compiles it as the body of an async function over its own globals — so `node --check` is a silent no-op on one and only an `AsyncFunction` parses it. The check script has loaded them that way all along, construct-only, because running one dispatches agents. Handing that same constructor a **scripted fake `agent()`** runs the whole machine instead: every loop, every bound, every ending, for the price of a `node` process and no dispatches at all. It is the highest seam available, and no new one is introduced anywhere.
+
+  **The shim is now one copy rather than two that were asked to match.** It moves to `scripts/lib/phase-script.mjs`, which the check script calls as a CLI and the harness imports as a function. Previously the check script carried it inline with a comment naming a gitignored harness it "must stay in step" with — an untracked file nothing could compare it against, and one a provisioned worktree never had.
+
+  **Fifteen scenarios, two observables each**: the ordered labels the fake `agent()` was asked for, and the lane result — ending label, ending reason, terminal pull-request state, findings ledger. They cover the review loop reaching its bound with the findings open, the implement loop's two debug+fix attempts and its give-up clause landing on the final permitted one and no earlier, all four debugger routes, the suite gate's progress-sensitive rounds and its eight-round ceiling, the ending labels a bound and a reasoned refusal take against the ones a dead agent and an unusable return take, and terminal state computed per sub-lane so that one sub-lane's draft does not draft its sibling.
+
+  Nothing asserts on an internal variable, a private helper, or prompt wording beyond an input a contract requires to be present — a test that breaks when a loop is refactored but its behaviour is unchanged is a bad test, and this file has to survive refactors of the file it tests.
+
+- [#109](https://github.com/ieuanign/skills/pull/109) [`5e345a1`](https://github.com/ieuanign/skills/commit/5e345a15ce62f9d0c585ab7aa0c3e7a69cb9086a) Thanks [@ieuanign](https://github.com/ieuanign)! - A `/dev-loop` stage that returns nothing no longer produces an ending saying the agent "died".
+
+  From where the pipeline sits that was an assertion it could not support. An agent skipped mid-run and an agent dead after the runner's own retries both resolve the call to nothing, and nothing is the whole of what the script sees — so a developer triaging from a phone read "died" and went looking for a crash that may never have happened. Every such ending now says the stage **returned nothing, and that it was skipped or died after the runner's retries**, which is the wording a lane whose result came back empty already carried. One condition, one voice.
+
+  Seven sites: the writer on a plan commit, the debugger, the reviewer, a fix-cycle writer, the suite gate, the suite debugger, and a suite-fix writer — plus the architect's `DIED` summary in the planning phase, which said the same thing about the same observation.
+
+  **The ending label is unchanged, and `contracts.md` now records why so it is not re-proposed.** A transient break keeps **FAILED**, because that label answers exactly one question — _is this worth retrying?_ — and a transport timeout is its clearest affirmative. No new label, no classification stage, and no agent dispatched to adjudicate a transport failure it could not reproduce. Calling it a halt would assert that something deliberately stopped, which is the one thing here known not to have happened.
+
+  The contract was edited first and both execution modes in the same change. A harness scenario drives all seven stages and asserts, for each, that the ending carries the shared sentence and that nothing in it claims a death.
+
 ## 0.11.0
 
 ### Minor Changes
