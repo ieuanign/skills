@@ -89,8 +89,8 @@ destination stays untouched by this effort entirely.
 |---|---|---|---|---|
 | S-3 | "You are the orchestrator. You stay in the MAIN worktree and never write code, plan, review, or debug yourself" | `SKILL.md` | — | ☐ |
 | S-4 | The orchestrator owns "intake, gates, worktree provisioning, push, PRs, cleanup — and, under `unattended`, the notifications at your own boundaries" | `SKILL.md` | — | ☐ |
-| S-5 | "the **notifier**, is not one you dispatch: `phase-execute.js` dispatches it mid-script … because you are blind while a script runs" | `script` | #129 | ☐ |
-| S-6 | "`notifications.md` governs who writes what" — the pointer to the notifications specification | `agents/` | #129 | ☐ |
+| S-5 | "the **notifier**, is not one you dispatch: `phase-execute.js` dispatches it mid-script … because you are blind while a script runs" | `script` | #129 | ☑ phase-execute.js |
+| S-6 | "`notifications.md` governs who writes what" — the pointer to the notifications specification | `agents/` | #129 | ☑ agents/notifier.md |
 | S-7 | "All agent returns are machine-readable — trust the contract keys (`STATUS/RESULT/VERDICT/OWNER`), not vibes" | `script` | #128 | ☑ phase-execute.js |
 | S-8 | "The pipeline's state machine … is specified in `<this-skill-dir>/contracts.md` — normative for BOTH execution modes; read it before Phase B." | `deleted` | #128 | ☑ |
 | S-9 | "This skill is repo- and machine-agnostic: it hardcodes no repository name, path, or project fact." | `SKILL.md` | — | ☐ |
@@ -116,7 +116,7 @@ the specification, and the half the orchestrator evaluates moves into `SKILL.md`
 | S-16 | "It is contracts.md's **Lane conclusion** branch" — the framing of the run mode as a contract branch point | `deleted` | #126 | ☑ |
 | S-17 | **Gate suppression.** "Both gates raise their questions under `gated`, and neither raises any under `unattended`. This line is the only place that is decided: no argument and no profile key overrides it." | `SKILL.md` | — | ☐ |
 | S-18 | **Notifications.** "Under `unattended` you emit … the host-owned events, at the three boundaries marked **⟨notify⟩** … each ⟨notify⟩ boundary says *what* to run and never *whether*" | `SKILL.md` | — | ☐ |
-| S-19 | "`notifications.md` governs what each event says, which label role it writes, and in what order" — the specification itself | `agents/` | #129 | ☐ |
+| S-19 | "`notifications.md` governs what each event says, which label role it writes, and in what order" — the specification itself | `agents/` | #129 | ☑ agents/notifier.md |
 | S-20 | The format of the orchestrator's own three events — lane start, plan comment, lane conclusion — stated inline at the boundaries that write them | `SKILL.md` | #129 | ☐ |
 | S-21 | **Cost log.** "Under `unattended` you write Act 4's per-lane cost log. Under `gated` you write none … the transcript directories it needs are captured under both modes" | `SKILL.md` | — | ☐ |
 | S-22 | "**Suppression removes the questions, not the work.** Every step of both gates still runs; each question resolves to its unattended answer instead" | `SKILL.md` | — | ☐ |
@@ -131,7 +131,7 @@ the specification, and the half the orchestrator evaluates moves into `SKILL.md`
 
 | ID | Rule | → | By | ✓ |
 |---|---|---|---|---|
-| S-29 | "Read `notifications.md` before you emit anything." — the orchestrator loading the specification | `deleted` | #129 | ☐ |
+| S-29 | "Read `notifications.md` before you emit anything." — the orchestrator loading the specification | `deleted` | #129 | ☑ |
 | S-30 | "**A label is `gh issue edit <n> --add-label/--remove-label`.** Resolve its three roles to strings ONCE at Act 0, through the repo's own `docs/agents/triage-labels.md` … No label string is ever written into this skill." | `SKILL.md` | — | ☐ |
 | S-31 | "**A comment is `gh issue comment <n> --body-file -`**, with the body piped in from a **quoted** heredoc … Never `--body "<text>"`" | `SKILL.md` | — | ☐ |
 | S-32 | "**A message is `<this-skill-dir>/notify.sh <<'MSG' … MSG`**, which reads its payload on standard input … never check for [a channel], never ask about it, and never add a profile key for it." | `SKILL.md` | — | ☐ |
@@ -150,7 +150,7 @@ payment #121 names.
 | S-36 | "**WORKTREES** — `<MAIN>/.claude/worktrees/`. … the directory slug is the branch name after its first `/`" | `SKILL.md` | — | ☐ |
 | S-37 | "**GitHub repo** — never pass `--repo`: … gh infers the repository from the remote." | `SKILL.md` | — | ☐ |
 | S-38 | "**RUN HANDLE** — … read once from your environment: `$CLAUDE_CODE_SESSION_ID`. Unset or empty ⇒ **there is no handle**: carry the empty string, write no line for it anywhere, ask nothing" | `SKILL.md` | — | ☐ |
-| S-39 | "It is a **run handle, never a resume identifier**" and why — an unattended conclusion deletes the state a session resume would restore | `notifications.md` | #129 | ☐ |
+| S-39 | "It is a **run handle, never a resume identifier**" and why — an unattended conclusion deletes the state a session resume would restore | `notifications.md` | #129 | ☑ |
 | S-40 | "**Fast copy** — macOS: `/bin/cp -Rc` … MUST be `/bin/cp`; Linux: `cp -R --reflink=auto`; anywhere else: plain `cp -R`." | `SKILL.md` | — | ☐ |
 
 ## A6. Where configuration lives — a rule, not a list
@@ -177,7 +177,7 @@ reader load whatever file they are in today.
 | S-50 | "Never store derivable facts there." | `SKILL.md` | — | ☐ |
 | S-51 | **Branch template** key — default `feat/{issue}`, sub-lanes `feat/{issue}-{area}`, asked on the first run in a repo | `SKILL.md` | — | ☐ |
 | S-52 | **PR title format** key — default `<type>(<scope>): #<issue> - <title>` | `SKILL.md` | — | ☐ |
-| S-53 | **PR body template** key — "asked at the first Gate 2; whatever its shape, the core elements in Gate 2 below must survive" | `profile` | #129 | ☐ |
+| S-53 | **PR body template** key — "asked at the first Gate 2; whatever its shape, the core elements in Gate 2 below must survive" | `profile` | #129 | ☑ |
 | S-54 | **Setup command** key — "what a cold checkout runs before its tests pass … Asked at the first provisioning." | `SKILL.md` | — | ☐ |
 | S-55 | **Full-suite command** key — "the ONE command that runs the repo's whole test suite from a provisioned worktree … `none` is a real answer … Configuration, never discovery" | `SKILL.md` | — | ☐ |
 | S-56 | **Fix cycles** key — the review loop's no-progress threshold, default `2`, asked by Act 0's step 9 and nowhere else | `SKILL.md` | — | ☐ |
@@ -232,7 +232,7 @@ dropped.
 | S-91 | Step 9 — the Fix cycles ask's shape: state the arithmetic, say what it is *not*, offer `2` / a higher value / `0`, declined ⇒ `2` persisted | `SKILL.md` | — | ☐ |
 | S-92 | Step 9 — "**This step is host work in both execution modes** — Act 3 passes the two values into the phase scripts under Mode W and Mode A reads the same two off the same profile" | `deleted` | #126 | ☑ |
 | S-93 | Step 10 — "**⟨notify⟩ Lane start.** For every lane that survived steps 6–8 … add the in-progress label and send the started message, per lane. This is the LAST step of Act 0, and that position is the point" | `SKILL.md` | — | ☐ |
-| S-94 | Step 10 — "The label is also a claim marker … `notifications.md` records the hazard that comes with it — do not solve it here." | `notifications.md` | #129 | ☐ |
+| S-94 | Step 10 — "The label is also a claim marker … `notifications.md` records the hazard that comes with it — do not solve it here." | `notifications.md` | #129 | ☑ |
 
 ## A10. Act 1 — Phase A: plans
 
@@ -246,7 +246,7 @@ dropped.
 | S-100 | "planning … is roughly three tenths of a lane and it lands in a different directory from execution's" | `docs/dev-loop.md` | #125 | ☑ |
 | S-101 | "KEEP each lane's `summary` bullets for the rest of the run … Gate 2 puts them in the PR body's Context section — so they must survive whether or not Gate 1 fires" | `SKILL.md` | — | ☐ |
 | S-102 | "**⟨notify⟩ Plan comment.** Per lane, comment the plan's summary bullets and the architect's open questions on the issue … Pass `planPath` in the comment" | `SKILL.md` | — | ☐ |
-| S-103 | "**Never the plan file** — it survives on disk at tens of kilobytes, no agent ever reads this comment … and inlining it buries the thread to serve nobody." | `notifications.md` | #129 | ☐ |
+| S-103 | "**Never the plan file** — it survives on disk at tens of kilobytes, no agent ever reads this comment … and inlining it buries the thread to serve nobody." | `notifications.md` | #129 | ☑ |
 
 ## A11. Gate 1 — plan approval
 
@@ -331,8 +331,8 @@ dropped.
 | S-165 | Step 2 — "Put `terminal.reasons` in the body so a human landing on a draft sees which trigger fired." | `SKILL.md` | — | ☐ |
 | S-166 | Step 2 — "Under `gated` **nothing here changes and the table is not read**: a sub-lane that **ended** gets no PR by default and you offer 'open a draft PR anyway?' … a sub-lane that concluded clean gets its normal PR whatever its verdicts say" | `SKILL.md` | — | ☐ |
 | S-167 | Step 2 — "You set draft state ONLY on a PR you are creating: never convert one that already exists, whoever opened it." | `SKILL.md` | — | ☐ |
-| S-168 | Step 2 — the pull request body's core elements: `Closes #<n>` on the first sub-lane only, Context, Acceptance criteria, Whole-issue roll-up on the last sub-lane, Review findings, Suite, Attempt log, Run handle, Local-only artifacts, Why this is a draft | `profile` | #129 | ☐ |
-| S-169 | Step 2 — the footer "🤖 Generated with [Claude Code](https://claude.com/claude-code)" | `profile` | #129 | ☐ |
+| S-168 | Step 2 — the pull request body's core elements: `Closes #<n>` on the first sub-lane only, Context, Acceptance criteria, Whole-issue roll-up on the last sub-lane, Review findings, Suite, Attempt log, Run handle, Local-only artifacts, Why this is a draft | `profile` | #129 | ☑ |
+| S-169 | Step 2 — the footer "🤖 Generated with [Claude Code](https://claude.com/claude-code)" | `profile` | #129 | ☑ |
 | S-170 | Step 3 — worktrees "removed when, and only when, the work reached the remote AND no human is expected to resume in it … `git worktree remove <WORKTREES>/<slug>` and is never `--force`, and it runs **only after that push succeeded**" | `SKILL.md` | — | ☐ |
 | S-171 | Step 3 — "A refusal means work was left behind — report `git -C <wt> status --porcelain` verbatim and keep that worktree; that refusal IS the dirty-work guard, so never argue with it." | `SKILL.md` | — | ☐ |
 | S-172 | Step 3 — "NEVER target MAIN: before any removal, confirm the path is NOT the first entry of `git worktree list`." | `SKILL.md` | — | ☐ |
@@ -347,9 +347,9 @@ dropped.
 | S-181 | Step 4 — "**⟨notify⟩ Lane conclusion.** … Per lane, not per sub-lane … and at the lane's LAST layer" | `SKILL.md` | — | ☐ |
 | S-182 | Step 4 — "**Remove the in-progress label, without exception**: finished, ended or thrown, the lane is no longer in progress." | `SKILL.md` | — | ☐ |
 | S-183 | Step 4 — the four-case table: `notified: true` ⇒ write nothing else; `crashed: true` ⇒ label it and post the ending comment plus the run handle; a draft with no ending ⇒ the host's; every PR ready ⇒ no label | `SKILL.md` | — | ☐ |
-| S-184 | Step 4 — "What replaces it — if anything — is `notifications.md`'s label rule, which is stated there and not here." | `agents/` | #129 | ☐ |
+| S-184 | Step 4 — "What replaces it — if anything — is `notifications.md`'s label rule, which is stated there and not here." | `agents/` | #129 | ☑ agents/notifier.md |
 | S-185 | Step 4 — "Then **send exactly one closing message** … Unconditional, including for a lane with no PR at all" | `SKILL.md` | — | ☐ |
-| S-186 | Step 4 — "paired with Act 0's started message it is the run's dead-session signal" | `notifications.md` | #129 | ☐ |
+| S-186 | Step 4 — "paired with Act 0's started message it is the run's dead-session signal" | `notifications.md` | #129 | ☑ |
 | S-187 | Step 4 — "A lane whose sub-lanes span layers reaches this step once, at its last. Carry its `notified` forward into the next layer's args" | `SKILL.md` | — | ☐ |
 | S-188 | Step 4 — "**What this cannot cover** is the session itself stopping … A watchdog is deliberately out of scope" | `docs/dev-loop.md` | #125 | ☑ |
 | S-189 | Step 5 — "**Stack linking.** Once per BATCH, at its LAST Gate 2." | `SKILL.md` | — | ☐ |
@@ -655,10 +655,10 @@ the reasoning to an ADR.
 
 | ID | Rule | → | By | ✓ |
 |---|---|---|---|---|
-| C-122 | "The **last sub-lane of a lane** therefore carries, in its pull request body beneath its own criteria section, every acceptance criterion of the issue with its verdict and the sub-lane that judged it." | `profile` | #129 | ☐ |
+| C-122 | "The **last sub-lane of a lane** therefore carries, in its pull request body beneath its own criteria section, every acceptance criterion of the issue with its verdict and the sub-lane that judged it." | `profile` | #129 | ☑ |
 | C-123 | "**The host assembles it from sub-lane records it already holds**, so no agent is dispatched and no stage is added to any loop." | `SKILL.md` | — | ☐ |
 | C-124 | "**It is reporting only.** It feeds no predicate, changes no terminal-state row, and decides nothing" | `internals` | #125 | ☑ |
-| C-125 | "**Omitted on a lane with a single sub-lane**, where the whole issue is that sub-lane's and the roll-up would repeat the section above it verbatim." | `profile` | #129 | ☐ |
+| C-125 | "**Omitted on a lane with a single sub-lane**, where the whole issue is that sub-lane's and the roll-up would repeat the section above it verbatim." | `profile` | #129 | ☑ |
 | C-126 | "Single-version: both execution modes compose it identically, because the pull request body is the host's in both." | `deleted` | #126 | ☑ |
 
 ## B18. Sequencing
@@ -762,7 +762,7 @@ token names a class rather than a file — `ADR`, `agents/` — the tick cell na
 | #126 | 17 `deleted` + 4 `ADR` (0004) | **21 / 21** |
 | #127 | 15 `cleanup` + 1 `docs/dev-loop.md` (`S-214`, re-destined — see below) | **16 / 16** |
 | #128 | 8 `agents/` + 8 `script` + 4 `deleted` + 3 `ADR` | **23 / 23** |
-| #129 | 5 `profile` + 4 `notifications.md` + 3 `agents/` + 1 `script` + 1 `deleted` | 0 / 14 |
+| #129 | 5 `profile` + 4 `notifications.md` + 3 `agents/` + 1 `script` + 1 `deleted` | **14 / 14** |
 | #130 | rewrites what stays in `SKILL.md`; ticks nothing new | n/a |
 
 The 223 `SKILL.md` entries are not ticked by any ticket: they are the steps, and they stay. #131
