@@ -87,4 +87,6 @@ See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
-Single-context — root `CONTEXT.md` plus `docs/adr/`. See `docs/agents/domain.md`.
+Single-context — root `CONTEXT.md`, and no decision records. A decision worth keeping is written where
+the code it binds lives, so it goes stale in the same edit that invalidates it. See
+`docs/agents/domain.md`.

@@ -143,4 +143,4 @@ ordinary English ("an accepted cost") name other things and are unaffected.
 
 A recorded exception to the smell baseline: a pattern this repository uses deliberately that would otherwise be reported as a code smell. Overrides live in `docs/agents/smell-overrides.md`, read by the `reviewer` agent and the code-review Standards axis. They are written from findings a human rejected, never distilled from `CLAUDE.md` — a repository where nothing has recurred yet correctly has no file at all.
 
-Coding standards themselves are not this. They bind whether or not this plugin is installed, so they live in `CLAUDE.md` and `.claude/rules/`, per [ADR-0001](./docs/adr/0001-config-boundary.md).
+Coding standards themselves are not this. They bind whether or not this plugin is installed, so they live in `CLAUDE.md` and `.claude/rules/`.

@@ -9,7 +9,7 @@ implementation, `phase-execute.js` is the specification of record, and this page
 human can understand it without reading 759 lines of JavaScript.
 
 For what a run *does* — run shapes, prerequisites, common questions — see
-[`dev-loop.md`](./dev-loop.md). For the decisions behind the sharper edges, see `adr/`.
+[`dev-loop.md`](./dev-loop.md).
 
 ---
 
@@ -133,8 +133,11 @@ The architect is the one role that runs before any sub-lane exists, so an archit
 nothing is **reported at Gate 1 with a re-run offer** instead. A requested issue is never silently
 dropped.
 
-Why the wording is careful and why the label does not change is
-[ADR-0006](./adr/0006-empty-returns-stay-failed.md).
+The wording is careful and the label does not change, both deliberately. A skipped agent and a dead
+one are indistinguishable from where the pipeline sits, so asserting a death sends a reader looking
+for a crash that may never have happened, and calling it a halt would assert the one thing known not
+to have happened. The ending stays `FAILED`, because that label answers exactly one question — *is
+this worth retrying?*
 
 ---
 
@@ -187,8 +190,7 @@ The review loop below is progress-sensitive; this one is not, and that is delibe
 inconsistency to tidy away. The give-up clause requires knowing **at dispatch time** that an attempt
 is the last, and a progress-sensitive counter cannot supply that: firing late is impossible, because
 the counter only advances after a round returns, and firing early stamps abandonment on attempts that
-go on to succeed. [ADR-0002](./adr/0002-review-loop-progress-sensitive-bound.md) carries the full
-comparison.
+go on to succeed.
 
 ---
 
@@ -256,9 +258,9 @@ rarely word the same defect identically, so the threshold fires rarely. That is 
 a defect, and it is recorded so that nobody later "fixes" the counter for not advancing.
 
 The ceiling being 5 where the suite gate's is 8 encodes run spend: a review cycle dispatches the two
-dearest agents in the pipeline, where a suite round is one cheap call running one command.
-[ADR-0005](./adr/0005-no-token-ceiling.md) rests the decision to have no token ceiling at all on a lane
-being bounded from five directions, one of them this one — so raising it is not free.
+dearest agents in the pipeline, where a suite round is one cheap call running one command. There is
+no token ceiling anywhere in the pipeline, and that decision rests on a lane being bounded from five
+directions, one of them this one — so raising it is not free.
 
 ### Finding identity — what makes two findings the same finding
 
@@ -299,8 +301,8 @@ criterion is `APPROVED`.**
 
 The last review's verdicts are the sub-lane's. They land in the findings ledger, and — under
 `unattended` — in the terminal-state table, which is the one place a criterion verdict decides
-anything at all. Which criteria a sub-lane owns is
-[ADR-0003](./adr/0003-criterion-ownership.md)'s.
+anything at all. Which criteria a sub-lane owns is a fact the plan states and the host applies, never
+a judgement the reviewer makes at review time.
 
 ---
 
@@ -460,8 +462,9 @@ never built on a base the human has not vetted.
 ### Push
 
 A sub-lane's branch reaches the remote **exactly once**, at its layer's Gate 2, guarded on the branch
-being ahead of its base as read from git. [ADR-0007](./adr/0007-per-commit-push-is-not-implementable.md)
-records why per-commit push cannot be built and buys nothing.
+being ahead of its base as read from git. **Per-commit push is not implementable, and is not to be
+re-proposed**: the whole commit loop runs inside one workflow call, a workflow script has no shell,
+and no stage in the pipeline consumes an intermediate push anyway.
 
 **Never a force-push.** Fix cycles append commits and a resumed lane derives its already-done commits
 from the git log, so every push the pipeline makes is a fast-forward by construction. There is

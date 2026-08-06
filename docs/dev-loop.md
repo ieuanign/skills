@@ -101,7 +101,7 @@ therefore exactly one Gate 2. This is the shape everything else is a variation o
 `/dev-loop 41 42 43`. Three architects at once, three worktrees, three branches, three pull requests,
 all based on the trunk and all in layer 1. They finish together, because a layer's Gate 2 fires when
 the layer ends — so the first lane to finish waits for the slowest. That is
-[an accepted cost](./adr/0007-per-commit-push-is-not-implementable.md), not a bug.
+an accepted cost, not a bug.
 
 Gate 1 is **one** interruption for the whole batch, not one per lane.
 
@@ -134,7 +134,7 @@ Two things follow that surprise people:
 - **Each sub-lane is judged only on the acceptance criteria it owns.** The plan states which; anything
   the plan left unlisted falls to the last sub-lane in plan order. The last sub-lane's pull request
   additionally carries a whole-issue roll-up, so whoever merges the top of a chain can see whether the
-  issue as a whole was delivered. [ADR-0003](./adr/0003-criterion-ownership.md) is why.
+  issue as a whole was delivered.
 
 ### An unattended run
 
@@ -239,8 +239,8 @@ of a blocked lane's architect.
 **Can I set a token budget per lane?**
 
 No, and this is deliberate rather than unbuilt. **Token spend is reported and enforced nowhere.**
-[ADR-0005](./adr/0005-no-token-ceiling.md) records the four reasons a ceiling could not work and the
-load-bearing reason it was unnecessary: a lane is already bounded from five directions, and the most
+A ceiling was specified once and dropped, for four reasons it could not work and one load-bearing
+reason it was unnecessary: a lane is already bounded from five directions, and the most
 expensive lane in the measured set was not stuck — it was thirteen commits of genuine work against a
 median of three. A ceiling would not have caught a runaway; it would have refused a big issue.
 

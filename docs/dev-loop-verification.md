@@ -47,7 +47,7 @@ below, and 499 adding the `.claude/rules/` row to the config-homes table with it
 additions this ticket judged necessary, and neither is prose. Closing that gap would mean cutting rules rather than prose: what remains is the
 Acts, the Gates, the four host tables and the ten-element pull request body floor. That is now
 [#158](https://github.com/ieuanign/skills/issues/158)'s to settle — either by naming the rules that go
-or by an ADR retiring the target — rather than a number left with no owner.
+or by retiring the target — rather than a number left with no owner.
 
 ## Rule survival — the check that mattered
 
@@ -98,8 +98,8 @@ found `Status: READY` on disk, skipped Phase A, and cost 126K against the first 
 
 ### Why scenario 10 cannot be run from inside a session that has the tool
 
-Tool availability is fixed at session start — the fact [ADR-0004](./adr/0004-mode-a-deleted.md) records
-and the reason the refusal names a restart. A session holding the Workflow tool cannot simulate one
+Tool availability is fixed at session start — the reason the refusal names a restart. A session
+holding the Workflow tool cannot simulate one
 that does not: the refusal fires at Act 0 off a toolset check, and nothing inside the run can make that
 check fail.
 

@@ -133,9 +133,6 @@ Two corollaries do the enforcing, and both are load-bearing: **no derived copies
 `docs/agents/` restates a fact the repo states elsewhere, which is the mistake that produced and then
 retired the old `coding-standards.md` — and **no machine facts in git**.
 
-[ADR-0001](./adr/0001-config-boundary.md) is the authority here, with the reasoning and the rejected
-alternatives.
-
 ## Running it
 
 ```bash
