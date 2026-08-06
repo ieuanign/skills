@@ -73,6 +73,21 @@ on near-repetition, because sameness is what ends the review loop early.
 Its counterpart in the suite gate is free: a test runner supplies stable identifiers, where a
 reviewer supplies prose.
 
+## Criterion ownership
+
+Which sub-lane an acceptance criterion belongs to: the one whose pull request delivers it, named on
+that pull request's entry in the plan's Commit / PR breakdown. A fact the architect states and the
+host applies — never a judgement the reviewer makes, which holds one range and the whole issue and so
+cannot tell work that is missing from work that is not yet due.
+
+A criterion the plan left unassigned **falls to the last sub-lane in plan order** — last in the plan,
+never the top of the stack, since a lane's sub-lanes are sequential but not necessarily stacked. A
+single-pull-request plan names nothing and owns everything by that default, which is why it carries
+none of this.
+
+_Avoid_: criterion scope — **scope** already names the sub-lane's own diff range, which is the other
+half of what a reviewer is told and the half it never has to decide.
+
 ## Run handle
 
 The identifier that locates a finished run's own transcript, carried on the ending comment and in the
