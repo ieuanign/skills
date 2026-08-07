@@ -72,25 +72,49 @@ Classification is **your own plain reading of each body**, and dispatches no age
 
 **Classify what the comment says, not what its metadata suggests.** An outdated comment — `line: null`, `outdated: true`, its stale anchor left in `originalLine` — is one whose code moved, which says nothing about whether anyone did what it asked. `outdated: true` is therefore never the evidence for `already addressed`; a commit is.
 
-One row per entry, in the order the read returned them:
+### The table
 
-| Comment | Author | Intent | Why |
-|---|---|---|---|
-| `<path>:<line>` where the entry has both, `<path>` marked *stale anchor* where `line` is null, and the origin in words where there is no path at all — each linked to the entry's `url` — then the opening of the body | the entry's `author`, or `unknown` where it is null | **fix**, **skip** or **unclassified** | one clause saying what makes it that |
+**One line per entry, in the order the read returned them.** Anything longer than a clause goes to an expansion beneath the table and never into a cell.
 
-The cell is for reading: the body's opening is truncated to fit and any `|` in it escaped, while the body itself travels on verbatim.
+| # | Comment | Author | Intent | Reason | Why |
+|---|---|---|---|---|---|
+| the row's key, from `1` | `<path>:<line>` where the entry has both, `<path>` marked *stale anchor* where `line` is null, and the origin in words where there is no path at all — each linked to the entry's `url` — then the opening of the body | the entry's `author`, or `unknown` where it is null | **fix**, **skip** or **unclassified** | a **skip**'s reason, spelled as the table above spells it and marked `(!)` where it is `disagreed with`; empty on the other two intents | one clause, per the intent below |
+
+The comment cell is for reading: the body's opening is truncated to fit. **Any `|` a cell carries is escaped, and anything wanting a newline goes to its expansion** — the excerpts cut for evidence included, since one unescaped pipe silently eats the rest of a row. The body itself travels on verbatim.
+
+| Intent | Its clause |
+|---|---|
+| **fix** | what the fix will do — written once here, and the same string Step 5 hands the writer |
+| **skip** | the evidence its reason takes, or `see [<#>]` where that evidence runs past a clause |
+| **unclassified** | that the vocabulary did not cover it, and what it appeared to ask |
+
+### Expansions
+
+Beneath the table, one block per row that needs one, keyed by that row's `#`:
+
+```markdown
+**[3] disagreed with**
+
+<the full text — as many paragraphs as it takes>
+```
+
+**Every `disagreed with` row has one, carrying the reasoning in full**; a row with that reason and no expansion is an unfinished table. Any other row may have one where its clause would not fit.
+
+`(!)` is the mark, carried by no other reason. It is plain ASCII on purpose: it reads the same in a terminal as in GitHub's renderer, and nothing here says anything with colour.
+
+**This is the only table definition there is.** The gate below, Step 5's file and Step 10's comment each render *this* table, expansions included — the same rows, columns and clauses, never a second summary of them.
 
 ## Step 4 — the gate
 
 **Nothing above this line wrote anything** — every command so far was a read — and nothing below it runs without an explicit answer.
 
-Present the table, then count its **fix** rows:
+Present Step 3's table and its expansions, then count its **fix** rows:
 
 - **None** ⇒ there is nothing to do. Say so and stop, having shown the table: it is the answer.
 - **More than one** ⇒ show the table and stop, saying that grouping several fixes into commits is not built yet and that one at a time is what this skill can do. Never pick one.
 - **Exactly one** ⇒ ask.
 
-AskUserQuestion, once: approve this table, or stop. Say what approving does, so the answer is an informed one — a worktree attached to `headRefName`, one commit for the one fix, one push to that same branch, and one comment carrying the findings back. A human may correct any row's intent first; the corrected table is the one that counts, and the count above is taken again from it. Anything short of approval ends the run with nothing written.
+AskUserQuestion, once: approve this table, or stop. Say what approving does, so the answer is an informed one — a worktree attached to `headRefName`, one commit for the one fix, one push to that same branch, and one comment carrying the findings back. A human may correct any row's intent, reason or clause first; the corrected table is the one that counts, everything downstream renders that one, and the count above is taken again from it. Anything short of approval ends the run with nothing written.
 
 ## Step 5 — the approved row becomes the plan
 
@@ -111,6 +135,8 @@ there is no path — and the entry's url.
 <the body, VERBATIM: not summarised, not re-wrapped, not corrected>
 
 ## Approach
+<the approved row's Why clause, character for character as the table shows it>
+
 <what the fix must achieve, as an outcome rather than a diff>
 
 Only this comment. Every unresolved comment was classified and shown; the rest were not approved and
@@ -128,7 +154,13 @@ something nobody asked for.
 
 ## Commit / PR breakdown
 1. `<message>` — <one line saying what the commit does>
+
+## The table
+<Step 3's table as approved, every row and every expansion, rendered identically — what the rest of
+the pull request's comments were classified as, and none of it this commit's scope>
 ```
+
+**The fix row's clause is not rewritten here.** The writer implements against the string the human approved, so a second wording of it is a second brief nobody agreed to.
 
 `<message>` is a conventional-commit message — `<type>(<scope>): #<n> - <what changes>`, its type and scope taken from what the fix actually is — and the **same string, verbatim,** is what Step 7 passes as `commits[0].message`. `#<n>` is the pull request: GitHub numbers pull requests and issues in one sequence.
 
@@ -215,7 +247,7 @@ gh pr comment <n> --body-file - <<'BODY'
 BODY
 ```
 
-**The heredoc is quoted and the body arrives on stdin.** Comment bodies, reviewer notes and findings are agent-facing prose full of backticks, dollar signs and quotes; interpolated into a shell string they are executed, and the one place this run quotes a human's words back at them is the last place to allow that. Everything it carries travels verbatim.
+**The heredoc is quoted and the body arrives on stdin.** Comment bodies, the verbatim excerpts Step 3's evidence cuts out of them, reviewer notes and findings are agent-facing prose full of backticks, dollar signs and quotes; interpolated into a shell string they are executed, and the one place this run quotes a human's words back at them is the last place to allow that. Everything it carries travels verbatim.
 
 What it says, from the sub-lane record and nothing else:
 
@@ -223,6 +255,7 @@ What it says, from the sub-lane record and nothing else:
 |---|---|
 | what reached the branch | the pushed commit's sha and subject — or plainly that nothing was pushed, and why |
 | the comment it answers | the entry's author and `url`. `gh pr comment` posts at the pull request rather than in the thread, so the link is what tells a reader which comment this is about |
+| the table | Step 3's table as approved, every row and every expansion, rendered identically. This copy is the one that outlives the run — the gate's is a session's scrollback and the table file is deleted below |
 | fixed | `fixedFindings` — reviewer findings the writer applied |
 | won't-fix | `wontFix`, each with the writer's reason |
 | notes | `reviewNotes` verbatim, and `reviewTrajectory` where a bound ended the review loop |
@@ -260,6 +293,8 @@ A refusal is the guard working: `git worktree remove` declines on tracked modifi
 - **Gated, always.** Nothing below Step 4 runs without an explicit answer; there is no unattended mode, no `auto` token and no argument that reaches one.
 - **One fix per run.** Every unresolved comment is classified and shown; more than one **fix** row shows the table and stops.
 - **Every skip names one of Step 3's four reasons and carries its evidence.** No fifth reason is invented at run time and no free text stands in for one; a comment none of them fits, or whose evidence cannot be produced, is `unclassified`, and nothing acts on it.
+- **One line per comment, and one table definition.** Overflow goes to the keyed expansion beneath it, never into a cell, and the gate, the table file and the ledger comment each render Step 3's table rather than a summary of it.
+- **A `disagreed with` row is marked `(!)` and expanded in full**, and a **fix** row's clause of intent is the one string the human approved — Step 5 hands the writer that string, not a rewording of it.
 - **Change nothing under `<DEV-LOOP>`** and add no phase script here. The execute phase runs as it is.
 - **Every body is carried verbatim and never interpolated into a shell string.**
 - **No repository name, absolute path, label string or project fact lives in this skill.** MAIN, DEFAULT, NAMESPACE and DEV-LOOP are derived at run time, and the three profile keys come from the repo's own `docs/agents/dev-loop.md` — this skill adds none of its own.
