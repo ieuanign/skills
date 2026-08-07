@@ -168,3 +168,80 @@ Four keys are left out, each deliberately:
 **Change nothing under `<DEV-LOOP>`.** The execute phase runs as it is — writer, review loop, suite gate — and this skill adds no phase script of its own.
 
 The call returns one entry for the lane, whose single `subResults` entry carries the `ending` (`null` where the sub-lane finished clean), the commits made, the fixed and won't-fix findings, the reviewer's notes and the suite result. Everything that happens after this is decided from that record.
+
+## Step 8 — the push
+
+`ending` decides this step before anything else is read: non-null ⇒ **Step 9**, which pushes nothing. The clean path:
+
+1. `git -C <worktree> rev-list --count <the sha from Step 6>..<headRefName>`. **Ask git, never the reported commit list** — the count is what settles the push.
+2. **Zero** ⇒ nothing landed on the branch. Push nothing and take Step 9's disposal, saying the phase reported no ending and made no commit.
+3. Otherwise `git -C <worktree> push origin <headRefName>` — **never `--force`, never `--force-with-lease`**. This is the run's one push, and the only write to a git remote it will ever make.
+
+The push is a fast-forward by construction: Step 6 started the worktree at `origin/<headRefName>` and stopped where it could not. **A rejection therefore means the branch moved while the fix was being written** — someone else pushed to the pull request. Report git's message verbatim, keep the worktree, and go to Step 10 saying nothing was pushed. Never retry harder, and never reach for a flag that would make it land anyway.
+
+## Step 9 — an ending pushes nothing
+
+An `ending` is **HALT** (something deliberately stopped) or **FAILED** (something broke), and both are disposed of the same way here: the branch is not touched.
+
+`/dev-loop` pushes an ended sub-lane because the branch is its own. This one is a human's pull request, and a half-applied fix or a `wip:` commit landing on it is precisely the state change on someone else's artifact this skill refuses — whoever wrote the comment would find commits nobody approved sitting under it.
+
+Report the label, the stage it ended at, the reason verbatim, the debugger's diagnosis where there is one, and the `attempts` log in order. Then Step 10's comment, and Step 11 keeps the worktree: the work is in it, and it is the only copy there is.
+
+## Step 10 — the ledger, commented back
+
+**One comment, on every path that reached Step 7's dispatch, and one only** — including the paths that pushed nothing, because a run that touched a pull request and said so nowhere on it is one nobody can audit.
+
+```bash
+gh pr comment <n> --body-file - <<'BODY'
+...
+BODY
+```
+
+**The heredoc is quoted and the body arrives on stdin.** Comment bodies, reviewer notes and findings are agent-facing prose full of backticks, dollar signs and quotes; interpolated into a shell string they are executed, and the one place this run quotes a human's words back at them is the last place to allow that. Everything it carries travels verbatim.
+
+What it says, from the sub-lane record and nothing else:
+
+| Section | What it holds |
+|---|---|
+| what reached the branch | the pushed commit's sha and subject — or plainly that nothing was pushed, and why |
+| the comment it answers | the entry's author and `url`. `gh pr comment` posts at the pull request rather than in the thread, so the link is what tells a reader which comment this is about |
+| fixed | `fixedFindings` — reviewer findings the writer applied |
+| won't-fix | `wontFix`, each with the writer's reason |
+| notes | `reviewNotes` verbatim, and `reviewTrajectory` where a bound ended the review loop |
+| suite | `suite.state`: `passed`, `failed` with its failing identifiers, or `not run` with why. A suite that did not run never reads as green |
+| attempt log | `attempts` in order, on a run that ended — what was tried after the first thing went wrong |
+
+**No acceptance-criteria section**: there was no issue and so no spec axis, `criterionVerdicts` comes back empty by the contract Step 7 invoked, and a section rendering nothing claims something was judged. `terminal` goes unread too — it decides a pull request's draft state, and this run opens none.
+
+**Nothing else on the pull request changes.** The thread stays unresolved: whether a fix answers a comment is its author's call, and a run that resolved its own work marks its own homework. No draft or ready conversion, no label, no edit to the pull request's body, the issue behind it, or anyone's comment.
+
+Then the table file. It restates a comment the pull request already holds, and this ledger says what became of it, so nothing in it goes unread when it goes: **delete `<MAIN>/.scratch/pr-comments/<n>-comments.md` once the comment has posted**, and on any path that never got there keep it and say where it is.
+
+## Step 11 — the worktree, removed last
+
+| How the run got here | The branch | The worktree |
+|---|---|---|
+| clean, commits pushed | fast-forwarded | removed |
+| clean, nothing to push | untouched | kept |
+| ended HALT or FAILED | untouched | **kept** |
+| push rejected | untouched | kept, reported |
+| removal refused | fast-forwarded | kept, reported |
+
+Removal is `git -C <MAIN> worktree remove <WORKTREES>/pr-<n>`, **never `--force`**, and only once the push has succeeded — after it the remote branch is the only copy of the fix, so a push that failed or never ran keeps its worktree. **Confirm the path is not the first entry of `git worktree list` first.** The main worktree is never a removal candidate on any path, and nothing here reaches for `rm -rf`.
+
+A refusal is the guard working: `git worktree remove` declines on tracked modifications and on untracked non-ignored files, and with no `--force` anywhere in this skill there is nothing to talk past it with. Report `git -C <worktree> status --porcelain` verbatim and keep the worktree.
+
+**The branch is left alone either way, local ref and remote.** The remote one is what the pull request *is*; the local one may have been the human's before Step 6 attached to it.
+
+## Hard rules
+
+- **Two writes, and the gate sits above both.** One `git push` to the branch the pull request already has, one `gh pr comment` on it, and nothing else leaves this session. Every command before Step 4 is a read.
+- **Append-only, and narrower than `/dev-loop`'s, because the artifacts belong to someone else.** No review thread resolved, no draft or ready state converted, no label added or removed, no issue body, pull request body or anyone's comment edited. No ending, no failure and no absent human relaxes this.
+- **Never force-push, in any form** — no `--force`, no `--force-with-lease`. The push is a fast-forward by construction, so forcing is never the repair.
+- **Push before you remove**, never remove the main worktree, and remove only with `git worktree remove` without `--force`, against a path under `<WORKTREES>`.
+- **Gated, always.** Nothing below Step 4 runs without an explicit answer; there is no unattended mode, no `auto` token and no argument that reaches one.
+- **One fix per run.** Every unresolved comment is classified and shown; more than one **fix** row shows the table and stops.
+- **Change nothing under `<DEV-LOOP>`** and add no phase script here. The execute phase runs as it is.
+- **Every body is carried verbatim and never interpolated into a shell string.**
+- **No repository name, absolute path, label string or project fact lives in this skill.** MAIN, DEFAULT, NAMESPACE and DEV-LOOP are derived at run time, and the three profile keys come from the repo's own `docs/agents/dev-loop.md` — this skill adds none of its own.
+- **`.scratch/` is working material nothing may depend on surviving.** The table file goes once the ledger has posted, and is named where it lies on a run that ended before that.
