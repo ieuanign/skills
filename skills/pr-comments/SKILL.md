@@ -50,8 +50,10 @@ Classification is **your own plain reading of each body**, and dispatches no age
 | Intent | What it is |
 |---|---|
 | **fix** | the comment asks for a change to the code on this pull request, and says enough for someone to make it |
-| **skip** | it asks for no such change, and one reason below fits it — carrying that reason's evidence |
+| **skip** | this pull request will not make the change, or none was asked for — and one reason below fits it, carrying that reason's evidence |
 | **unclassified** | no reason below fits, or the evidence its reason takes cannot be produced |
+
+**Fits both rows ⇒ skip.** Three of the four reasons below cover a change that *was* asked for and is still not being made, so the fix row matches those comments too; a reason that fits is what settles it, and a disagreement stated is the whole point.
 
 **A skip's reason is picked from this table, never written.** Four, and no fifth is invented at run time; free text never stands where a reason goes. A comment none of them fits is the signal the vocabulary needs widening, which is a deliberate change and never a run's decision.
 
