@@ -75,3 +75,96 @@ Present the table, then count its **fix** rows:
 - **Exactly one** ⇒ ask.
 
 AskUserQuestion, once: approve this table, or stop. Say what approving does, so the answer is an informed one — a worktree attached to `headRefName`, one commit for the one fix, one push to that same branch, and one comment carrying the findings back. A human may correct any row's intent first; the corrected table is the one that counts, and the count above is taken again from it. Anything short of approval ends the run with nothing written.
+
+## Step 5 — the approved row becomes the plan
+
+`phase-execute.js` hands the writer a `planPath` and the writer reads it before anything else — a path that does not exist comes straight back as BLOCKED. So the approved row is written as a file, at `<MAIN>/.scratch/pr-comments/<n>-comments.md`, creating the directory. **Not under a `plans/` subdirectory**: `/dev-loop-cleanup` reaps `.scratch/*/plans/<n>-*.md` by number, and an issue sharing a number with this pull request would take a live table with it.
+
+Plan-shaped, and carrying the comment's own content:
+
+```markdown
+# <n> — <pull request title>
+
+## Issue summary
+<the pull request's url, and that this is a review comment on it rather than an issue>
+
+## The comment
+<author> — <path>:<line>, or the stale anchor `<path>:<originalLine>`, or the origin in words where
+there is no path — and the entry's url.
+
+<the body, VERBATIM: not summarised, not re-wrapped, not corrected>
+
+## Approach
+<what the fix must achieve, as an outcome rather than a diff>
+
+Only this comment. Every unresolved comment was classified and shown; the rest were not approved and
+are not this commit's scope.
+
+## Hard constraints
+None. A review comment supplies none, and constraints invented here would bind the writer to
+something nobody asked for.
+
+## File touchpoints
+<the comment's path where it has one; otherwise say plainly that it names no file>
+
+## Test expectations
+<the profile's Full-suite command>, from the worktree.
+
+## Commit / PR breakdown
+1. `<message>` — <one line saying what the commit does>
+```
+
+`<message>` is a conventional-commit message — `<type>(<scope>): #<n> - <what changes>`, its type and scope taken from what the fix actually is — and the **same string, verbatim,** is what Step 7 passes as `commits[0].message`. `#<n>` is the pull request: GitHub numbers pull requests and issues in one sequence.
+
+The file is gitignored working material and nothing may depend on it surviving: delete it once the ledger comment carrying its content has posted, and on a run that ends before that keep it and say where it is.
+
+## Step 6 — a worktree on the pull request's own branch
+
+**Nothing here creates a branch.** `headRefName` from Step 1's read is the branch the worktree checks out and the only branch this run will ever push to.
+
+1. `git fetch origin <headRefName>` — the worktree starts at the remote's tip, which is what makes the later push a fast-forward instead of a race.
+2. Attach at `<WORKTREES>/pr-<n>` — a directory name, and the only name this run invents:
+   - branch already exists locally ⇒ `git worktree add <WORKTREES>/pr-<n> <headRefName>`, with no `-b`, which errors on an existing branch;
+   - it does not ⇒ `git worktree add <WORKTREES>/pr-<n> -b <headRefName> --track origin/<headRefName>`. That is the only `-b` there is here: a local ref for that same remote branch, under that same name.
+   - A branch already checked out in another worktree makes `git worktree add` refuse — report its message verbatim and stop.
+3. The checkout must sit at `origin/<headRefName>`. Where a stale local branch left it behind, `git -C <worktree> merge --ff-only origin/<headRefName>`; a refusal means the local branch diverged, so no push from it could be a fast-forward — report git's message verbatim, leave the worktree in place, and stop.
+4. `git -C <worktree> rev-parse HEAD`. **That sha is the sub-lane's `base`**, captured now, before anything is written to the branch. The reviewer diffs `base..<branch>`; the pull request's own base branch in its place would have it review the human's entire pull request, flooding findings and spending fix cycles on code this run did not write.
+5. `.worktreeinclude` copies, the same mechanism `/dev-loop` provisions with: `git -C <MAIN> ls-files -oi --exclude-from=.worktreeinclude --directory` lists the matches — files, plus fully-ignored directories collapsed to one entry — and each is fast-copied from MAIN into the worktree at the same relative path, parent directories created, the trailing slash git puts on a directory entry stripped first. No `.worktreeinclude` ⇒ no copies and no question asked: `/dev-loop`'s Act 0 owns that one.
+6. Run the profile's Setup command from inside the worktree.
+
+**Three profile keys, all read from `docs/agents/dev-loop.md`**: Setup command, Full-suite command and Fix cycles. For one the file lacks, follow its own ask-then-persist rule — ask once, write the answer in, never ask again. This skill adds no key of its own, no second profile and no argument that changes what the pipeline does.
+
+## Step 7 — dispatch the execute phase
+
+Run the Workflow tool with `scriptPath: <DEV-LOOP>/phase-execute.js`, and these arguments and no others:
+
+```json
+{
+  "lanes": [{
+    "issue": <n>,
+    "planPath": "<MAIN>/.scratch/pr-comments/<n>-comments.md",
+    "subLanes": [{
+      "branch": "<headRefName>",
+      "worktree": "<WORKTREES>/pr-<n>",
+      "base": "<the sha from Step 6>",
+      "commits": [{ "ordinal": 1, "message": "<Step 5's message, verbatim>" }]
+    }]
+  }],
+  "mode": "gated",
+  "fixCycleThreshold": <the profile's Fix cycles>,
+  "suiteCommand": "<the profile's Full-suite command>",
+  "agentNamespace": "<NAMESPACE>"
+}
+```
+
+`planPath` and `worktree` are **absolute** — `.scratch` and the worktrees directory both live under MAIN. `mode` is the literal `gated`, this skill having no other mode to parse. `fixCycleThreshold` and `suiteCommand` are the profile's values passed verbatim, never literals written here — and `fixCycleThreshold` is a **number**: the script tests it with `Number.isInteger` and a quoted one silently becomes the default instead.
+
+Four keys are left out, each deliberately:
+
+- **`issueBody`** and **`ownedCriteria`** — there is no issue, so there is no spec axis. The script already tells the reviewer to return an empty `criterionVerdicts` and say so in its notes; that is the existing contract's degenerate case, reached by passing less rather than by editing anything.
+- **`skillDir`** — it exists for the notifier, which the script dispatches under `unattended` only.
+- **`runHandle`** — the notifier is the only thing that writes it, and none is dispatched.
+
+**Change nothing under `<DEV-LOOP>`.** The execute phase runs as it is — writer, review loop, suite gate — and this skill adds no phase script of its own.
+
+The call returns one entry for the lane, whose single `subResults` entry carries the `ending` (`null` where the sub-lane finished clean), the commits made, the fixed and won't-fix findings, the reviewer's notes and the suite result. Everything that happens after this is decided from that record.
