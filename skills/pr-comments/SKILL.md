@@ -84,13 +84,15 @@ A **skip** and an **unclassified** row have no ordinal, and nothing acts on eith
 
 ### The table
 
-**One line per entry, in the order the read returned them.** Anything longer than a clause goes to an expansion beneath the table and never into a cell.
+**One line per entry, ordered by commit ordinal** — two rows sharing one are then adjacent, so a merge is seen rather than looked for. The rows carrying no ordinal follow, in the order the read returned them. Anything longer than a clause goes to an expansion beneath the table and never into a cell.
 
-| # | Comment | Author | Intent | Reason | Why |
-|---|---|---|---|---|---|
-| the row's key, from `1` | `<path>:<line>` where the entry has both, `<path>` marked *stale anchor* where `line` is null, and the origin in words where there is no path at all — each linked to the entry's `url` — then the opening of the body | the entry's `author`, or `unknown` where it is null | **fix**, **skip** or **unclassified** | a **skip**'s reason, spelled as the table above spells it and marked `(!)` where it is `disagreed with`; empty on the other two intents | one clause, per the intent below |
+| # | Comment | Author | Intent | Reason | Why | Commit |
+|---|---|---|---|---|---|---|
+| the row's key, from `1` down the table | `<path>:<line>` where the entry has both, `<path>` marked *stale anchor* where `line` is null, and the origin in words where there is no path at all — each linked to the entry's `url` — then an excerpt of the body | the entry's `author`, or `unknown` where it is null | **fix**, **skip** or **unclassified** | a **skip**'s reason, spelled as the table above spells it and marked `(!)` where it is `disagreed with`; empty on the other two intents | one clause, per the intent below | the row's commit ordinal, or empty where it has none |
 
-The comment cell is for reading: the body's opening is truncated to fit. **Any `|` a cell carries is escaped, and anything wanting a newline goes to its expansion** — the excerpts cut for evidence included, since one unescaped pipe silently eats the rest of a row. The body itself travels on verbatim.
+**The comment cell is an excerpt, never the body** — its opening, cut to one line. The body itself travels on verbatim, into Step 5's file, which is where a writer reads it. **Any `|` a cell carries is escaped, and anything wanting a newline goes to its expansion** — the excerpts cut for evidence included, since one unescaped pipe silently eats the rest of a row.
+
+**Fifteen rows read as three do**, because every row is one line whatever it carries and everything that would not fit is beneath the table rather than in it. That is a property of the shape, not of the count.
 
 | Intent | Its clause |
 |---|---|
@@ -302,7 +304,7 @@ A refusal is the guard working: `git worktree remove` declines on tracked modifi
 - **Gated, always.** Nothing below Step 4 runs without an explicit answer; there is no unattended mode, no `auto` token and no argument that reaches one.
 - **Every fix row proceeds, and the default is one commit each.** Two share an ordinal only where they ask for the same change, with what makes them one stated; proximity never merges. A table with no fix row at all is shown and stops the run, provisioning nothing.
 - **Every skip names one of Step 3's four reasons and carries its evidence.** No fifth reason is invented at run time and no free text stands in for one; a comment none of them fits, or whose evidence cannot be produced, is `unclassified`, and nothing acts on it.
-- **One line per comment, and one table definition.** Overflow goes to the keyed expansion beneath it, never into a cell, and the gate, the table file and the ledger comment each render Step 3's table rather than a summary of it.
+- **One line per comment — an excerpt, never the body — ordered by commit ordinal, and one table definition.** Overflow goes to the keyed expansion beneath it, never into a cell, and the gate, the table file and the ledger comment each render Step 3's table rather than a summary of it.
 - **A `disagreed with` row is marked `(!)` and expanded in full**, and a **fix** row's clause of intent is the one string the human approved — Step 5 hands the writer that string, not a rewording of it.
 - **Change nothing under `<DEV-LOOP>`** and add no phase script here. The execute phase runs as it is.
 - **Every body is carried verbatim and never interpolated into a shell string.**
