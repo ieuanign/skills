@@ -35,6 +35,7 @@ Then once per repo — independent, either order:
 |---|---|
 | [`/dev-loop`](./skills/dev-loop/SKILL.md) | GitHub issues → pull requests: plan → implement → review → full-suite gate, one git worktree per lane, lanes in parallel |
 | [`/dev-loop-cleanup`](./skills/dev-loop-cleanup/SKILL.md) | Deletes the branch and plan of every **merged** lane; *lists* lingering worktrees with a reason, removing none |
+| [`/dev-loop-pr-comments`](./skills/dev-loop-pr-comments/SKILL.md) | One pull request's unresolved comments, classified **fix** or **skip** for your approval; the approved fix then runs through `/dev-loop`'s execute phase and is pushed to that pull request's own branch |
 | [`/code-review-mp`](./skills/code-review-mp/SKILL.md) | Reviews a diff on two parallel axes — **Standards** (`CLAUDE.md`, `.claude/rules/`, Fowler smells, your `docs/agents/smell-overrides.md`) and **Spec** (the originating issue/PRD) |
 | [`/setup-ieuanign-skills`](./skills/setup-ieuanign-skills/SKILL.md) | Per-repo config in three independent parts: smell overrides, the workflow labels, `.claude/rules/` conventions. Nothing written without an explicit yes |
 
