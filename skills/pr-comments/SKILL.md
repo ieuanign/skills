@@ -273,7 +273,7 @@ What it says — the commit list from git, everything else from the sub-lane rec
 | Section | What it holds |
 |---|---|
 | what reached the branch | `<planned> planned, <made> made`, then `git -C <worktree> log --oneline <the sha from Step 6>..<headRefName>` line for line — marked **not pushed**, with why, on a path that pushed nothing |
-| the comment it answers | the entry's author and `url`. `gh pr comment` posts at the pull request rather than in the thread, so the link is what tells a reader which comment this is about |
+| the comments it answers | one line per comment a commit fixed, in ordinal order — its `#`, its author and its `url`. `gh pr comment` posts at the pull request rather than in the thread, so the links are what tell a reader which comments these are; one line where a run fixed several attributes the rest to it |
 | the table | Step 3's table as approved, every row and every expansion, rendered identically. This copy is the one that outlives the run — the gate's is a session's scrollback and the table file is deleted below |
 | fixed | `fixedFindings` — reviewer findings the writer applied |
 | won't-fix | `wontFix`, each with the writer's reason |
