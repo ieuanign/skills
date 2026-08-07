@@ -144,3 +144,61 @@ ordinary English ("an accepted cost") name other things and are unaffected.
 A recorded exception to the smell baseline: a pattern this repository uses deliberately that would otherwise be reported as a code smell. Overrides live in `docs/agents/smell-overrides.md`, read by the `reviewer` agent and the code-review Standards axis. They are written from findings a human rejected, never distilled from `CLAUDE.md` — a repository where nothing has recurred yet correctly has no file at all.
 
 Coding standards themselves are not this. They bind whether or not this plugin is installed, so they live in `CLAUDE.md` and `.claude/rules/`.
+
+## Comment table
+
+One row per unresolved comment on a pull request — every one of them, whatever intent it was given —
+carrying that comment, its author, the intent, and, where that intent is a **fix**, which commit it
+becomes. The whole of what a run proposes, and the thing a human approves.
+
+Not a report of the run: it **is** the plan those commits are made against, which is why comments are
+grouped into commits in the table rather than after it is approved.
+
+_Avoid_: comment report, run summary — both name something written after the work, which is what this
+is not.
+
+## Fix
+
+The intent for a comment asking for a change to the code on this pull request, in enough detail for
+someone to make it. The only one of the three intents anything acts on: a fix row carries a commit
+ordinal and becomes a commit, where a **skip** and an **unclassified** row carry none.
+
+Not a **fix cycle** above — that counts rounds of a lane's review loop, this classifies one comment.
+
+## Skip
+
+The intent for a comment whose change is not being made, because none was asked for or because this
+pull request is not where it goes. A skip names one of four reasons — `question`, `already addressed`,
+`out of scope for this branch`, `disagreed with` — and carries that reason's evidence. The list is
+closed: no fifth is written at run time, and free text never stands where a reason goes.
+
+Three of the four cover a change that *was* asked for and is still not being made, so a comment fitting
+both intents is settled by the reason that fits. A skip is stated with its evidence rather than left
+out, because the rows nobody did any work on are the ones a human is likeliest to disagree with.
+
+_Avoid_: won't-fix — that names a reviewer finding the writer declined, a different artifact in the
+same pipeline.
+
+## Unclassified
+
+The intent left for a comment no skip reason fits, or whose reason's evidence cannot be produced.
+Nothing acts on one: it is not a fix, so it becomes no commit, and it is stated as unclassified rather
+than folded into a skip that would have to invent a reason.
+
+The signal that the four-reason vocabulary needs widening — a deliberate change, never a run's
+decision.
+
+## Pull request-comment lane
+
+The run one open pull request's comments get, end to end: read, classified into a **comment table**,
+approved, then driven through `/dev-loop`'s execute phase — writer, review loop, suite gate — and
+pushed to the head branch that pull request already has. One run works one pull request.
+
+Three things a `/dev-loop` lane has, it lacks. No architect is dispatched and no plan is authored,
+because the comment table is the plan the execute phase runs on. No acceptance criteria, and therefore
+no spec axis and no criterion verdicts. No pull request is created, because the run pushes to one that
+already exists.
+
+Append-only against artifacts a human owns, and narrower than `/dev-loop`'s rule of the same name for
+that reason: no review thread resolved, no draft or ready state converted, no label touched, no body
+anyone wrote edited.
