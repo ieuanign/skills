@@ -112,6 +112,13 @@ while IFS= read -r module; do
   fi
 done < <(find "$REPO/skills" -name '*.mjs' -not -path '*/node_modules/*' | sort)
 
+# --- pr-comment normaliser ---------------------------------------------------
+# The syntax stage above proves read-comments.mjs parses; this one proves it
+# EXCLUDES and CARRIES, over fixtures, with no network and nothing spawned.
+if ! node "$REPO/scripts/pr-comment-read.mjs"; then
+  failed=1
+fi
+
 # --- cost stage vocabulary ---------------------------------------------------
 # The lane-and-stage marker's vocabulary is written out in all three files that
 # touch it, because a phase script imports nothing. That triplication is only
