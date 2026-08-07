@@ -50,17 +50,33 @@ Classification is **your own plain reading of each body**, and dispatches no age
 | Intent | What it is |
 |---|---|
 | **fix** | the comment asks for a change to the code on this pull request, and says enough for someone to make it |
-| **skip** | everything else — a reply, a question, an observation, a change wanted somewhere other than this pull request, or a request nobody could act on without first asking what it meant |
+| **skip** | it asks for no such change, and one reason below fits it — carrying that reason's evidence |
+| **unclassified** | no reason below fits, or the evidence its reason takes cannot be produced |
+
+**A skip's reason is picked from this table, never written.** Four, and no fifth is invented at run time; free text never stands where a reason goes. A comment none of them fits is the signal the vocabulary needs widening, which is a deliberate change and never a run's decision.
+
+| Reason | What it covers | The evidence it takes |
+|---|---|---|
+| `question` | it asks something rather than asking for a change | the fragment of the body that makes it a question, **verbatim** — never a paraphrase |
+| `already addressed` | the code on this pull request already does what it asks | the short sha and subject of a commit **this pull request holds**, and what in it addressed the comment |
+| `out of scope for this branch` | the change is wanted, somewhere other than this pull request | what that separate piece of work is, so the comment reads as deferred rather than dropped |
+| `disagreed with` | the change was asked for, understood, and is not being made | the reasoning, in full |
+
+**Evidence that restates the reason is no evidence.** A skip whose evidence you cannot produce is `unclassified` instead.
+
+`already addressed` is the one whose evidence is not in the comment set: `gh pr view <n> --json commits`, then name a commit that read actually returned — its `oid` short, and its `messageHeadline`. This is a read of the pull request, not a second read of its comments; Step 2's module stays the only source of those. A sha from anywhere else is one nobody can check.
+
+**An `unclassified` row is stated, not buried.** For each, say plainly that the vocabulary did not cover it and what it appeared to ask. Nothing acts on one: it is not a fix, and Step 4 counts fix rows.
 
 **Every unresolved comment gets a row, whichever way it went.** A table showing only the work is one nobody can check, and the skips are the half a human is likeliest to disagree with.
 
-**Classify what the comment says, not what its metadata suggests.** An outdated comment — `line: null`, `outdated: true`, its stale anchor left in `originalLine` — is one whose code moved, which says nothing about whether anyone did what it asked; a comment that reads as already dealt with is a **skip** on what it says, never on where it sits.
+**Classify what the comment says, not what its metadata suggests.** An outdated comment — `line: null`, `outdated: true`, its stale anchor left in `originalLine` — is one whose code moved, which says nothing about whether anyone did what it asked. `outdated: true` is therefore never the evidence for `already addressed`; a commit is.
 
 One row per entry, in the order the read returned them:
 
 | Comment | Author | Intent | Why |
 |---|---|---|---|
-| `<path>:<line>` where the entry has both, `<path>` marked *stale anchor* where `line` is null, and the origin in words where there is no path at all — each linked to the entry's `url` — then the opening of the body | the entry's `author`, or `unknown` where it is null | **fix** or **skip** | one clause saying what makes it that |
+| `<path>:<line>` where the entry has both, `<path>` marked *stale anchor* where `line` is null, and the origin in words where there is no path at all — each linked to the entry's `url` — then the opening of the body | the entry's `author`, or `unknown` where it is null | **fix**, **skip** or **unclassified** | one clause saying what makes it that |
 
 The cell is for reading: the body's opening is truncated to fit and any `|` in it escaped, while the body itself travels on verbatim.
 
@@ -243,6 +259,7 @@ A refusal is the guard working: `git worktree remove` declines on tracked modifi
 - **Push before you remove**, never remove the main worktree, and remove only with `git worktree remove` without `--force`, against a path under `<WORKTREES>`.
 - **Gated, always.** Nothing below Step 4 runs without an explicit answer; there is no unattended mode, no `auto` token and no argument that reaches one.
 - **One fix per run.** Every unresolved comment is classified and shown; more than one **fix** row shows the table and stops.
+- **Every skip names one of Step 3's four reasons and carries its evidence.** No fifth reason is invented at run time and no free text stands in for one; a comment none of them fits, or whose evidence cannot be produced, is `unclassified`, and nothing acts on it.
 - **Change nothing under `<DEV-LOOP>`** and add no phase script here. The execute phase runs as it is.
 - **Every body is carried verbatim and never interpolated into a shell string.**
 - **No repository name, absolute path, label string or project fact lives in this skill.** MAIN, DEFAULT, NAMESPACE and DEV-LOOP are derived at run time, and the three profile keys come from the repo's own `docs/agents/dev-loop.md` — this skill adds none of its own.
