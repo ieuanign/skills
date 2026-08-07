@@ -268,11 +268,11 @@ BODY
 
 **The heredoc is quoted and the body arrives on stdin.** Comment bodies, the verbatim excerpts Step 3's evidence cuts out of them, reviewer notes and findings are agent-facing prose full of backticks, dollar signs and quotes; interpolated into a shell string they are executed, and the one place this run quotes a human's words back at them is the last place to allow that. Everything it carries travels verbatim.
 
-What it says, from the sub-lane record and nothing else:
+What it says — the commit list from git, everything else from the sub-lane record:
 
 | Section | What it holds |
 |---|---|
-| what reached the branch | the pushed commit's sha and subject — or plainly that nothing was pushed, and why |
+| what reached the branch | `<planned> planned, <made> made`, then `git -C <worktree> log --oneline <the sha from Step 6>..<headRefName>` line for line — marked **not pushed**, with why, on a path that pushed nothing |
 | the comment it answers | the entry's author and `url`. `gh pr comment` posts at the pull request rather than in the thread, so the link is what tells a reader which comment this is about |
 | the table | Step 3's table as approved, every row and every expansion, rendered identically. This copy is the one that outlives the run — the gate's is a session's scrollback and the table file is deleted below |
 | fixed | `fixedFindings` — reviewer findings the writer applied |
@@ -280,6 +280,8 @@ What it says, from the sub-lane record and nothing else:
 | notes | `reviewNotes` verbatim, and `reviewTrajectory` where a bound ended the review loop |
 | suite | `suite.state`: `passed`, `failed` with its failing identifiers, or `not run` with why. A suite that did not run never reads as green |
 | attempt log | `attempts` in order, on a run that ended — what was tried after the first thing went wrong |
+
+**Ask git for that list, as Step 8 asks it for the count.** The record's commits are the writer's claim and the branch is the fact, so the log is read in the worktree — after the push, and before Step 11 removes it. `<planned>` counts the ordinals Step 7 dispatched, and every planned message the log does not hold is named as not made: a commit nobody wrote is the one thing a claimed list cannot show. A `wip:` commit is listed and **not** counted in `<made>` — it is abandoned work kept as evidence, and counting one reports a failure as delivery.
 
 **No acceptance-criteria section**: there was no issue and so no spec axis, `criterionVerdicts` comes back empty by the contract Step 7 invoked, and a section rendering nothing claims something was judged. `terminal` goes unread too — it decides a pull request's draft state, and this run opens none.
 
@@ -312,6 +314,7 @@ A refusal is the guard working: `git worktree remove` declines on tracked modifi
 - **Gated, always.** Nothing below Step 4 runs without an explicit answer; there is no unattended mode, no `auto` token and no argument that reaches one.
 - **Every fix row proceeds, and the default is one commit each.** Two share an ordinal only where they ask for the same change, with what makes them one stated; proximity never merges. One file's fixes take adjacent ordinals ascending by anchor and every commit runs in one sub-lane, never split across sub-lanes or branches. A table with no fix row at all is shown and stops the run, provisioning nothing.
 - **Each breakdown entry names the comment(s) it satisfies, every message in the file is unique, and Step 7's `commits` matches that breakdown verbatim** — same ordinals, same strings, same order. Anchors written into it are pre-run positions and say so.
+- **The ledger's commit list is git's, never the returned one** — `git log <base>..<headRefName>`, read in the worktree before it is removed, with the planned count beside the made count, a `wip:` commit listed and not counted, and any planned commit the branch does not hold named as not made.
 - **Every skip names one of Step 3's four reasons and carries its evidence.** No fifth reason is invented at run time and no free text stands in for one; a comment none of them fits, or whose evidence cannot be produced, is `unclassified`, and nothing acts on it.
 - **One line per comment — an excerpt, never the body — ordered by commit ordinal, and one table definition.** Overflow goes to the keyed expansion beneath it, never into a cell, and the gate, the table file and the ledger comment each render Step 3's table rather than a summary of it.
 - **A `disagreed with` row is marked `(!)` and expanded in full**, and a **fix** row's clause of intent is the one string the human approved — Step 5 hands the writer that string, not a rewording of it.
