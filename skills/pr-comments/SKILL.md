@@ -38,7 +38,7 @@ You are the orchestrator and you stay in the MAIN worktree. This skill reads one
 
 ### The messages an unattended run sends
 
-A gated run has a human watching and sends none. An unattended one has nobody, so it reports itself where the approval request used to be: **one `start` message at intake and exactly one closing message**, paired. Detail belongs in the two comments — Step 4's table and Step 10's ledger; a message is the one line somebody triages from a phone.
+A gated run has a human watching and sends none. An unattended one has nobody, so it reports itself where the approval request used to be: **one `start` message at intake and exactly one closing message**, paired. Detail belongs in the two comments — Step 4's table and Step 10's conclusion; a message is the one line somebody triages from a phone.
 
 **The shape** is the pull request's number, a state token, the reason where one exists, then the link — the `url` Step 1 read, on every message, that being the only artifact this run has:
 
@@ -80,6 +80,7 @@ Which token closes the run is Step 9's question, asked of the whole run: did som
 - **WORKTREES** — `<MAIN>/.claude/worktrees/`, where this run's worktree goes.
 - **NAMESPACE** — the agent namespace, read off your own roster: find `code-writer` among your available agent types — listed bare, it is the empty string; listed as `<prefix>:code-writer`, it is `<prefix>`. This is the ONLY place it is derived, and it comes from the roster rather than from a path, a package name or a manifest.
 - **DEV-LOOP** — the sibling skill folder, `<this-skill-dir>/../dev-loop`. Both install paths put skill folders side by side, so the sibling relation holds on either and no absolute path is written down.
+- **RUN HANDLE** — the identifier that locates this run's own transcript, read once from your environment: `$CLAUDE_CODE_SESSION_ID`. Empty or unset ⇒ **there is no handle**: write no line for it, ask nothing, and change nothing else about the run. It is written in exactly one place — Step 10's comment on a run that ended — and never in a message.
 - Every `gh` command runs inside a checkout of this repo and gh infers the repository from the remote, so no `gh` command carries `--repo`.
 
 ## Step 1 — preconditions, before anything is read or shown
@@ -258,7 +259,7 @@ the pull request's comments were classified as, and none of it any commit's scop
 
 Each `<message>` is a conventional-commit message — `<type>(<scope>): #<n> - <what changes>`, its type and scope taken from what that fix actually is — and the **same strings, verbatim and in this order,** are what Step 7 passes as `commits`. `#<n>` is the pull request: GitHub numbers pull requests and issues in one sequence.
 
-The file is gitignored working material and nothing may depend on it surviving: delete it once the ledger comment carrying its content has posted, and on a run that ends before that keep it and say where it is.
+The file is gitignored working material and nothing may depend on it surviving: Step 10 deletes it once the comment carrying its content has posted and never before, and keeps it — named in that comment — wherever the worktree is kept.
 
 ## Step 6 — a worktree on the pull request's own branch
 
@@ -275,6 +276,8 @@ The file is gitignored working material and nothing may depend on it surviving: 
 4. `git -C <worktree> rev-parse HEAD`. **That sha is the sub-lane's `base`**, captured now, before anything is written to the branch. The reviewer diffs `base..<branch>`; the pull request's own base branch in its place would have it review the human's entire pull request, flooding findings and spending fix cycles on code this run did not write.
 5. `.worktreeinclude` copies, the same mechanism `/dev-loop` provisions with: `git -C <MAIN> ls-files -oi --exclude-from=.worktreeinclude --directory` lists the matches — files, plus fully-ignored directories collapsed to one entry — and each is fast-copied from MAIN into the worktree at the same relative path, parent directories created, the trailing slash git puts on a directory entry stripped first. No `.worktreeinclude` ⇒ no copies and no question asked: `/dev-loop`'s Act 0 owns that one.
 6. Run the profile's Setup command from inside the worktree.
+
+**Every stop in this step goes through Step 10 under `unattended`, before the closing message this step sends.** Step 4's comment told the pull request a worktree and these commits were coming; a run that walks away from that in silence is one only its own channel heard about.
 
 **Three profile keys, all read from `docs/agents/dev-loop.md`**: Setup command, Full-suite command and Fix cycles. For one the file lacks, follow its own ask-then-persist rule — ask once, write the answer in, never ask again, **under `unattended` as much as under `gated`**: an invented default is a value nobody chose, persisted as though somebody had. This skill adds no key of its own, no second profile and no argument that changes what the pipeline does.
 
@@ -333,9 +336,11 @@ An `ending` is **HALT** (something deliberately stopped) or **FAILED** (somethin
 
 Report the label, the stage it ended at, the reason verbatim, the debugger's diagnosis where there is one, and the `attempts` log in order. Then Step 10's comment, and Step 11 keeps the worktree: the work is in it, and it is the only copy there is.
 
-## Step 10 — the ledger, commented back
+## Step 10 — the conclusion, commented back
 
-**One comment, on every path that reached Step 7's dispatch, and one only** — including the paths that pushed nothing, because a run that touched a pull request and said so nowhere on it is one nobody can audit.
+**One comment, and one only: the run's conclusion** — the ledger where it finished, the explanation where it ended. Under `gated` it posts on every path that reached Step 7's dispatch, the ones that pushed nothing included, because a run that touched a pull request and said so nowhere on it is one nobody can audit. Under `unattended` it posts on every path past Step 4's table as well, the ones that ended before the dispatch included: that comment promised a worktree, these commits and a push, and the run that promised them is the only thing that can say they never came.
+
+**It is a second comment beside Step 4's, never an edit to it.** A run that stopped at Step 4 for want of a fix row was answered there and posts nothing here; one that ended before Step 4 promised the pull request nothing and writes nothing on it at all.
 
 ```bash
 gh pr comment <n> --body-file - <<'BODY'
@@ -351,7 +356,7 @@ What it says — the commit list from git, everything else from the sub-lane rec
 |---|---|
 | what reached the branch | `<planned> planned, <made> made`, then `git -C <worktree> log --oneline <the sha from Step 6>..<headRefName>` line for line — marked **not pushed**, with why, on a path that pushed nothing |
 | the comments it answers | one line per comment a commit fixed, in ordinal order — its `#`, its author and its `url`. `gh pr comment` posts at the pull request rather than in the thread, so the links are what tell a reader which comments these are; one line where a run fixed several attributes the rest to it |
-| the table | Step 3's table as it stands, every row and every expansion, rendered identically. This copy is the one that outlives the run — a gated run's is a session's scrollback and the table file is deleted below |
+| the table | Step 3's table as it stands, every row and every expansion, rendered identically. This copy is the one that outlives the run — a gated run's was a session's scrollback, and nothing under `.scratch/` outlives the worktree |
 | fixed | `fixedFindings` — reviewer findings the writer applied |
 | won't-fix | `wontFix`, each with the writer's reason |
 | notes | `reviewNotes` verbatim, and `reviewTrajectory` where a bound ended the review loop |
@@ -362,9 +367,19 @@ What it says — the commit list from git, everything else from the sub-lane rec
 
 **No acceptance-criteria section**: there was no issue and so no spec axis, `criterionVerdicts` comes back empty by the contract Step 7 invoked, and a section rendering nothing claims something was judged. `terminal` goes unread too — it decides a pull request's draft state, and this run opens none.
 
+### A run that ended says what stopped it
+
+Those sections are the sub-lane record's, so a run that ended before Step 7 ever dispatched fills almost none of them: it names the step that stopped it and carries that step's message verbatim — git's refusal to attach, the two shas that differed — and renders the table. **A section with nothing to put in it is left out**, for the reason the acceptance-criteria one is. An ended lane fills what it has and adds Step 9's account: the label, the stage it ended at, the reason verbatim, the debugger's diagnosis where there is one, and the `attempts` log in order.
+
+Either way it ends with what nothing else records, this session being the last thing that knows it:
+
+- **the worktree, by path** — kept per Step 11, holding whatever was written before the run stopped, or plainly that none was attached where Step 6 stopped before it had one;
+- **the table file, by path** — kept with it, being the plan those commits were made against;
+- **the RUN HANDLE**, on a line of its own, where the environment gave one: it locates this run's transcript, which is where the reasoning behind an ending survives. No message carries it and no other comment does.
+
 **Nothing else on the pull request changes.** The thread stays unresolved: whether a fix answers a comment is its author's call, and a run that resolved its own work marks its own homework. No draft or ready conversion, no label, no edit to the pull request's body, the issue behind it, or anyone's comment.
 
-Then the table file. It restates a comment the pull request already holds, and this ledger says what became of it, so nothing in it goes unread when it goes: **delete `<MAIN>/.scratch/pr-comments/<n>-comments.md` once the comment has posted**, and on any path that never got there keep it and say where it is.
+Then the table file, whose content this comment now holds — so nothing in it goes unread when it goes. **It lives as long as the work it planned is unpushed.** The pushed path leaves nothing in the worktree that is not on the branch, so **delete `<MAIN>/.scratch/pr-comments/<n>-comments.md` there, once this comment has posted and never before it**. Every other path — an ending, a rejected push, no commit made — keeps its worktree, so the file stays beside it and is named above: a worktree without the plan its commits were made against is one nobody can pick up. On a path that posted no comment at all, keep it and say where it is.
 
 ## Step 11 — the worktree, removed last
 
@@ -386,7 +401,7 @@ A refusal is the guard working: `git worktree remove` declines on tracked modifi
 
 ## Hard rules
 
-- **One push, and never more than one comment under `gated` or two under `unattended`, plus that run's two messages — nothing else leaves this session.** The push goes to the branch the pull request already has; the comments are Step 4's table, posted only where the gate did not ask, and Step 10's. Nothing before Step 4 writes to the pull request.
+- **One push, and never more than one comment under `gated` or two under `unattended`, plus that run's two messages — nothing else leaves this session.** The push goes to the branch the pull request already has; the comments are Step 4's table, posted only where the gate did not ask, and Step 10's conclusion — the ledger where the run finished, the explanation where it ended, naming there the kept worktree, the kept table file and the run handle. It is a second comment and never an edit to the first. Nothing before Step 4 writes to the pull request.
 - **An unattended run sends one `start` message at intake and exactly one closing message; a gated run sends none.** Number, token, reason, the pull request link — `halt` or `failed` where the run ended, `ready` where it concluded, `draft` never and no sixth token — through `<DEV-LOOP>/notify.sh` with the payload on standard input. These events carry no label, and **no notification failure changes the run it reports**.
 - **Append-only, and narrower than `/dev-loop`'s, because the artifacts belong to someone else.** No review thread resolved, no draft or ready state converted, no label added or removed, no issue body, pull request body or anyone's comment edited. No ending, no failure and no absent human relaxes this.
 - **Never force-push, in any form** — no `--force`, no `--force-with-lease`. The push is a fast-forward by construction, so forcing is never the repair.
@@ -401,4 +416,4 @@ A refusal is the guard working: `git worktree remove` declines on tracked modifi
 - **Change nothing under `<DEV-LOOP>`** and add no phase script here. The execute phase runs as it is.
 - **Every body is carried verbatim and never interpolated into a shell string.**
 - **No repository name, absolute path, label string or project fact lives in this skill.** MAIN, DEFAULT, NAMESPACE and DEV-LOOP are derived at run time, and the three profile keys come from the repo's own `docs/agents/dev-loop.md` — this skill adds none of its own.
-- **`.scratch/` is working material nothing may depend on surviving.** The table file goes once the ledger has posted, and is named where it lies on a run that ended before that.
+- **`.scratch/` is working material nothing may depend on surviving.** The table file goes once the conclusion comment carrying its content has posted and the work it planned is pushed; wherever the worktree is kept it is kept too, named in that comment.
