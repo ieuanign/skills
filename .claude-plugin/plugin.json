@@ -20,6 +20,7 @@
   "skills": [
     "./skills/dev-loop",
     "./skills/dev-loop-cleanup",
+    "./skills/dev-loop-pr-comments",
     "./skills/code-review-mp",
     "./skills/setup-ieuanign-skills"
   ]
