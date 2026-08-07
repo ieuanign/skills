@@ -1,11 +1,11 @@
 ---
 name: pr-comments
-description: Reads a pull request's unresolved comments and classifies each fix or skip for a human's approval, then drives the approved fix through /dev-loop's execute phase and pushes it to that pull request's own branch. Use for `/pr-comments <pull request>`.
+description: Reads a pull request's unresolved comments and classifies each fix or skip for a human's approval, then drives the approved fixes through /dev-loop's execute phase and pushes them to that pull request's own branch. Use for `/pr-comments <pull request>`.
 ---
 
 # /pr-comments — a pull request's comments, through to a pushed fix
 
-You are the orchestrator and you stay in the MAIN worktree. This skill reads one pull request's unresolved comments, classifies each **fix** or **skip**, and shows a human the table; the approved fix then runs through `/dev-loop`'s execute phase — writer, review loop and suite gate, unchanged — in a worktree attached to the pull request's own head branch.
+You are the orchestrator and you stay in the MAIN worktree. This skill reads one pull request's unresolved comments, classifies each **fix** or **skip**, and shows a human the table; the approved fixes then run through `/dev-loop`'s execute phase — writer, review loop and suite gate, unchanged — in a worktree attached to the pull request's own head branch.
 
 **Gated, and append-only against artifacts someone else owns.** There is no unattended mode and no token that asks for one. The whole run makes two writes — one `git push` to the branch the pull request already has, and one `gh pr comment` on it — and neither of them happens before the gate below.
 
@@ -27,7 +27,7 @@ You are the orchestrator and you stay in the MAIN worktree. This skill reads one
 
 ## Step 1 — preconditions, before anything is read or shown
 
-Each one below makes this run's promise — one fix, pushed to this pull request's own branch — impossible to keep. Refuse on it **here**, because discovering it after a human has read a table wastes the reading as well as the read.
+Each one below makes this run's promise — the fixes, pushed to this pull request's own branch — impossible to keep. Refuse on it **here**, because discovering it after a human has read a table wastes the reading as well as the read.
 
 1. **The Workflow tool.** The execute phase is dispatched through it, so a session without it in your toolset stops the run. Name the setting — `"enableWorkflows": true` in the per-machine settings file (`~/.claude/settings.json`) — and say a **restart is required**. Ask nothing and write nothing: `/dev-loop` owns that question and asks it once per machine, and a second asker is a second question.
 2. **The sibling `dev-loop` skill folder.** `<DEV-LOOP>/phase-execute.js` missing ⇒ stop, saying the two install together. That script runs the fix, and nothing here reimplements it.
@@ -74,6 +74,14 @@ Classification is **your own plain reading of each body**, and dispatches no age
 
 **Classify what the comment says, not what its metadata suggests.** An outdated comment — `line: null`, `outdated: true`, its stale anchor left in `originalLine` — is one whose code moved, which says nothing about whether anyone did what it asked. `outdated: true` is therefore never the evidence for `already addressed`; a commit is.
 
+### Which commit each fix becomes
+
+**Every fix row carries a commit ordinal, and the default is one ordinal per fix.** Grouping is decided here rather than after the gate, because the table is the plan: approving these rows is what approves the commits.
+
+Two fix rows share an ordinal **only where they ask for the same change** — two reviewers wanting one rename — and a shared ordinal states what makes them one. **Proximity is never sameness**: two comments on the same region of one file are one commit each, because touching the same lines is not asking for the same thing. Silent merging is what the table exists to prevent, so a merge carrying no reason is not one.
+
+A **skip** and an **unclassified** row have no ordinal, and nothing acts on either.
+
 ### The table
 
 **One line per entry, in the order the read returned them.** Anything longer than a clause goes to an expansion beneath the table and never into a cell.
@@ -112,11 +120,10 @@ Beneath the table, one block per row that needs one, keyed by that row's `#`:
 
 Present Step 3's table and its expansions, then count its **fix** rows:
 
-- **None** ⇒ there is nothing to do. Say so and stop, having shown the table: it is the answer.
-- **More than one** ⇒ show the table and stop, saying that grouping several fixes into commits is not built yet and that one at a time is what this skill can do. Never pick one.
-- **Exactly one** ⇒ ask.
+- **None** ⇒ there is nothing to do. Say so and stop, having shown the table: it is the answer. No worktree is provisioned, no phase dispatched and nothing pushed — an empty fix set has no commit to make, and dispatching one anyway would send the review loop at an empty diff.
+- **One or more** ⇒ ask. There is no ceiling on the count: a pull request's whole comment set runs in one pass, and the ordinals above are how it divides.
 
-AskUserQuestion, once: approve this table, or stop. Say what approving does, so the answer is an informed one — a worktree attached to `headRefName`, one commit for the one fix, one push to that same branch, and one comment carrying the findings back. A human may correct any row's intent, reason or clause first; the corrected table is the one that counts, everything downstream renders that one, and the count above is taken again from it. Anything short of approval ends the run with nothing written.
+AskUserQuestion, once: approve this table, or stop. Say what approving does, so the answer is an informed one — a worktree attached to `headRefName`, one commit per ordinal the table shows, one push to that same branch, and one comment carrying the findings back. A human may correct any row's intent, reason, clause or grouping first; the corrected table is the one that counts, everything downstream renders that one, and the count above is taken again from it. Anything short of approval ends the run with nothing written.
 
 ## Step 5 — the approved row becomes the plan
 
@@ -293,7 +300,7 @@ A refusal is the guard working: `git worktree remove` declines on tracked modifi
 - **Never force-push, in any form** — no `--force`, no `--force-with-lease`. The push is a fast-forward by construction, so forcing is never the repair.
 - **Push before you remove**, never remove the main worktree, and remove only with `git worktree remove` without `--force`, against a path under `<WORKTREES>`.
 - **Gated, always.** Nothing below Step 4 runs without an explicit answer; there is no unattended mode, no `auto` token and no argument that reaches one.
-- **One fix per run.** Every unresolved comment is classified and shown; more than one **fix** row shows the table and stops.
+- **Every fix row proceeds, and the default is one commit each.** Two share an ordinal only where they ask for the same change, with what makes them one stated; proximity never merges. A table with no fix row at all is shown and stops the run, provisioning nothing.
 - **Every skip names one of Step 3's four reasons and carries its evidence.** No fifth reason is invented at run time and no free text stands in for one; a comment none of them fits, or whose evidence cannot be produced, is `unclassified`, and nothing acts on it.
 - **One line per comment, and one table definition.** Overflow goes to the keyed expansion beneath it, never into a cell, and the gate, the table file and the ledger comment each render Step 3's table rather than a summary of it.
 - **A `disagreed with` row is marked `(!)` and expanded in full**, and a **fix** row's clause of intent is the one string the human approved — Step 5 hands the writer that string, not a rewording of it.
