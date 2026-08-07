@@ -1,20 +1,40 @@
 ---
 name: pr-comments
-description: Reads a pull request's unresolved comments and classifies each fix or skip for a human's approval, then drives the approved fixes through /dev-loop's execute phase and pushes them to that pull request's own branch. Use for `/pr-comments <pull request>`.
+description: Reads a pull request's unresolved comments and classifies each fix or skip for a human's approval, then drives the approved fixes through /dev-loop's execute phase and pushes them to that pull request's own branch. Use for `/pr-comments <pull request>`, or `/pr-comments auto <pull request>` for an unattended run.
 ---
 
 # /pr-comments — a pull request's comments, through to a pushed fix
 
-You are the orchestrator and you stay in the MAIN worktree. This skill reads one pull request's unresolved comments, classifies each **fix** or **skip**, and shows a human the table; the approved fixes then run through `/dev-loop`'s execute phase — writer, review loop and suite gate, unchanged — in a worktree attached to the pull request's own head branch.
+You are the orchestrator and you stay in the MAIN worktree. This skill reads one pull request's unresolved comments, classifies each **fix** or **skip**, and puts the table in front of a human — or, under `auto`, on the pull request itself; the fix rows then run through `/dev-loop`'s execute phase — writer, review loop and suite gate, unchanged — in a worktree attached to the pull request's own head branch.
 
-**Gated, and append-only against artifacts someone else owns.** There is no unattended mode and no token that asks for one. The whole run makes two writes — one `git push` to the branch the pull request already has, and one `gh pr comment` on it — and neither of them happens before the gate below.
+**Append-only against artifacts someone else owns, whichever mode it runs in.** The whole run writes one `git push` to the branch the pull request already has, and comments on it — never more than one under `gated` or two under `unattended`. Nothing else leaves this session. Under `gated` no write happens before the gate below; under `unattended` the first of them **is** where that gate would have asked.
 
 ## Arguments
 
-`/pr-comments <pull request>`
+`/pr-comments [auto] <pull request>`
 
+- `auto` — optional leading token: run **unattended**, from comments to pushed fix, without stopping for approval.
 - `<pull request>` — one pull request, as a number or a URL. One run reads one pull request; there is no batch.
 - A URL contributes its **number** only. Every command here resolves the repository from this checkout's remote, so a URL pointing at a different repository is refused rather than quietly reinterpreted as this one's pull request of the same number.
+
+### Run mode — `gated` or `unattended`
+
+`auto` present ⇒ **unattended**; absent ⇒ **gated**. Read it off the arguments ONCE, before Step 1, and carry that single value through the run — no later step re-derives it from the arguments, and **no other argument and no profile key overrides it**. Same token and same leading position as `/dev-loop [auto] <issues>`, so the two read alike.
+
+> **Gate suppression.** Step 4 raises its question under `gated` and raises none under `unattended`. That is the only thing this value decides.
+
+**Suppression removes the questions, not the work.** Every step of Step 4 still runs: every comment is still classified, the table is still rendered, and it is still written to Step 5's file. Each question resolves to its unattended answer instead.
+
+| The gate's question | Its unattended answer |
+|---|---|
+| approve this table? | every **fix** row proceeds — that is what the run is for |
+| act on a **skip** anyway? | no. It stays skipped, and its reason and evidence are posted with the table |
+| what about an **unclassified** row? | nobody can decide it, so it is reported as unclassified and acted on by nothing |
+| no **fix** row at all? | there is no work: post the table, say so, provision no worktree, push nothing, and stop |
+
+**No comment is re-classified to reach a different intent**, least of all here. Under `gated` a `disagreed with` skip is a disagreement a human can overrule at the gate; under `unattended` it is this skill overruling a reviewer with nobody left to overrule it back, which is why its reasoning is posted in full on the pull request where that reviewer will read it.
+
+**The preconditions are not gates and fire under both modes** — Step 1's five refusals, and the three profile keys Step 6 reads under that profile's own ask-then-persist rule. Suppression is scoped to the question above, so **no unattended default is invented for a profile key**: a run needing one the profile lacks asks once and persists the answer, exactly as a gated run does.
 
 ## Derived facts (compute once — never hardcode, never persist)
 
@@ -27,7 +47,7 @@ You are the orchestrator and you stay in the MAIN worktree. This skill reads one
 
 ## Step 1 — preconditions, before anything is read or shown
 
-Each one below makes this run's promise — the fixes, pushed to this pull request's own branch — impossible to keep. Refuse on it **here**, because discovering it after a human has read a table wastes the reading as well as the read.
+Each one below makes this run's promise — the fixes, pushed to this pull request's own branch — impossible to keep. Refuse on it **here**, because discovering it after a human has read a table wastes the reading as well as the read. **All five fire under both modes**, and a run refused here has written nothing anywhere.
 
 1. **The Workflow tool.** The execute phase is dispatched through it, so a session without it in your toolset stops the run. Name the setting — `"enableWorkflows": true` in the per-machine settings file (`~/.claude/settings.json`) — and say a **restart is required**. Ask nothing and write nothing: `/dev-loop` owns that question and asks it once per machine, and a second asker is a second question.
 2. **The sibling `dev-loop` skill folder.** `<DEV-LOOP>/phase-execute.js` missing ⇒ stop, saying the two install together. That script runs the fix, and nothing here reimplements it.
@@ -116,22 +136,40 @@ Beneath the table, one block per row that needs one, keyed by that row's `#`:
 
 `(!)` is the mark, carried by no other reason. It is plain ASCII on purpose: it reads the same in a terminal as in GitHub's renderer, and nothing here says anything with colour.
 
-**This is the only table definition there is.** The gate below, Step 5's file and Step 10's comment each render *this* table, expansions included — the same rows, columns and clauses, never a second summary of them.
+**This is the only table definition there is.** Step 4 below — shown at the gate or posted in its place — Step 5's file and Step 10's comment each render *this* table, expansions included: the same rows, columns and clauses, never a second summary of them.
 
-## Step 4 — the gate
+## Step 4 — the gate, and what stands in for it
 
-**Nothing above this line wrote anything** — every command so far was a read — and nothing below it runs without an explicit answer.
+**Nothing above this line wrote anything** — every command so far was a read. Under `gated` nothing below it runs without an explicit answer; under `unattended` the answers are the Run mode table's, already given.
 
-Present Step 3's table and its expansions, then count its **fix** rows:
+Render Step 3's table and its expansions, then count its **fix** rows:
 
-- **None** ⇒ there is nothing to do. Say so and stop, having shown the table: it is the answer. No worktree is provisioned, no phase dispatched and nothing pushed — an empty fix set has no commit to make, and dispatching one anyway would send the review loop at an empty diff.
-- **One or more** ⇒ ask. There is no ceiling on the count: a pull request's whole comment set runs in one pass, and the ordinals above are how it divides.
+- **None** ⇒ there is nothing to do, and the table is the answer: show it under `gated`, post it under `unattended`, say so, and stop either way. No worktree is provisioned, no phase dispatched and nothing pushed — an empty fix set has no commit to make, and dispatching one anyway would send the review loop at an empty diff.
+- **One or more** ⇒ carry on by the mode. There is no ceiling on the count: a pull request's whole comment set runs in one pass, and the ordinals above are how it divides.
+
+### `gated` — ask
 
 AskUserQuestion, once: approve this table, or stop. Say what approving does, so the answer is an informed one — a worktree attached to `headRefName`, one commit per ordinal the table shows, one push to that same branch, and one comment carrying the findings back. A human may correct any row's intent, reason, clause or grouping first; the corrected table is the one that counts, everything downstream renders that one, and the count above is taken again from it. Anything short of approval ends the run with nothing written.
 
-## Step 5 — the approved rows become the plan
+### `unattended` — post the table where the question would have been
 
-`phase-execute.js` hands the writer a `planPath` and the writer reads it before anything else — a path that does not exist comes straight back as BLOCKED. So the approved rows are written as one file, at `<MAIN>/.scratch/pr-comments/<n>-comments.md`, creating the directory. **Not under a `plans/` subdirectory**: `/dev-loop-cleanup` reaps `.scratch/*/plans/<n>-*.md` by number, and an issue sharing a number with this pull request would take a live table with it.
+Nobody is going to correct a row, so Step 3's table as classified is the one that counts and the one everything downstream renders. It goes on the pull request, because a table nobody was watching is a decision made in a terminal that closes:
+
+```bash
+gh pr comment <n> --body-file - <<'BODY'
+...
+BODY
+```
+
+**Quoted heredoc, body on standard input.** The table carries excerpts of other people's comments and the reasoning behind every `disagreed with` — prose full of backticks, dollar signs and quotes, which interpolated into a shell string is executed instead of quoted. Every comment this skill posts arrives this way.
+
+It holds Step 3's table and every expansion, rendered identically — no second summary of them — under one line saying an unattended run of this skill classified them and what it will do next: a worktree on `headRefName`, one commit per ordinal, one push to that same branch, and one further comment when it finishes. Where no row was a fix it says that instead, and is the whole account: nothing follows it.
+
+**This is the run's first write and its first comment, and an unattended run posts this one and Step 10's and never a third** — a run stopping here for want of a fix row posts only this one. **A skip gets no comment of its own**: it stays skipped, its reason and evidence travel in this table, and its thread is not written in.
+
+## Step 5 — the fix rows become the plan
+
+`phase-execute.js` hands the writer a `planPath` and the writer reads it before anything else — a path that does not exist comes straight back as BLOCKED. So the table's fix rows are written as one file, at `<MAIN>/.scratch/pr-comments/<n>-comments.md`, creating the directory. **Not under a `plans/` subdirectory**: `/dev-loop-cleanup` reaps `.scratch/*/plans/<n>-*.md` by number, and an issue sharing a number with this pull request would take a live table with it.
 
 Plan-shaped, and carrying the comments' own content:
 
@@ -146,7 +184,7 @@ One commit per entry below, made in the order they are listed and in one worktre
 opens a file with the earlier ones already applied.
 
 Only the comments those entries name. Every unresolved comment was classified and shown; the rest
-were not approved and are no commit's scope.
+went to skip or unclassified and are no commit's scope.
 
 ## Hard constraints
 None. A review comment supplies none, and constraints invented here would bind the writer to
@@ -167,7 +205,7 @@ something nobody asked for.
 indented into the entry — a `suggestion` block's own leading tabs are the code>
 
 ## The table
-<Step 3's table as approved, every row and every expansion, rendered identically — what the rest of
+<Step 3's table as it stands, every row and every expansion, rendered identically — what the rest of
 the pull request's comments were classified as, and none of it any commit's scope>
 ```
 
@@ -177,7 +215,7 @@ the pull request's comments were classified as, and none of it any commit's scop
 
 **Every anchor here is a pre-run position and is labelled one.** GitHub numbered those lines before any of this ran, and the first commit's edit moves the second's — so the site is found by content, which is the other thing the verbatim body is for: the code it quotes and the symbols it names survive an edit above them. Where `line` is null the anchor is `originalLine`, marked *stale anchor* as the table marks it.
 
-**A fix row's clause is not rewritten here.** The writer implements against the string the human approved, so a second wording of it is a second brief nobody agreed to.
+**A fix row's clause is not rewritten here.** The writer implements against the string the table states — the one a gated run's human approved — so a second wording of it is a second brief nobody agreed to.
 
 Each `<message>` is a conventional-commit message — `<type>(<scope>): #<n> - <what changes>`, its type and scope taken from what that fix actually is — and the **same strings, verbatim and in this order,** are what Step 7 passes as `commits`. `#<n>` is the pull request: GitHub numbers pull requests and issues in one sequence.
 
@@ -199,7 +237,7 @@ The file is gitignored working material and nothing may depend on it surviving: 
 5. `.worktreeinclude` copies, the same mechanism `/dev-loop` provisions with: `git -C <MAIN> ls-files -oi --exclude-from=.worktreeinclude --directory` lists the matches — files, plus fully-ignored directories collapsed to one entry — and each is fast-copied from MAIN into the worktree at the same relative path, parent directories created, the trailing slash git puts on a directory entry stripped first. No `.worktreeinclude` ⇒ no copies and no question asked: `/dev-loop`'s Act 0 owns that one.
 6. Run the profile's Setup command from inside the worktree.
 
-**Three profile keys, all read from `docs/agents/dev-loop.md`**: Setup command, Full-suite command and Fix cycles. For one the file lacks, follow its own ask-then-persist rule — ask once, write the answer in, never ask again. This skill adds no key of its own, no second profile and no argument that changes what the pipeline does.
+**Three profile keys, all read from `docs/agents/dev-loop.md`**: Setup command, Full-suite command and Fix cycles. For one the file lacks, follow its own ask-then-persist rule — ask once, write the answer in, never ask again, **under `unattended` as much as under `gated`**: an invented default is a value nobody chose, persisted as though somebody had. This skill adds no key of its own, no second profile and no argument that changes what the pipeline does.
 
 ## Step 7 — dispatch the execute phase
 
@@ -217,7 +255,7 @@ Run the Workflow tool with `scriptPath: <DEV-LOOP>/phase-execute.js`, and these 
       "commits": [{ "ordinal": 1, "message": "<Step 5's first message, verbatim>" }, ...]
     }]
   }],
-  "mode": "gated",
+  "mode": "<gated or unattended>",
   "fixCycleThreshold": <the profile's Fix cycles>,
   "suiteCommand": "<the profile's Full-suite command>",
   "agentNamespace": "<NAMESPACE>"
@@ -226,12 +264,12 @@ Run the Workflow tool with `scriptPath: <DEV-LOOP>/phase-execute.js`, and these 
 
 **`commits` is Step 5's `## Commit / PR breakdown`, entry for entry** — one element per entry, same order, same message strings verbatim, ordinals from `1`. The writer is handed an ordinal and a message and reads the file for the rest, so an array disagreeing with the file sends it at a commit nothing describes. It is never empty; Step 4 already ended the run where no fix row was left. **One sub-lane, always** — the array is what makes those commits sequential in one worktree.
 
-`planPath` and `worktree` are **absolute** — `.scratch` and the worktrees directory both live under MAIN. `mode` is the literal `gated`, this skill having no other mode to parse. `fixCycleThreshold` and `suiteCommand` are the profile's values passed verbatim, never literals written here — and `fixCycleThreshold` is a **number**: the script tests it with `Number.isInteger` and a quoted one silently becomes the default instead.
+`planPath` and `worktree` are **absolute** — `.scratch` and the worktrees directory both live under MAIN. `mode` is the run's real mode, literally `gated` or `unattended` and never the `auto` token the developer typed: with no `skillDir` below it changes nothing the script does, and a record saying `gated` for an unattended run is a false record. `fixCycleThreshold` and `suiteCommand` are the profile's values passed verbatim, never literals written here — and `fixCycleThreshold` is a **number**: the script tests it with `Number.isInteger` and a quoted one silently becomes the default instead.
 
 Four keys are left out, each deliberately:
 
 - **`issueBody`** and **`ownedCriteria`** — there is no issue, so there is no spec axis. The script already tells the reviewer to return an empty `criterionVerdicts` and say so in its notes; that is the existing contract's degenerate case, reached by passing less rather than by editing anything.
-- **`skillDir`** — it exists for the notifier, which the script dispatches under `unattended` only.
+- **`skillDir`** — the notifier's only purpose, and an absent one is that script's documented "no notifier is dispatched". Left out under **both** modes, for two reasons. The notifier's first act is a label swap on the issue it was given, and this run works a pull request somebody else opened. And it exists because a workflow script has no shell, so a lane ending mid-script would otherwise have no writer until its siblings finish — this run dispatches one lane with one sub-lane, so the call returns the moment that lane ends and this session is back.
 - **`runHandle`** — the notifier is the only thing that writes it, and none is dispatched.
 
 **Change nothing under `<DEV-LOOP>`.** The execute phase runs as it is — writer, review loop, suite gate — and this skill adds no phase script of its own.
@@ -274,7 +312,7 @@ What it says — the commit list from git, everything else from the sub-lane rec
 |---|---|
 | what reached the branch | `<planned> planned, <made> made`, then `git -C <worktree> log --oneline <the sha from Step 6>..<headRefName>` line for line — marked **not pushed**, with why, on a path that pushed nothing |
 | the comments it answers | one line per comment a commit fixed, in ordinal order — its `#`, its author and its `url`. `gh pr comment` posts at the pull request rather than in the thread, so the links are what tell a reader which comments these are; one line where a run fixed several attributes the rest to it |
-| the table | Step 3's table as approved, every row and every expansion, rendered identically. This copy is the one that outlives the run — the gate's is a session's scrollback and the table file is deleted below |
+| the table | Step 3's table as it stands, every row and every expansion, rendered identically. This copy is the one that outlives the run — a gated run's is a session's scrollback and the table file is deleted below |
 | fixed | `fixedFindings` — reviewer findings the writer applied |
 | won't-fix | `wontFix`, each with the writer's reason |
 | notes | `reviewNotes` verbatim, and `reviewTrajectory` where a bound ended the review loop |
@@ -307,12 +345,12 @@ A refusal is the guard working: `git worktree remove` declines on tracked modifi
 
 ## Hard rules
 
-- **Two writes, and the gate sits above both.** One `git push` to the branch the pull request already has, one `gh pr comment` on it, and nothing else leaves this session. Every command before Step 4 is a read.
+- **One push, and never more than one comment under `gated` or two under `unattended` — nothing else leaves this session.** The push goes to the branch the pull request already has; the comments are Step 4's table, posted only where the gate did not ask, and Step 10's. Every command before Step 4 is a read.
 - **Append-only, and narrower than `/dev-loop`'s, because the artifacts belong to someone else.** No review thread resolved, no draft or ready state converted, no label added or removed, no issue body, pull request body or anyone's comment edited. No ending, no failure and no absent human relaxes this.
 - **Never force-push, in any form** — no `--force`, no `--force-with-lease`. The push is a fast-forward by construction, so forcing is never the repair.
 - **Push before you remove**, never remove the main worktree, and remove only with `git worktree remove` without `--force`, against a path under `<WORKTREES>`.
-- **Gated, always.** Nothing below Step 4 runs without an explicit answer; there is no unattended mode, no `auto` token and no argument that reaches one.
-- **Every fix row proceeds, and the default is one commit each.** Two share an ordinal only where they ask for the same change, with what makes them one stated; proximity never merges. One file's fixes take adjacent ordinals ascending by anchor and every commit runs in one sub-lane, never split across sub-lanes or branches. A table with no fix row at all is shown and stops the run, provisioning nothing.
+- **A leading `auto` is the only thing that suppresses the gate, and it is parsed once.** Present ⇒ unattended, absent ⇒ gated; no later step re-derives it, and no other argument and no profile key overrides it. **Suppression removes Step 4's question and nothing else**: every comment is still classified, the table is still rendered, written to Step 5's file and posted on the pull request, Step 1's refusals and Step 6's profile reads still fire, no comment is re-classified to reach a different intent, and nothing acts on a skip or an unclassified row.
+- **Every fix row proceeds, and the default is one commit each.** Two share an ordinal only where they ask for the same change, with what makes them one stated; proximity never merges. One file's fixes take adjacent ordinals ascending by anchor and every commit runs in one sub-lane, never split across sub-lanes or branches. A table with no fix row at all is shown or posted and stops the run, provisioning nothing.
 - **Each breakdown entry names the comment(s) it satisfies, every message in the file is unique, and Step 7's `commits` matches that breakdown verbatim** — same ordinals, same strings, same order. Anchors written into it are pre-run positions and say so.
 - **The ledger's commit list is git's, never the returned one** — `git log <base>..<headRefName>`, read in the worktree before it is removed, with the planned count beside the made count, a `wip:` commit listed and not counted, and any planned commit the branch does not hold named as not made.
 - **Every skip names one of Step 3's four reasons and carries its evidence.** No fifth reason is invented at run time and no free text stands in for one; a comment none of them fits, or whose evidence cannot be produced, is `unclassified`, and nothing acts on it.
