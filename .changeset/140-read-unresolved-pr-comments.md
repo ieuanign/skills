@@ -13,6 +13,10 @@ minimising one is a human saying it is dealt with.
 Bodies are carried byte for byte and never reach a shell: `gh` is spawned with an argument array and
 its stdout is parsed, which is what makes a body containing backticks, `$(...)` and quotes inert.
 
+Every entry names the thread it sits in. Replies on one conversation share a `threadId`, which is
+null on a review body and an issue comment because neither belongs to a thread — so a consumer can
+answer a conversation once rather than once per reply.
+
 Absence stays absence. An outdated comment keeps `line: null` while its stale `originalLine` anchor
 travels separately, so a consumer can tell *no line* from *line moved* rather than being handed a
 location the file no longer has. Every connection is paginated, and a failed read exits non-zero with
