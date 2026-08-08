@@ -116,6 +116,19 @@ of what a lane costs.**
 - [**How to improve your `/dev-loop`**](./docs/improving-dev-loop.md) — the pipeline is fixed, so it
   improves by what your repo tells it. Five things worth declaring, in payoff order.
 
+## `/pr-comments`
+
+```
+/pr-comments [auto] <pull request>
+```
+
+**Gated** by default — you approve the comment table before anything below it runs. `auto` suppresses
+that question only: the table is posted on the pull request in the gate's place, and the run's
+conclusion beside it.
+
+- [**How a run works**](./docs/pr-comments.md) — the table that *is* the plan, what a run
+  refuses to do and why, both run shapes, common questions, "it's working if". A run loads none of it.
+
 ## For maintainers
 
 - `npm run check` — validate the manifest, compile every phase script, confirm the `package.json` and
