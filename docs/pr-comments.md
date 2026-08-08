@@ -1,8 +1,8 @@
-# `/dev-loop-pr-comments`
+# `/pr-comments`
 
 ## What it does
 
-`/dev-loop-pr-comments` takes one pull request's unresolved comments and produces one pushed fix. It
+`/pr-comments` takes one pull request's unresolved comments and produces one pushed fix. It
 reads them, classifies each **fix** or **skip**, puts the table in front of you, and drives the
 approved fix rows through `/dev-loop`'s execute phase — writer, review loop and suite gate, unchanged —
 in a worktree attached to the pull request's own head branch.
@@ -32,8 +32,8 @@ The table is not a report of the run. It **is** the plan — see [below](#the-co
 
 | The work is… | Reach for |
 |---|---|
-| Unresolved comments on one open pull request | `/dev-loop-pr-comments 128` |
-| The same, and you will not be at the keyboard | `/dev-loop-pr-comments auto 128` |
+| Unresolved comments on one open pull request | `/pr-comments 128` |
+| The same, and you will not be at the keyboard | `/pr-comments auto 128` |
 | An issue rather than a pull request | `/dev-loop` |
 | A diff you want judged rather than fixed | `/code-review-mp` |
 | Comments on a pull request opened from a fork | nothing here — see **Prerequisites** |
@@ -148,14 +148,14 @@ Two consequences worth knowing:
 
 ### Supervised
 
-`/dev-loop-pr-comments 128`. The table and its expansions are shown, and you are asked once: approve,
+`/pr-comments 128`. The table and its expansions are shown, and you are asked once: approve,
 or stop. You may correct any row's intent, reason, clause or grouping first — **the corrected table is
 the one that counts**, and everything downstream renders that one. Anything short of approval ends the
 run with nothing written.
 
 ### Unattended
 
-`/dev-loop-pr-comments auto 128`. `auto` leads, for the same reason it leads in `/dev-loop`: the word
+`/pr-comments auto 128`. `auto` leads, for the same reason it leads in `/dev-loop`: the word
 deciding whether you will ever be asked should be the second one you type.
 
 **Suppression removes the question, not the work.** Every comment is still classified, the table is

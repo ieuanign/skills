@@ -2,10 +2,10 @@
 "ieuanign-skills": minor
 ---
 
-`/dev-loop-pr-comments` gets the written record: a narrative a human reads and no run loads, and the
+`/pr-comments` gets the written record: a narrative a human reads and no run loads, and the
 glossary entries that make it readable.
 
-**`docs/dev-loop-pr-comments.md`** is modelled section-for-section on `docs/dev-loop.md`. What it does,
+**`docs/pr-comments.md`** is modelled section-for-section on `docs/dev-loop.md`. What it does,
 the four words you need before the rest reads, when to reach for it over `/dev-loop` or
 `/code-review-mp`, prerequisites, what one run does in order, both run shapes end to end, the questions
 people actually ask — each answered with the reason rather than the rule — and an "it's working if"
