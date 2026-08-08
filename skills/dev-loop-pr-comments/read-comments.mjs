@@ -30,6 +30,7 @@ const entry = (origin, node, extra) => ({
   line: null,
   originalLine: null,
   outdated: null,
+  threadId: null,
   reviewState: null,
   ...extra,
 })
@@ -55,6 +56,9 @@ export function normalise({ threads = [], reviews = [], issueComments = [] } = {
         line: c.line ?? null,
         originalLine: c.originalLine ?? null,
         outdated: Boolean(thread.isOutdated),
+        // The conversation a comment sits in. Nothing on the comment recovers it, so a consumer
+        // that answers a thread once rather than per reply has to be handed it here.
+        threadId: thread.id ?? null,
       }))
     }
   }
