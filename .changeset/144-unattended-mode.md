@@ -2,7 +2,7 @@
 "ieuanign-skills": minor
 ---
 
-`/dev-loop-pr-comments auto <pull request>` runs the whole harness unattended, and reports itself on
+`/pr-comments auto <pull request>` runs the whole harness unattended, and reports itself on
 the pull request rather than into a terminal nobody is watching.
 
 A leading `auto` — the same token in the same position `/dev-loop` takes it in — is read off the
