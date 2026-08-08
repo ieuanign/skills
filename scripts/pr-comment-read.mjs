@@ -117,6 +117,16 @@ scenario('an outdated comment keeps line null and its stale anchor separate', ()
   )
 })
 
+scenario('every reply carries the thread it sits in, and separate threads stay separate', () => {
+  const entries = normalise({
+    threads: [
+      thread('t-first', [comment('c-opened'), comment('c-replied'), comment('c-replied-again')]),
+      thread('t-second', [comment('c-elsewhere')]),
+    ],
+  })
+  assert.deepEqual(entries.map(e => e.threadId), ['t-first', 't-first', 't-first', 't-second'])
+})
+
 // Every metacharacter a body could carry into a shell, plus the newline that would end a command.
 // Kept as one string literal so a broken assertion prints the exact bytes that failed to survive.
 const HOSTILE = 'run `git log` first\nthen $(rm -rf /) and "quoted" \'single\' \\backslash | ; & > $HOME'
@@ -138,13 +148,14 @@ scenario('every entry carries the same keys, and an absent author stays null', (
     reviews: [review('r1')],
     issueComments: [issueComment('i1')],
   })
-  const keys = ['origin', 'id', 'author', 'body', 'url', 'createdAt', 'path', 'line', 'originalLine', 'outdated', 'reviewState']
+  const keys = ['origin', 'id', 'author', 'body', 'url', 'createdAt', 'path', 'line', 'originalLine', 'outdated', 'threadId', 'reviewState']
   for (const e of entries) assert.deepEqual(Object.keys(e).sort(), [...keys].sort(), `entry ${e.id}`)
   assert.deepEqual(entries.map(e => e.author), [null, 'someone', 'someone'])
-  // A review body and an issue comment have no location, and none is invented for them.
-  assert.deepEqual(entries.slice(1).map(e => [e.path, e.line, e.originalLine, e.outdated]), [
-    [null, null, null, null],
-    [null, null, null, null],
+  // A review body and an issue comment belong to no thread and have no location, and neither is
+  // invented for them.
+  assert.deepEqual(entries.slice(1).map(e => [e.path, e.line, e.originalLine, e.outdated, e.threadId]), [
+    [null, null, null, null, null],
+    [null, null, null, null, null],
   ])
 })
 
