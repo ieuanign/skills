@@ -1,11 +1,11 @@
 ---
 name: pr-comments
-description: Reads a pull request's unresolved comments and classifies each fix or skip for a human's approval, then drives the approved fix through /dev-loop's execute phase and pushes it to that pull request's own branch. Use for `/pr-comments <pull request>`.
+description: Reads a pull request's unresolved comments and classifies each fix or skip for a human's approval, then drives the approved fixes through /dev-loop's execute phase and pushes them to that pull request's own branch. Use for `/pr-comments <pull request>`.
 ---
 
 # /pr-comments — a pull request's comments, through to a pushed fix
 
-You are the orchestrator and you stay in the MAIN worktree. This skill reads one pull request's unresolved comments, classifies each **fix** or **skip**, and shows a human the table; the approved fix then runs through `/dev-loop`'s execute phase — writer, review loop and suite gate, unchanged — in a worktree attached to the pull request's own head branch.
+You are the orchestrator and you stay in the MAIN worktree. This skill reads one pull request's unresolved comments, classifies each **fix** or **skip**, and shows a human the table; the approved fixes then run through `/dev-loop`'s execute phase — writer, review loop and suite gate, unchanged — in a worktree attached to the pull request's own head branch.
 
 **Gated, and append-only against artifacts someone else owns.** There is no unattended mode and no token that asks for one. The whole run makes two writes — one `git push` to the branch the pull request already has, and one `gh pr comment` on it — and neither of them happens before the gate below.
 
@@ -27,7 +27,7 @@ You are the orchestrator and you stay in the MAIN worktree. This skill reads one
 
 ## Step 1 — preconditions, before anything is read or shown
 
-Each one below makes this run's promise — one fix, pushed to this pull request's own branch — impossible to keep. Refuse on it **here**, because discovering it after a human has read a table wastes the reading as well as the read.
+Each one below makes this run's promise — the fixes, pushed to this pull request's own branch — impossible to keep. Refuse on it **here**, because discovering it after a human has read a table wastes the reading as well as the read.
 
 1. **The Workflow tool.** The execute phase is dispatched through it, so a session without it in your toolset stops the run. Name the setting — `"enableWorkflows": true` in the per-machine settings file (`~/.claude/settings.json`) — and say a **restart is required**. Ask nothing and write nothing: `/dev-loop` owns that question and asks it once per machine, and a second asker is a second question.
 2. **The sibling `dev-loop` skill folder.** `<DEV-LOOP>/phase-execute.js` missing ⇒ stop, saying the two install together. That script runs the fix, and nothing here reimplements it.
@@ -74,15 +74,27 @@ Classification is **your own plain reading of each body**, and dispatches no age
 
 **Classify what the comment says, not what its metadata suggests.** An outdated comment — `line: null`, `outdated: true`, its stale anchor left in `originalLine` — is one whose code moved, which says nothing about whether anyone did what it asked. `outdated: true` is therefore never the evidence for `already addressed`; a commit is.
 
+### Which commit each fix becomes
+
+**Every fix row carries a commit ordinal, and the default is one ordinal per fix.** Grouping is decided here rather than after the gate, because the table is the plan: approving these rows is what approves the commits.
+
+Two fix rows share an ordinal **only where they ask for the same change** — two reviewers wanting one rename — and a shared ordinal states what makes them one. **Proximity is never sameness**: two comments on the same region of one file are one commit each, because touching the same lines is not asking for the same thing. Silent merging is what the table exists to prevent, so a merge carrying no reason is not one.
+
+**Ordinals run file by file, ascending by anchor within each.** One file's fixes take adjacent ordinals, ordered by the line each sits at — `originalLine` where `line` is null — and the fixes anchored to no file come last. They all run in **one sub-lane**: sequential commits in one worktree is the only thing that makes a later fix open a file with the earlier one already in it, and splitting a run's fixes across sub-lanes or branches races them instead.
+
+A **skip** and an **unclassified** row have no ordinal, and nothing acts on either.
+
 ### The table
 
-**One line per entry, in the order the read returned them.** Anything longer than a clause goes to an expansion beneath the table and never into a cell.
+**One line per entry, ordered by commit ordinal** — two rows sharing one are then adjacent, so a merge is seen rather than looked for. The rows carrying no ordinal follow, in the order the read returned them. Anything longer than a clause goes to an expansion beneath the table and never into a cell.
 
-| # | Comment | Author | Intent | Reason | Why |
-|---|---|---|---|---|---|
-| the row's key, from `1` | `<path>:<line>` where the entry has both, `<path>` marked *stale anchor* where `line` is null, and the origin in words where there is no path at all — each linked to the entry's `url` — then the opening of the body | the entry's `author`, or `unknown` where it is null | **fix**, **skip** or **unclassified** | a **skip**'s reason, spelled as the table above spells it and marked `(!)` where it is `disagreed with`; empty on the other two intents | one clause, per the intent below |
+| # | Comment | Author | Intent | Reason | Why | Commit |
+|---|---|---|---|---|---|---|
+| the row's key, from `1` down the table | `<path>:<line>` where the entry has both, `<path>` marked *stale anchor* where `line` is null, and the origin in words where there is no path at all — each linked to the entry's `url` — then an excerpt of the body | the entry's `author`, or `unknown` where it is null | **fix**, **skip** or **unclassified** | a **skip**'s reason, spelled as the table above spells it and marked `(!)` where it is `disagreed with`; empty on the other two intents | one clause, per the intent below | the row's commit ordinal, or empty where it has none |
 
-The comment cell is for reading: the body's opening is truncated to fit. **Any `|` a cell carries is escaped, and anything wanting a newline goes to its expansion** — the excerpts cut for evidence included, since one unescaped pipe silently eats the rest of a row. The body itself travels on verbatim.
+**The comment cell is an excerpt, never the body** — its opening, cut to one line. The body itself travels on verbatim, into Step 5's file, which is where a writer reads it. **Any `|` a cell carries is escaped, and anything wanting a newline goes to its expansion** — the excerpts cut for evidence included, since one unescaped pipe silently eats the rest of a row.
+
+**Fifteen rows read as three do**, because every row is one line whatever it carries and everything that would not fit is beneath the table rather than in it. That is a property of the shape, not of the count.
 
 | Intent | Its clause |
 |---|---|
@@ -112,59 +124,62 @@ Beneath the table, one block per row that needs one, keyed by that row's `#`:
 
 Present Step 3's table and its expansions, then count its **fix** rows:
 
-- **None** ⇒ there is nothing to do. Say so and stop, having shown the table: it is the answer.
-- **More than one** ⇒ show the table and stop, saying that grouping several fixes into commits is not built yet and that one at a time is what this skill can do. Never pick one.
-- **Exactly one** ⇒ ask.
+- **None** ⇒ there is nothing to do. Say so and stop, having shown the table: it is the answer. No worktree is provisioned, no phase dispatched and nothing pushed — an empty fix set has no commit to make, and dispatching one anyway would send the review loop at an empty diff.
+- **One or more** ⇒ ask. There is no ceiling on the count: a pull request's whole comment set runs in one pass, and the ordinals above are how it divides.
 
-AskUserQuestion, once: approve this table, or stop. Say what approving does, so the answer is an informed one — a worktree attached to `headRefName`, one commit for the one fix, one push to that same branch, and one comment carrying the findings back. A human may correct any row's intent, reason or clause first; the corrected table is the one that counts, everything downstream renders that one, and the count above is taken again from it. Anything short of approval ends the run with nothing written.
+AskUserQuestion, once: approve this table, or stop. Say what approving does, so the answer is an informed one — a worktree attached to `headRefName`, one commit per ordinal the table shows, one push to that same branch, and one comment carrying the findings back. A human may correct any row's intent, reason, clause or grouping first; the corrected table is the one that counts, everything downstream renders that one, and the count above is taken again from it. Anything short of approval ends the run with nothing written.
 
-## Step 5 — the approved row becomes the plan
+## Step 5 — the approved rows become the plan
 
-`phase-execute.js` hands the writer a `planPath` and the writer reads it before anything else — a path that does not exist comes straight back as BLOCKED. So the approved row is written as a file, at `<MAIN>/.scratch/pr-comments/<n>-comments.md`, creating the directory. **Not under a `plans/` subdirectory**: `/dev-loop-cleanup` reaps `.scratch/*/plans/<n>-*.md` by number, and an issue sharing a number with this pull request would take a live table with it.
+`phase-execute.js` hands the writer a `planPath` and the writer reads it before anything else — a path that does not exist comes straight back as BLOCKED. So the approved rows are written as one file, at `<MAIN>/.scratch/pr-comments/<n>-comments.md`, creating the directory. **Not under a `plans/` subdirectory**: `/dev-loop-cleanup` reaps `.scratch/*/plans/<n>-*.md` by number, and an issue sharing a number with this pull request would take a live table with it.
 
-Plan-shaped, and carrying the comment's own content:
+Plan-shaped, and carrying the comments' own content:
 
 ```markdown
 # <n> — <pull request title>
 
 ## Issue summary
-<the pull request's url, and that this is a review comment on it rather than an issue>
-
-## The comment
-<author> — <path>:<line>, or the stale anchor `<path>:<originalLine>`, or the origin in words where
-there is no path — and the entry's url.
-
-<the body, VERBATIM: not summarised, not re-wrapped, not corrected>
+<the pull request's url, and that these are review comments on it rather than an issue>
 
 ## Approach
-<the approved row's Why clause, character for character as the table shows it>
+One commit per entry below, made in the order they are listed and in one worktree — so a later one
+opens a file with the earlier ones already applied.
 
-<what the fix must achieve, as an outcome rather than a diff>
-
-Only this comment. Every unresolved comment was classified and shown; the rest were not approved and
-are not this commit's scope.
+Only the comments those entries name. Every unresolved comment was classified and shown; the rest
+were not approved and are no commit's scope.
 
 ## Hard constraints
 None. A review comment supplies none, and constraints invented here would bind the writer to
 something nobody asked for.
 
 ## File touchpoints
-<the comment's path where it has one; otherwise say plainly that it names no file>
+<every path the entries name, and plainly that a comment anchored to no file names none>
 
 ## Test expectations
 <the profile's Full-suite command>, from the worktree.
 
 ## Commit / PR breakdown
-1. `<message>` — <one line saying what the commit does>
+1. `<message>` — <the row's Why clause, character for character as the table shows it>
+
+   Satisfies **[<#>]** <author>, `<path>:<line>` — a **pre-run position** — and the entry's url.
+
+<the body, VERBATIM and at the left margin: not summarised, not re-wrapped, not corrected, and not
+indented into the entry — a `suggestion` block's own leading tabs are the code>
 
 ## The table
 <Step 3's table as approved, every row and every expansion, rendered identically — what the rest of
-the pull request's comments were classified as, and none of it this commit's scope>
+the pull request's comments were classified as, and none of it any commit's scope>
 ```
 
-**The fix row's clause is not rewritten here.** The writer implements against the string the human approved, so a second wording of it is a second brief nobody agreed to.
+**One entry per ordinal, in ordinal order, each naming by `#` and url exactly the comment(s) it satisfies** and carrying their bodies. A shared ordinal lists both and says what makes them one change; an entry naming no comment is one whose scope nobody can bound.
 
-`<message>` is a conventional-commit message — `<type>(<scope>): #<n> - <what changes>`, its type and scope taken from what the fix actually is — and the **same string, verbatim,** is what Step 7 passes as `commits[0].message`. `#<n>` is the pull request: GitHub numbers pull requests and issues in one sequence.
+**Every `<message>` in the file is unique.** The writer is handed an ordinal and a message string and reads this file for the rest, so two entries reading alike is how the third commit does the first's work.
+
+**Every anchor here is a pre-run position and is labelled one.** GitHub numbered those lines before any of this ran, and the first commit's edit moves the second's — so the site is found by content, which is the other thing the verbatim body is for: the code it quotes and the symbols it names survive an edit above them. Where `line` is null the anchor is `originalLine`, marked *stale anchor* as the table marks it.
+
+**A fix row's clause is not rewritten here.** The writer implements against the string the human approved, so a second wording of it is a second brief nobody agreed to.
+
+Each `<message>` is a conventional-commit message — `<type>(<scope>): #<n> - <what changes>`, its type and scope taken from what that fix actually is — and the **same strings, verbatim and in this order,** are what Step 7 passes as `commits`. `#<n>` is the pull request: GitHub numbers pull requests and issues in one sequence.
 
 The file is gitignored working material and nothing may depend on it surviving: delete it once the ledger comment carrying its content has posted, and on a run that ends before that keep it and say where it is.
 
@@ -199,7 +214,7 @@ Run the Workflow tool with `scriptPath: <DEV-LOOP>/phase-execute.js`, and these 
       "branch": "<headRefName>",
       "worktree": "<WORKTREES>/pr-<n>",
       "base": "<the sha from Step 6>",
-      "commits": [{ "ordinal": 1, "message": "<Step 5's message, verbatim>" }]
+      "commits": [{ "ordinal": 1, "message": "<Step 5's first message, verbatim>" }, ...]
     }]
   }],
   "mode": "gated",
@@ -208,6 +223,8 @@ Run the Workflow tool with `scriptPath: <DEV-LOOP>/phase-execute.js`, and these 
   "agentNamespace": "<NAMESPACE>"
 }
 ```
+
+**`commits` is Step 5's `## Commit / PR breakdown`, entry for entry** — one element per entry, same order, same message strings verbatim, ordinals from `1`. The writer is handed an ordinal and a message and reads the file for the rest, so an array disagreeing with the file sends it at a commit nothing describes. It is never empty; Step 4 already ended the run where no fix row was left. **One sub-lane, always** — the array is what makes those commits sequential in one worktree.
 
 `planPath` and `worktree` are **absolute** — `.scratch` and the worktrees directory both live under MAIN. `mode` is the literal `gated`, this skill having no other mode to parse. `fixCycleThreshold` and `suiteCommand` are the profile's values passed verbatim, never literals written here — and `fixCycleThreshold` is a **number**: the script tests it with `Number.isInteger` and a quoted one silently becomes the default instead.
 
@@ -251,18 +268,20 @@ BODY
 
 **The heredoc is quoted and the body arrives on stdin.** Comment bodies, the verbatim excerpts Step 3's evidence cuts out of them, reviewer notes and findings are agent-facing prose full of backticks, dollar signs and quotes; interpolated into a shell string they are executed, and the one place this run quotes a human's words back at them is the last place to allow that. Everything it carries travels verbatim.
 
-What it says, from the sub-lane record and nothing else:
+What it says — the commit list from git, everything else from the sub-lane record:
 
 | Section | What it holds |
 |---|---|
-| what reached the branch | the pushed commit's sha and subject — or plainly that nothing was pushed, and why |
-| the comment it answers | the entry's author and `url`. `gh pr comment` posts at the pull request rather than in the thread, so the link is what tells a reader which comment this is about |
+| what reached the branch | `<planned> planned, <made> made`, then `git -C <worktree> log --oneline <the sha from Step 6>..<headRefName>` line for line — marked **not pushed**, with why, on a path that pushed nothing |
+| the comments it answers | one line per comment a commit fixed, in ordinal order — its `#`, its author and its `url`. `gh pr comment` posts at the pull request rather than in the thread, so the links are what tell a reader which comments these are; one line where a run fixed several attributes the rest to it |
 | the table | Step 3's table as approved, every row and every expansion, rendered identically. This copy is the one that outlives the run — the gate's is a session's scrollback and the table file is deleted below |
 | fixed | `fixedFindings` — reviewer findings the writer applied |
 | won't-fix | `wontFix`, each with the writer's reason |
 | notes | `reviewNotes` verbatim, and `reviewTrajectory` where a bound ended the review loop |
 | suite | `suite.state`: `passed`, `failed` with its failing identifiers, or `not run` with why. A suite that did not run never reads as green |
 | attempt log | `attempts` in order, on a run that ended — what was tried after the first thing went wrong |
+
+**Ask git for that list, as Step 8 asks it for the count.** The record's commits are the writer's claim and the branch is the fact, so the log is read in the worktree — after the push, and before Step 11 removes it. `<planned>` counts the ordinals Step 7 dispatched, and every planned message the log does not hold is named as not made: a commit nobody wrote is the one thing a claimed list cannot show. A `wip:` commit is listed and **not** counted in `<made>` — it is abandoned work kept as evidence, and counting one reports a failure as delivery.
 
 **No acceptance-criteria section**: there was no issue and so no spec axis, `criterionVerdicts` comes back empty by the contract Step 7 invoked, and a section rendering nothing claims something was judged. `terminal` goes unread too — it decides a pull request's draft state, and this run opens none.
 
@@ -293,9 +312,11 @@ A refusal is the guard working: `git worktree remove` declines on tracked modifi
 - **Never force-push, in any form** — no `--force`, no `--force-with-lease`. The push is a fast-forward by construction, so forcing is never the repair.
 - **Push before you remove**, never remove the main worktree, and remove only with `git worktree remove` without `--force`, against a path under `<WORKTREES>`.
 - **Gated, always.** Nothing below Step 4 runs without an explicit answer; there is no unattended mode, no `auto` token and no argument that reaches one.
-- **One fix per run.** Every unresolved comment is classified and shown; more than one **fix** row shows the table and stops.
+- **Every fix row proceeds, and the default is one commit each.** Two share an ordinal only where they ask for the same change, with what makes them one stated; proximity never merges. One file's fixes take adjacent ordinals ascending by anchor and every commit runs in one sub-lane, never split across sub-lanes or branches. A table with no fix row at all is shown and stops the run, provisioning nothing.
+- **Each breakdown entry names the comment(s) it satisfies, every message in the file is unique, and Step 7's `commits` matches that breakdown verbatim** — same ordinals, same strings, same order. Anchors written into it are pre-run positions and say so.
+- **The ledger's commit list is git's, never the returned one** — `git log <base>..<headRefName>`, read in the worktree before it is removed, with the planned count beside the made count, a `wip:` commit listed and not counted, and any planned commit the branch does not hold named as not made.
 - **Every skip names one of Step 3's four reasons and carries its evidence.** No fifth reason is invented at run time and no free text stands in for one; a comment none of them fits, or whose evidence cannot be produced, is `unclassified`, and nothing acts on it.
-- **One line per comment, and one table definition.** Overflow goes to the keyed expansion beneath it, never into a cell, and the gate, the table file and the ledger comment each render Step 3's table rather than a summary of it.
+- **One line per comment — an excerpt, never the body — ordered by commit ordinal, and one table definition.** Overflow goes to the keyed expansion beneath it, never into a cell, and the gate, the table file and the ledger comment each render Step 3's table rather than a summary of it.
 - **A `disagreed with` row is marked `(!)` and expanded in full**, and a **fix** row's clause of intent is the one string the human approved — Step 5 hands the writer that string, not a rewording of it.
 - **Change nothing under `<DEV-LOOP>`** and add no phase script here. The execute phase runs as it is.
 - **Every body is carried verbatim and never interpolated into a shell string.**
