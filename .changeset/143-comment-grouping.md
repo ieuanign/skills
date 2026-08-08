@@ -2,7 +2,7 @@
 "ieuanign-skills": minor
 ---
 
-`/dev-loop-pr-comments` runs a whole pull request's comments in one pass, and the table says which
+`/pr-comments` runs a whole pull request's comments in one pass, and the table says which
 commit each fix becomes.
 
 The one-fix ceiling is gone: every **fix**-classified comment proceeds, and the default is one commit
