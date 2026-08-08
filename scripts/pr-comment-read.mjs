@@ -3,7 +3,7 @@
 // runs no fetch, so every exclusion and every carried field is checkable for the price of a node process.
 
 import assert from 'node:assert/strict'
-import { normalise, ORIGINS } from '../skills/dev-loop-pr-comments/read-comments.mjs'
+import { normalise, ORIGINS } from '../skills/pr-comments/read-comments.mjs'
 
 // --- fixture builders --------------------------------------------------------
 

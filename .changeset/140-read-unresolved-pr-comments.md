@@ -4,11 +4,11 @@
 
 A pull request's unresolved comments now read as one list, whatever kind each comment started as.
 
-`skills/dev-loop-pr-comments/read-comments.mjs` returns thread-anchored review comments, review
-bodies and issue comments in a single shape. Resolved threads are excluded on GraphQL's own
-`isResolved` rather than on an inference — REST does not expose thread resolution, and guessing hands
-back every comment a long-lived pull request ever carried. Hidden comments are excluded too, because
-minimising one is a human saying it is dealt with.
+`skills/pr-comments/read-comments.mjs` returns thread-anchored review comments, review bodies and
+issue comments in a single shape. Resolved threads are excluded on GraphQL's own `isResolved` rather
+than on an inference — REST does not expose thread resolution, and guessing hands back every comment
+a long-lived pull request ever carried. Hidden comments are excluded too, because minimising one is
+a human saying it is dealt with.
 
 Bodies are carried byte for byte and never reach a shell: `gh` is spawned with an argument array and
 its stdout is parsed, which is what makes a body containing backticks, `$(...)` and quotes inert.
