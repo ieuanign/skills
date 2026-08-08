@@ -2,7 +2,7 @@
 "ieuanign-skills": minor
 ---
 
-`/dev-loop-pr-comments` skips are now checkable rather than taken on trust.
+`/pr-comments` skips are now checkable rather than taken on trust.
 
 A skip carries one reason from a closed list of four — `question`, `already addressed`, `out of
 scope for this branch`, `disagreed with` — and free text never stands where a reason goes. Each
