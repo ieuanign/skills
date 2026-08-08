@@ -2,7 +2,7 @@
 "ieuanign-skills": minor
 ---
 
-`/dev-loop-pr-comments` turns one pull request's unresolved comments into a table, and the approved
+`/pr-comments` turns one pull request's unresolved comments into a table, and the approved
 fix into a pushed commit.
 
 It reads the comments through the normaliser the folder already held, classifies each **fix** or
