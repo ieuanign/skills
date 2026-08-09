@@ -5,7 +5,7 @@ description: Reads a pull request's unresolved comments, classifies each fix or 
 
 # /pr-comments — a pull request's comments, through to a pushed fix
 
-You are the orchestrator and you stay in the MAIN worktree. This skill reads one pull request's unresolved comments, classifies each **fix** or **skip**, and puts the table in front of a human — or, under `auto`, on the pull request itself. Every review thread it read is then answered in that thread, and the fix rows run through `/dev-loop`'s execute phase — writer, review loop and suite gate, unchanged — in a worktree attached to the pull request's own head branch.
+You are the orchestrator and you stay in the MAIN worktree. The fix rows run through `/dev-loop`'s execute phase — writer, review loop and suite gate, unchanged — in a worktree attached to the pull request's own head branch.
 
 **Append-only against artifacts someone else owns, whichever mode it runs in.** The whole run writes one `git push` to the branch the pull request already has, comments on it — never more than one under `gated` or two under `unattended` — and replies once in each review thread its table covers. An unattended run also sends two messages to its own channel, which touch nothing here. Nothing else leaves this session. Under `gated` no write happens before the gate below; under `unattended` the first comment **is** where that gate would have asked.
 
@@ -386,14 +386,14 @@ Run the Workflow tool with `scriptPath: <DEV-LOOP>/phase-execute.js`, and these 
 }
 ```
 
-**`commits` is Step 5's `## Commit / PR breakdown`, entry for entry** — one element per entry, same order, same message strings verbatim, ordinals from `1`. The writer is handed an ordinal and a message and reads the file for the rest, so an array disagreeing with the file sends it at a commit nothing describes. It is never empty; Step 4 already ended the run where no fix row was left. **One sub-lane, always** — Step 3 decided that, and the array is what makes those commits sequential in one worktree.
+**`commits` is Step 5's `## Commit / PR breakdown`, entry for entry** — one element per entry, same order, same message strings verbatim, ordinals from `1`. An array disagreeing with the file sends the writer at a commit nothing describes. It is never empty; Step 4 already ended the run where no fix row was left. **One sub-lane, always** — Step 3 decided that, and the array is what makes those commits sequential in one worktree.
 
 `planPath` and `worktree` are **absolute** — `.scratch` and the worktrees directory both live under MAIN. `mode` is the run's real mode, literally `gated` or `unattended` and never the `auto` token the developer typed: with no `skillDir` below it changes nothing the script does, and a record saying `gated` for an unattended run is a false record. `fixCycleThreshold` and `suiteCommand` are the profile's values passed verbatim, never literals written here — and `fixCycleThreshold` is a **number**: the script tests it with `Number.isInteger` and a quoted one silently becomes the default instead.
 
 Four keys are left out, each deliberately:
 
 - **`issueBody`** and **`ownedCriteria`** — there is no issue, so there is no spec axis. The script already tells the reviewer to return an empty `criterionVerdicts` and say so in its notes; that is the existing contract's degenerate case, reached by passing less rather than by editing anything.
-- **`skillDir`** — the notifier's only purpose, and an absent one is that script's documented "no notifier is dispatched". Left out under **both** modes, for two reasons. The notifier's first act is a label swap on the issue it was given, and this run works a pull request somebody else opened. And it exists because a workflow script has no shell, so a lane ending mid-script would otherwise have no writer until its siblings finish — this run dispatches one lane with one sub-lane, so the call returns the moment that lane ends and this session is back.
+- **`skillDir`** — the notifier's only purpose, and an absent one is that script's documented "no notifier is dispatched". Left out under **both** modes: its first act is the label swap the messages section already refuses, and the reason it exists — a workflow script has no shell, so a lane ending mid-script has no writer until its siblings finish — cannot arise where one lane holds one sub-lane and the call returns the moment it ends.
 - **`runHandle`** — the notifier is the only thing that writes it, and none is dispatched.
 
 **Change nothing under `<DEV-LOOP>`.** The execute phase runs as it is — writer, review loop, suite gate — and this skill adds no phase script of its own.
@@ -446,7 +446,7 @@ What it says — the commit list from step 1 above, everything else from the sub
 
 **No acceptance-criteria section**: there was no issue and so no spec axis, `criterionVerdicts` comes back empty by the contract Step 7 invoked, and a section rendering nothing claims something was judged. `terminal` goes unread too — it decides a pull request's draft state, and this run opens none.
 
-**A run that ended fills what it has.** It names the step that stopped it and carries that step's message verbatim — git's refusal to attach, the two shas that differed — and renders the table. **A section with nothing to put in it is left out**, for the reason the acceptance-criteria one is. A **Step 2** ending leaves out most of them and the table with them: there was nothing to classify, so it is the step, the read's message verbatim or the fact that the pull request held no unresolved comments, and nothing dressed up as more. An ended lane adds Step 9's account: the label, the stage it ended at, the reason verbatim, the debugger's diagnosis where there is one, and the `attempts` log in order.
+**A run that ended fills what it has.** It names the step that stopped it and carries that step's message verbatim — git's refusal to attach, the two shas that differed — and renders the table. **A section with nothing to put in it is left out**, for the reason the acceptance-criteria one is. A **Step 2** ending leaves out most of them and the table with them: there was nothing to classify, so it is the step, the read's message verbatim or the fact that the pull request held no unresolved comments, and nothing dressed up as more. An ended lane adds Step 9's account.
 
 Either way it ends with what nothing else records, this session being the last thing that knows it:
 
