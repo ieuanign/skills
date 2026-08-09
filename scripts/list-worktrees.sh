@@ -7,4 +7,6 @@ set -euo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO"
 
-git worktree list | awk '{print $1}'
+# --porcelain, not the column layout: its columns are whitespace-separated, so a
+# path containing a space comes back truncated.
+git worktree list --porcelain | sed -n 's/^worktree //p'
