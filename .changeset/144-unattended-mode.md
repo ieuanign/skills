@@ -19,7 +19,8 @@ ends mid-flight — it posts one conclusion comment beside that one: the finding
 commits reached the branch, and where they did not, the step that stopped it and that step's message
 verbatim, the table in full either way, the kept worktree and table file by path, and the run handle
 that locates the run's transcript. Two comments per run, never a third, and the second is never an
-edit to the first.
+edit to the first — one only where the run ended at its read of the comments, that explanation being
+the whole account of a run there was never a table to post for.
 
 A `start` message goes out once the preconditions pass, and exactly one closing message as the run's
 last act — the pull request's number, a state token, the reason, the link — through the sibling

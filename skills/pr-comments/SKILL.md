@@ -103,6 +103,8 @@ Each one below makes this run's promise — the fixes, pushed to this pull reque
 - **What it excludes is its own business**: a resolved thread, a minimised comment, an unsubmitted or bodyless review. Never re-derive any of that, and issue no `gh` call of your own for comments — a second reader is a second answer.
 - **An empty list ends the run.** Say the pull request has no unresolved comments, show no table, ask nothing.
 
+**Under `unattended`, either ending is explained on the pull request** — Step 10's comment, before this step's closing message. A run with nobody watching that stops here otherwise leaves one line in one person's client and nothing at all on the artifact it was pointed at, which is a run that vanished. So the comment names this step, carries the read's message verbatim where it failed, and says the pull request held no unresolved comments where it did not. It is that run's **only** comment: Step 4's table was never reached, so the ceiling below is not raised. A `gated` run writes nothing here — its human read the reason as it happened.
+
 ## Step 3 — classify, and show the table
 
 Classification is **your own plain reading of each body**, and dispatches no agent — the same shape `/dev-loop`'s Gate 1 classifies touchpoint overlap in.
@@ -190,7 +192,7 @@ No cell carries this. The **Why** cell states what a fix will do and the **Reaso
 
 ## Step 4 — the gate, and what stands in for it
 
-**Nothing above this line touched the pull request** — every command so far was a read, and unattended's `start` message goes to a channel rather than to any artifact. Under `gated` nothing below it runs without an explicit answer; under `unattended` the answers are the Run mode table's, already given.
+**Nothing on the way to this line touched the pull request** — every command so far was a read, and unattended's `start` message goes to a channel rather than to any artifact. The one write above it belongs to a run that never arrives here: an unattended Step 2 ending posts its explanation and stops. Under `gated` nothing below this line runs without an explicit answer; under `unattended` the answers are the Run mode table's, already given.
 
 Render Step 3's table and its expansions, then count its **fix** rows:
 
@@ -348,9 +350,9 @@ Report the label, the stage it ended at, the reason verbatim, the debugger's dia
 
 ## Step 10 — the conclusion, commented back
 
-**One comment, and one only: the run's conclusion** — the ledger where it finished, the explanation where it ended. Under `gated` it posts on every path that reached Step 7's dispatch, the ones that pushed nothing included, because a run that touched a pull request and said so nowhere on it is one nobody can audit. Under `unattended` it posts on every path past Step 4's table as well, the ones that ended before the dispatch included: that comment promised a worktree, these commits and a push, and the run that promised them is the only thing that can say they never came.
+**One comment, and one only: the run's conclusion** — the ledger where it finished, the explanation where it ended. Under `gated` it posts on every path that reached Step 7's dispatch, the ones that pushed nothing included, because a run that touched a pull request and said so nowhere on it is one nobody can audit. Under `unattended` it posts on every path past Step 4's table as well, the ones that ended before the dispatch included: that comment promised a worktree, these commits and a push, and the run that promised them is the only thing that can say they never came. It posts on a Step 2 ending too, where nothing was promised and nothing read — a run pointed at a pull request that leaves no trace on it is one nobody can tell from a run that never happened.
 
-**It is a second comment beside Step 4's, never an edit to it.** A run that stopped at Step 4 for want of a fix row was answered there and posts nothing here; one that ended before Step 4 promised the pull request nothing and writes nothing on it at all.
+**It is a second comment beside Step 4's, never an edit to it** — and the *only* comment on a Step 2 ending, that table never having been posted. A run that stopped at Step 4 for want of a fix row was answered there and posts nothing here; a run refused at Step 1 wrote nothing anywhere, is not this pull request's business, and still writes nothing here.
 
 ```bash
 gh pr comment <n> --body-file - <<'BODY'
@@ -379,12 +381,12 @@ What it says — the commit list from git, everything else from the sub-lane rec
 
 ### A run that ended says what stopped it
 
-Those sections are the sub-lane record's, so a run that ended before Step 7 ever dispatched fills almost none of them: it names the step that stopped it and carries that step's message verbatim — git's refusal to attach, the two shas that differed — and renders the table. **A section with nothing to put in it is left out**, for the reason the acceptance-criteria one is. An ended lane fills what it has and adds Step 9's account: the label, the stage it ended at, the reason verbatim, the debugger's diagnosis where there is one, and the `attempts` log in order.
+Those sections are the sub-lane record's, so a run that ended before Step 7 ever dispatched fills almost none of them: it names the step that stopped it and carries that step's message verbatim — git's refusal to attach, the two shas that differed — and renders the table. **A section with nothing to put in it is left out**, for the reason the acceptance-criteria one is. A **Step 2** ending leaves out most of them and the table with them: there was nothing to classify, so it is the step, the read's message verbatim or the fact that the pull request held no unresolved comments, and nothing dressed up as more. An ended lane fills what it has and adds Step 9's account: the label, the stage it ended at, the reason verbatim, the debugger's diagnosis where there is one, and the `attempts` log in order.
 
 Either way it ends with what nothing else records, this session being the last thing that knows it:
 
 - **the worktree, by path** — kept per Step 11, holding whatever was written before the run stopped, or plainly that none was attached where Step 6 stopped before it had one;
-- **the table file, by path** — kept with it, being the plan those commits were made against;
+- **the table file, by path** — kept with it, being the plan those commits were made against, or plainly that none was written where the run ended before Step 5 had a table to write;
 - **the RUN HANDLE**, on a line of its own, where the environment gave one: it locates this run's transcript, which is where the reasoning behind an ending survives. No message carries it and no other comment does.
 
 **Nothing else on the pull request changes.** The thread stays unresolved: whether a fix answers a comment is its author's call, and a run that resolved its own work marks its own homework. No draft or ready conversion, no label, no edit to the pull request's body, the issue behind it, or anyone's comment.
@@ -411,7 +413,7 @@ A refusal is the guard working: `git worktree remove` declines on tracked modifi
 
 ## Hard rules
 
-- **One push, and never more than one comment under `gated` or two under `unattended`, plus that run's two messages — nothing else leaves this session.** The push goes to the branch the pull request already has; the comments are Step 4's table, posted only where the gate did not ask, and Step 10's conclusion — the ledger where the run finished, the explanation where it ended, naming there the kept worktree, the kept table file and the run handle. It is a second comment and never an edit to the first. Nothing before Step 4 writes to the pull request.
+- **One push, and never more than one comment under `gated` or two under `unattended`, plus that run's two messages — nothing else leaves this session.** The push goes to the branch the pull request already has; the comments are Step 4's table, posted only where the gate did not ask, and Step 10's conclusion — the ledger where the run finished, the explanation where it ended, naming there the kept worktree, the kept table file and the run handle. It is a second comment and never an edit to the first. Nothing on the way to Step 4 writes to the pull request — and a run that ends at Step 2 explains itself there and stops, that explanation being the one comment it makes.
 - **An unattended run sends one `start` message at intake and exactly one closing message; a gated run sends none.** Number, token, reason, the pull request link — `halt` or `failed` where the run ended, `ready` where it concluded, `draft` never and no sixth token — through `<DEV-LOOP>/notify.sh` with the payload on standard input. These events carry no label, and **no notification failure changes the run it reports**.
 - **Append-only, and narrower than `/dev-loop`'s, because the artifacts belong to someone else.** No review thread resolved, no draft or ready state converted, no label added or removed, no issue body, pull request body or anyone's comment edited. No ending, no failure and no absent human relaxes this.
 - **Never force-push, in any form** — no `--force`, no `--force-with-lease`. The push is a fast-forward by construction, so forcing is never the repair.
