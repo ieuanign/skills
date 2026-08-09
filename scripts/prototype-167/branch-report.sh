@@ -6,10 +6,12 @@
 
 set -euo pipefail
 
+# Sourced by the script's own directory, not the caller's cwd, and before the cd.
+. "$(dirname "${BASH_SOURCE[0]}")/ref-format.sh"
+
 # Assigned first rather than `cd "$(...)"`: bash returns 0 for `cd ""`, so a
 # failed rev-parse would sail past set -e and report the caller's branches.
 root=$(git rev-parse --show-toplevel)
 cd "$root"
 
-git for-each-ref --sort=-committerdate \
-  --format='%(refname:short)|%(committerdate:short)|%(authorname)' refs/heads
+git for-each-ref --sort=-committerdate --format="$REF_FORMAT" refs/heads
