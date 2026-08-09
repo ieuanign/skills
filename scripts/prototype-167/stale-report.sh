@@ -14,8 +14,8 @@ cd "$(git rev-parse --show-toplevel)"
 cutoff=$(( $(date +%s) - 90 * 24 * 60 * 60 ))
 
 git -c color.ui=false for-each-ref --sort=committerdate --format="$REF_FORMAT" refs/heads \
-  | while IFS='|' read -r name day author; do
+  | while IFS='|' read -r name day committer; do
       if [ "$(date -d "$day" +%s)" -lt "$cutoff" ]; then
-        echo "$name $day $author"
+        echo "$name $day $committer"
       fi
     done

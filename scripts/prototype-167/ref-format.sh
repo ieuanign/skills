@@ -4,4 +4,4 @@
 #
 # Sourced, not run: the one `git for-each-ref --format` both reports print.
 
-REF_FORMAT='%(refname:short)|%(committerdate:short)|%(authorname)'
+REF_FORMAT='%(refname:short)|%(committerdate:short)|%(committername)'
