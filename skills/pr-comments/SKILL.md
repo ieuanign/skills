@@ -1,13 +1,13 @@
 ---
 name: pr-comments
-description: Reads a pull request's unresolved comments and classifies each fix or skip for a human's approval, then drives the approved fixes through /dev-loop's execute phase and pushes them to that pull request's own branch. Use for `/pr-comments <pull request>`, or `/pr-comments auto <pull request>` for an unattended run.
+description: Reads a pull request's unresolved comments and classifies each fix or skip for a human's approval, then answers every skipped review thread where it was raised and drives the approved fixes through /dev-loop's execute phase, pushing them to that pull request's own branch. Use for `/pr-comments <pull request>`, or `/pr-comments auto <pull request>` for an unattended run.
 ---
 
 # /pr-comments — a pull request's comments, through to a pushed fix
 
-You are the orchestrator and you stay in the MAIN worktree. This skill reads one pull request's unresolved comments, classifies each **fix** or **skip**, and puts the table in front of a human — or, under `auto`, on the pull request itself; the fix rows then run through `/dev-loop`'s execute phase — writer, review loop and suite gate, unchanged — in a worktree attached to the pull request's own head branch.
+You are the orchestrator and you stay in the MAIN worktree. This skill reads one pull request's unresolved comments, classifies each **fix** or **skip**, and puts the table in front of a human — or, under `auto`, on the pull request itself; the skip rows are then answered in the threads that raised them, and the fix rows run through `/dev-loop`'s execute phase — writer, review loop and suite gate, unchanged — in a worktree attached to the pull request's own head branch.
 
-**Append-only against artifacts someone else owns, whichever mode it runs in.** The whole run writes one `git push` to the branch the pull request already has, and comments on it — never more than one under `gated` or two under `unattended`. An unattended run also sends two messages to its own channel, which touch nothing here. Nothing else leaves this session. Under `gated` no write happens before the gate below; under `unattended` the first comment **is** where that gate would have asked.
+**Append-only against artifacts someone else owns, whichever mode it runs in.** The whole run writes one `git push` to the branch the pull request already has, comments on it — never more than one under `gated` or two under `unattended` — and replies once in each thread it skipped. An unattended run also sends two messages to its own channel, which touch nothing here. Nothing else leaves this session. Under `gated` no write happens before the gate below; under `unattended` the first comment **is** where that gate would have asked.
 
 ## Arguments
 
@@ -28,11 +28,11 @@ You are the orchestrator and you stay in the MAIN worktree. This skill reads one
 | The gate's question | Its unattended answer |
 |---|---|
 | approve this table? | every **fix** row proceeds — that is what the run is for |
-| act on a **skip** anyway? | no. It stays skipped, and its reason and evidence are posted with the table |
+| act on a **skip** anyway? | no. It stays skipped, its reason and evidence are posted with the table, and its thread is replied to |
 | what about an **unclassified** row? | nobody can decide it, so it is reported as unclassified and acted on by nothing |
 | no **fix** row at all? | there is no work: post the table, say so, provision no worktree, push nothing, and stop |
 
-**No comment is re-classified to reach a different intent**, least of all here. Under `gated` a `disagreed with` skip is a disagreement a human can overrule at the gate; under `unattended` it is this skill overruling a reviewer with nobody left to overrule it back, which is why its reasoning is posted in full on the pull request where that reviewer will read it.
+**No comment is re-classified to reach a different intent**, least of all here. Under `gated` a `disagreed with` skip is a disagreement a human can overrule at the gate; under `unattended` it is this skill overruling a reviewer with nobody left to overrule it back, which is why its reasoning is replied into the thread that reviewer is watching as well as posted in full with the table.
 
 **The preconditions are not gates and fire under both modes** — Step 1's five refusals, and the three profile keys Step 6 reads under that profile's own ask-then-persist rule. Suppression is scoped to the question above, so **no unattended default is invented for a profile key**: a run needing one the profile lacks asks once and persists the answer, exactly as a gated run does.
 
@@ -217,7 +217,34 @@ BODY
 
 It holds Step 3's table and every expansion, rendered identically — no second summary of them — under one line saying an unattended run of this skill classified them and what it will do next: a worktree on `headRefName`, one commit per ordinal, one push to that same branch, and one further comment when it finishes. Where no row was a fix it says that instead, and is the whole account: nothing follows it.
 
-**This is the run's first write to the pull request and its first comment, and an unattended run posts this one and Step 10's and never a third** — a run stopping here for want of a fix row posts only this one. **A skip gets no comment of its own**: it stays skipped, its reason and evidence travel in this table, and its thread is not written in.
+**This is the run's first write to the pull request and its first comment, and an unattended run posts this one and Step 10's and never a third** — a run stopping here for want of a fix row posts only this one. **A skip gets no comment of its own**: it stays skipped, its reason and evidence travel in this table, and it is answered in its own thread by the section below rather than by a comment here.
+
+### The skips, answered where they were raised
+
+A skip is a decision made about somebody's comment, and the table is not where they will read it. Both comments post at the foot of the pull request, so a skip's author is notified about *the pull request* rather than about *their comment*, and the thread they are watching stays silent. A `disagreed with` skip delivered that way is this skill overruling a reviewer somewhere that reviewer has no reason to look.
+
+**Every skip whose entry carries a `threadId` is answered in that thread**, under both modes, once the table is the one that counts — after approval under `gated`, after the table comment under `unattended`. These are the only writes this run makes anywhere but the pull request itself, and they are append-only like everything else here: the thread is replied to, never resolved.
+
+**Here, and not at the end.** The skip rows were settled at the gate and nothing below this line depends on them, so a reply held until Step 10 is one that never arrives on any path ending before it — and a reviewer hearing nothing is the thing this section exists to stop. The price is that a reply carries no link to the table, the comment holding it not having been posted yet.
+
+```bash
+gh api graphql --input - <<'JSON'
+{ "query": "mutation($t: ID!, $b: String!) { addPullRequestReviewThreadReply(input: { pullRequestReviewThreadId: $t, body: $b }) { comment { url } } }",
+  "variables": { "t": "<the entry's threadId>", "b": "<the reply>" } }
+JSON
+```
+
+**One JSON document on standard input, from a quoted heredoc.** A reply quotes a human's own words back at them — bodies full of backticks, dollar signs and quotes — so the escaping is a serialiser's job and the shell never sees them. `gh pr comment` is not the tool for it: that posts at the pull request, which is the thing this section exists to stop doing.
+
+What a reply says, and nothing more: that an automated run of this skill classified the comment **skip**, its named reason spelled as Step 3 spells it, and that reason's evidence — **the same strings the table carries, verbatim and never a second wording**. A `disagreed with` reply carries its expansion in full, that being the whole reason this section is here.
+
+**One reply per thread**, whatever the number of that thread's comments the table skipped: a thread is one conversation, and two replies to it are two answers to one question. Where it holds several, the one reply names each by its `#` and gives each its own reason.
+
+**A skip with no `threadId` is not replied to.** A review body and an issue comment have no reply primitive — there is nowhere to put one, and a fresh comment at the foot of the pull request is another comment rather than an answer. Their reasons travel in the table as they always have, and Step 10 says which skips those were.
+
+**An `unclassified` row gets no reply either.** Nothing acts on one, this included: no reason was picked and no evidence produced, so a reply would say only that the run did not understand — which the table already says, in the one place a human can do something about it.
+
+**A failed reply is reported and changes nothing else**, the same way a failed notification does. The push, the commits, the ledger comment and the run's ending are what they would have been, and the reason that reply carried is in the table either way.
 
 ## Step 5 — the fix rows become the plan
 
@@ -368,6 +395,7 @@ What it says — the commit list from git, everything else from the sub-lane rec
 |---|---|
 | what reached the branch | `<planned> planned, <made> made`, then `git -C <worktree> log --oneline <the sha from Step 6>..<headRefName>` line for line — marked **not pushed**, with why, on a path that pushed nothing |
 | the comments it answers | one line per comment a commit fixed, in ordinal order — its `#`, its author and its `url`. `gh pr comment` posts at the pull request rather than in the thread, so the links are what tell a reader which comments these are; one line where a run fixed several attributes the rest to it |
+| the skips it answered | one line per thread Step 4 replied in — the row's `#` and the reply's url — then the skips that had no thread to reply in, named as carried by the table alone. A reply that failed is named here too, with what `gh` said |
 | the table | Step 3's table as it stands, every row and every expansion, rendered identically. This copy is the one that outlives the run — a gated run's was a session's scrollback, and nothing under `.scratch/` outlives the worktree |
 | fixed | `fixedFindings` — reviewer findings the writer applied |
 | won't-fix | `wontFix`, each with the writer's reason |
@@ -389,7 +417,7 @@ Either way it ends with what nothing else records, this session being the last t
 - **the table file, by path** — kept with it, being the plan those commits were made against, or plainly that none was written where the run ended before Step 5 had a table to write;
 - **the RUN HANDLE**, on a line of its own, where the environment gave one: it locates this run's transcript, which is where the reasoning behind an ending survives. No message carries it and no other comment does.
 
-**Nothing else on the pull request changes.** The thread stays unresolved: whether a fix answers a comment is its author's call, and a run that resolved its own work marks its own homework. No draft or ready conversion, no label, no edit to the pull request's body, the issue behind it, or anyone's comment.
+**Nothing else on the pull request changes** beyond the replies Step 4 left in the threads it skipped. Every thread stays unresolved, those included: whether an answer settles a comment is its author's call, and a run that resolved its own work marks its own homework. No draft or ready conversion, no label, no edit to the pull request's body, the issue behind it, or anyone's comment.
 
 Then the table file, whose content this comment now holds — so nothing in it goes unread when it goes. **It lives as long as the work it planned is unpushed.** The pushed path leaves nothing in the worktree that is not on the branch, so **delete `<MAIN>/.scratch/pr-comments/<n>-comments.md` there, once this comment has posted and never before it**. Every other path — an ending, a rejected push, no commit made — keeps its worktree, so the file stays beside it and is named above: a worktree without the plan its commits were made against is one nobody can pick up. On a path that posted no comment at all, keep it and say where it is.
 
@@ -413,12 +441,13 @@ A refusal is the guard working: `git worktree remove` declines on tracked modifi
 
 ## Hard rules
 
-- **One push, and never more than one comment under `gated` or two under `unattended`, plus that run's two messages — nothing else leaves this session.** The push goes to the branch the pull request already has; the comments are Step 4's table, posted only where the gate did not ask, and Step 10's conclusion — the ledger where the run finished, the explanation where it ended, naming there the kept worktree, the kept table file and the run handle. It is a second comment and never an edit to the first. Nothing on the way to Step 4 writes to the pull request — and a run that ends at Step 2 explains itself there and stops, that explanation being the one comment it makes.
+- **One push; one comment under `gated` or two under `unattended`; one reply in each thread the run skipped; plus that run's two messages — nothing else leaves this session.** The push goes to the branch the pull request already has; the comments are Step 4's table, posted only where the gate did not ask, and Step 10's conclusion — the ledger where the run finished, the explanation where it ended, naming there the kept worktree, the kept table file and the run handle. It is a second comment and never an edit to the first. Nothing on the way to Step 4 writes to the pull request — and a run that ends at Step 2 explains itself there and stops, that explanation being the one comment it makes.
+- **Every skip on a review thread is answered in that thread, once, immediately after the gate** — its named reason and that reason's evidence, the same strings the table carries, a `disagreed with` reply carrying its reasoning in full and never a second wording of it. One reply per thread however many of its comments were skipped; no reply where the entry carries no `threadId`, and none for an `unclassified` row, both named in the ledger instead; a failed reply is reported and changes nothing else about the run.
 - **An unattended run sends one `start` message at intake and exactly one closing message; a gated run sends none.** Number, token, reason, the pull request link — `halt` or `failed` where the run ended, `ready` where it concluded, `draft` never and no sixth token — through `<DEV-LOOP>/notify.sh` with the payload on standard input. These events carry no label, and **no notification failure changes the run it reports**.
-- **Append-only, and narrower than `/dev-loop`'s, because the artifacts belong to someone else.** No review thread resolved, no draft or ready state converted, no label added or removed, no issue body, pull request body or anyone's comment edited. No ending, no failure and no absent human relaxes this.
+- **Append-only, and narrower than `/dev-loop`'s, because the artifacts belong to someone else.** No review thread resolved — replying to one is append-only and resolving it is not — no draft or ready state converted, no label added or removed, no issue body, pull request body or anyone's comment edited. No ending, no failure and no absent human relaxes this.
 - **Never force-push, in any form** — no `--force`, no `--force-with-lease`. The push is a fast-forward by construction, so forcing is never the repair.
 - **Push before you remove**, never remove the main worktree, and remove only with `git worktree remove` without `--force`, against a path under `<WORKTREES>`.
-- **A leading `auto` is the only thing that suppresses the gate, and it is parsed once.** Present ⇒ unattended, absent ⇒ gated; no later step re-derives it, and no other argument and no profile key overrides it. **Suppression removes Step 4's question and nothing else**: every comment is still classified, the table is still rendered, written to Step 5's file and posted on the pull request, Step 1's refusals and Step 6's profile reads still fire, no comment is re-classified to reach a different intent, and nothing acts on a skip or an unclassified row.
+- **A leading `auto` is the only thing that suppresses the gate, and it is parsed once.** Present ⇒ unattended, absent ⇒ gated; no later step re-derives it, and no other argument and no profile key overrides it. **Suppression removes Step 4's question and nothing else**: every comment is still classified, the table is still rendered, written to Step 5's file and posted on the pull request, Step 1's refusals and Step 6's profile reads still fire, no comment is re-classified to reach a different intent, every skipped thread is still replied to, and nothing acts on a skip or an unclassified row.
 - **Every fix row proceeds, and the default is one commit each.** Two share an ordinal only where they ask for the same change, with what makes them one stated; proximity never merges. One file's fixes take adjacent ordinals ascending by anchor and every commit runs in one sub-lane, never split across sub-lanes or branches. A table with no fix row at all is shown or posted and stops the run, provisioning nothing.
 - **Each breakdown entry names the comment(s) it satisfies, every message in the file is unique, and Step 7's `commits` matches that breakdown verbatim** — same ordinals, same strings, same order. Anchors written into it are pre-run positions and say so.
 - **The ledger's commit list is git's, never the returned one** — `git log <base>..<headRefName>`, read in the worktree before it is removed, with the planned count beside the made count, a `wip:` commit listed and not counted, and any planned commit the branch does not hold named as not made.
