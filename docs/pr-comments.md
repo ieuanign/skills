@@ -98,8 +98,9 @@ In order:
     every reply the run left, the table again, the reviewer's findings and notes, the suite result.
 12. **The worktree, removed last** — and only where the push succeeded.
 
-Everything up to and including the gate is a read. **Nothing touches the pull request before the
-gate**, so a run you stop there leaves no trace on it.
+**Nothing touches the pull request before the gate** — everything up to it is a read, and under `auto`
+the table posted in the gate's place is the run's first write. A supervised run you stop at the gate
+leaves no trace on it at all.
 
 ## What it refuses to do
 
