@@ -5,6 +5,7 @@
 // decided by whichever package.json happens to be nearest once it is installed.
 
 import { spawnSync } from 'node:child_process'
+import { realpathSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 
 // The three kinds of thing a human writes on a pull request. Declared once so a consumer switches
@@ -210,6 +211,18 @@ function main(argv) {
   return 0
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// Node resolves a module's own path through symlinks and leaves argv[1] as the caller typed it, so a
+// skill folder reached through one makes these differ — and an unresolved compare skips main() silently.
+const invokedDirectly = invoked => {
+  if (!invoked) return false
+  if (import.meta.url === pathToFileURL(invoked).href) return true
+  try {
+    return import.meta.url === pathToFileURL(realpathSync(invoked)).href
+  } catch {
+    return false
+  }
+}
+
+if (invokedDirectly(process.argv[1])) {
   process.exitCode = main(process.argv.slice(2))
 }

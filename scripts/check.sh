@@ -112,6 +112,39 @@ while IFS= read -r module; do
   fi
 done < <(find "$REPO/skills" -name '*.mjs' -not -path '*/node_modules/*' | sort)
 
+# --- bundled module CLI entry through a symlink ------------------------------
+# A skill invokes its bundled modules BY PATH, and on every dogfooded checkout
+# that path runs through `.claude/skills/<name>`, a symlink. Node resolves a
+# module's own path through symlinks when it sets import.meta.url but leaves
+# argv[1] exactly as the caller typed it, so a main-module guard comparing the
+# two unresolved is FALSE there and main() never runs — exit 0, no output. That
+# is the worst shape a failure can take here: the caller reads a silent success
+# as an empty result. read-comments.mjs printing nothing reads as a pull request
+# with no unresolved comments; cost-report.mjs printing nothing reads as a run
+# that cost nothing. Neither is visible to any other check — `node --check`
+# compiles the broken guard happily, and nothing else runs these files.
+#
+# Every module with a `main` entry must therefore answer a MISSING argument with
+# its usage on stderr and a non-zero exit, invoked through a symlinked parent.
+# No arguments is what keeps this offline: neither module reaches the network
+# before it has parsed one.
+link_root="$(mktemp -d)"
+ln -s "$REPO/skills" "$link_root/skills"
+while IFS= read -r module; do
+  rel="${module#"$REPO/"}"
+  grep -q 'process.exitCode = main(' "$module" || continue
+  out="$(node "$link_root/${rel}" 2>&1)" && rc=0 || rc=$?
+  if [ "$rc" -ne 0 ] && [ -n "$out" ]; then
+    echo "ok    cli entry via symlink $rel"
+  else
+    echo "FAIL  cli entry via symlink $rel: exit $rc with ${#out} bytes of output — expected a" >&2
+    echo "      non-zero exit and a usage message. A main-module guard that compares" >&2
+    echo "      import.meta.url to an UNRESOLVED process.argv[1] skips main() here." >&2
+    failed=1
+  fi
+done < <(find "$REPO/skills" -name '*.mjs' -not -path '*/node_modules/*' | sort)
+rm -rf "$link_root"
+
 # --- pr-comment normaliser ---------------------------------------------------
 # The syntax stage above proves read-comments.mjs parses; this one proves it
 # EXCLUDES and CARRIES, over fixtures, with no network and nothing spawned.
