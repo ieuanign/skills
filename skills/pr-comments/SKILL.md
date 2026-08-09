@@ -426,7 +426,7 @@ Four things, in this order — git before the replies, so a reply can name its c
 
 **2. Answer the threads Step 4 deferred.** Every review thread holding a fix row, per Step 4's reply table, on every path that reaches this step. A pushed commit's reply carries its short sha and subject from that log; a path that pushed nothing says what stopped it in one clause instead, and never cites a sha the remote does not hold.
 
-**3. Post one comment: the run's conclusion** — the ledger where it finished, the explanation where it ended. **It posts on every path that got past Step 4, in both modes** — under `gated` that means the gate was answered — **plus an unattended Step 2 ending**, where it is the run's only comment. It is a second comment beside Step 4's table and never an edit to it. A run refused at Step 1 wrote nothing anywhere, is not this pull request's business, and still writes nothing here.
+**3. Post one comment: the run's conclusion** — the ledger where it finished, the explanation where it ended. **It posts on every path that got past Step 4, in both modes** — under `gated` that means the gate was answered — **plus an unattended Step 2 ending**. Under `unattended` it is a second comment beside Step 4's table and never an edit to it; under `gated` it is the run's only one. A run refused at Step 1 wrote nothing anywhere, is not this pull request's business, and still writes nothing here.
 
 What it says — the commit list from step 1 above, everything else from the sub-lane record:
 
