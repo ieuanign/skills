@@ -6,7 +6,8 @@ with real unresolved comments to work against, and it is deleted with the pull r
 ## What it is for
 
 - It is a target, not a document anyone should read for its content.
-- Every check in `scripts/check.sh` validates this file, so a typo here turns the suite red.
+- No stage of `scripts/check.sh` reads this file. The suite has no Markdown stage at all, so nothing
+  here can turn it red.
 - It lives under `docs/` because that is where a Markdown file goes in this repo.
 
 ## What it is not
