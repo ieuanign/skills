@@ -3,9 +3,10 @@
 ## What it does
 
 `/pr-comments` takes one pull request's unresolved comments and produces one pushed fix. It
-reads them, classifies each **fix** or **skip**, puts the table in front of you, and drives the
-approved fix rows through `/dev-loop`'s execute phase — writer, review loop and suite gate, unchanged —
-in a worktree attached to the pull request's own head branch.
+reads them, classifies each **fix** or **skip**, puts the table in front of you, answers every review
+thread it read in that thread, and drives the approved fix rows through `/dev-loop`'s execute phase —
+writer, review loop and suite gate, unchanged — in a worktree attached to the pull request's own head
+branch.
 
 It is an **orchestrator** and it stays in the main worktree. It writes no code and dispatches no
 planner: the classification is its own plain reading of each comment body, and everything after the
@@ -23,7 +24,7 @@ Four words, and the rest of this page reads.
 | **comment table** | one row per unresolved comment — the run's whole proposal, and the thing you approve |
 | **fix** | the comment asks for a change to the code on this pull request, and says enough for someone to make it |
 | **skip** | the change is not being made — for one of four named reasons, each carrying its evidence |
-| **unclassified** | no reason fits, or the evidence its reason takes cannot be produced. Nothing acts on one |
+| **unclassified** | no reason fits, or the evidence its reason takes cannot be produced. No commit is made for one |
 
 The table is not a report of the run. It **is** the plan — see [below](#the-comment-table-is-the-plan).
 [`CONTEXT.md`](../CONTEXT.md) carries the full glossary.
@@ -77,34 +78,41 @@ In order:
    unresolved comments ⇒ say so and stop.
 3. **Classification.** Every unresolved comment gets a row: **fix**, **skip** with one of four reasons
    and that reason's evidence, or **unclassified**. Each fix row also gets a **commit ordinal**.
-4. **The gate** — the table, and the question. Under `auto` the table is posted on the pull request in
-   the question's place.
-5. **The plan.** The approved table's fix rows become the file the execute phase runs on, each entry
+4. **The gate** — the table, and the question, asked on every path that reaches it. Under `auto` the
+   table is posted on the pull request in the question's place.
+5. **The threads, answered.** Every review thread the table covers gets one reply in that thread —
+   fix, skip and unclassified alike. Threads with no fix row are answered here; a thread holding a fix
+   waits for step 10, so its reply can carry the commit that answered it.
+6. **The plan.** The approved table's fix rows become the file the execute phase runs on, each entry
    naming the comments it satisfies and carrying their bodies verbatim.
-6. **The worktree**, attached to the pull request's own head branch at the remote's tip — nothing here
+7. **The worktree**, attached to the pull request's own head branch at the remote's tip — nothing here
    creates a branch — plus the gitignored files your `.worktreeinclude` names, plus your Setup command.
-7. **The execute phase**, dispatched as `/dev-loop` dispatches it: one lane, one sub-lane, one commit
+8. **The execute phase**, dispatched as `/dev-loop` dispatches it: one lane, one sub-lane, one commit
    per ordinal in ordinal order. Its loops, bounds and endings are the pipeline's and are documented in
    [internals](./dev-loop-internals.md).
-8. **The push** — one `git push`, a fast-forward, to that same branch, and only where a commit was
+9. **The push** — one `git push`, a fast-forward, to that same branch, and only where a commit was
    actually made.
-9. **The conclusion**, commented back: what reached the branch, which comments those commits answer,
-   the table again, the reviewer's findings and notes, the suite result.
-10. **The worktree, removed last** — and only where the push succeeded.
+10. **The fix threads, answered**, each carrying the short sha and subject of the commit that answered
+    it — or, where nothing was pushed, what stopped it.
+11. **The conclusion**, commented back: what reached the branch, which comments those commits answer,
+    every reply the run left, the table again, the reviewer's findings and notes, the suite result.
+12. **The worktree, removed last** — and only where the push succeeded.
 
 Everything up to and including the gate is a read. **Nothing touches the pull request before the
 gate**, so a run you stop there leaves no trace on it.
 
 ## What it refuses to do
 
-The whole run writes **one push** and **one comment** — two under `auto`, where the table is posted in
-the gate's place. Nothing else leaves the session.
+The whole run writes **one push**, **one comment** — two under `auto`, where the table is posted in
+the gate's place — and **one reply in each review thread its table covers**. Nothing else leaves the
+session.
 
 It is append-only against everything a human authored, and deliberately narrower than `/dev-loop`'s
 version of that rule, because here every artifact in sight belongs to somebody else:
 
-- **No review thread is resolved.** Whether a fix answers a comment is its author's call; a run that
-  resolved its own work marks its own homework.
+- **No review thread is resolved**, the ones it replied in included. Replying to a thread is
+  append-only; resolving it is not. Whether an answer settles a comment is its author's call, and a
+  run that closed its own work would be marking its own homework.
 - **No draft or ready conversion, and no label** — on the pull request or the issue behind it. This run
   opens no pull request, so it has no state of its own to set.
 - **No edit to any body somebody wrote** — the pull request's, the issue's, or anyone's comment. Its
@@ -165,13 +173,17 @@ Each of the gate's questions resolves to its unattended answer:
 | The gate's question | Its unattended answer |
 |---|---|
 | approve this table? | every **fix** row proceeds — that is what the run is for |
-| act on a **skip** anyway? | no. It stays skipped, and its reason and evidence are posted with the table |
-| what about an **unclassified** row? | nobody can decide it, so it is reported and acted on by nothing |
-| no **fix** row at all? | there is no work: post the table, say so, and stop |
+| act on a **skip** anyway? | no. It stays skipped, its reason and evidence are posted with the table, and its thread is answered |
+| what about an **unclassified** row? | nobody can decide it, so it is reported as unclassified, no commit is made for it, and its thread is answered saying so |
+| no **fix** row at all? | there is no code to write: post the table, answer every thread, and stop |
 
-The table is **posted on the pull request** where the question would have been, because a table nobody
-was watching is a decision made in a terminal that closes. That is the run's first write, and the one
-place a `disagreed with` skip's reasoning lands in front of the reviewer it disagrees with.
+The table is **posted on the pull request** where the question would have been — a table nobody was
+watching would otherwise be a decision that vanished with the terminal. That is the run's first write.
+
+**The threads are answered under `auto` exactly as they are under a supervised run.** The two modes
+differ only at the listing step, where you see what will be fixed and skipped and why; that difference
+never reaches the threads, which is what puts a `disagreed with` reply in front of the reviewer it
+disagrees with even when nobody is left to overrule it.
 
 An unattended run also sends **one `start` message at intake and exactly one closing message**, paired,
 through the same notifier `/dev-loop` uses — silent when your channel is unconfigured, and no
@@ -190,9 +202,10 @@ with no close after it.
 
 ### A run with no fix row
 
-Every comment was a skip or unclassified. The table **is** the answer: shown, or posted under `auto`,
-and the run stops there. No worktree is provisioned and nothing is pushed — an empty fix set has no
-commit to make, and dispatching the phase anyway would point the review loop at an empty diff.
+Every comment was a skip or unclassified. The table **is** the answer: shown, or posted under `auto`.
+Every thread it covers is still answered — that run is the one whose reviewers most need to hear back
+— and then it stops. No worktree is provisioned and nothing is pushed: an empty fix set has no commit
+to make, and dispatching the phase anyway would point the review loop at an empty diff.
 
 ### A run that ended
 
@@ -212,14 +225,52 @@ marked `(!)` and its reasoning is expanded **in full** beneath the table, never 
 cell. Under a supervised run you overrule it at the gate; under `auto` that reasoning is posted on the
 pull request precisely so the person who wrote the comment can.
 
+**I asked a question and it made a code change.**
+
+Because the answer to it was a change. A question is read for **what its answer implies, never for its
+grammar** — answer it first, then look at the answer. An answer naming something the code should do
+differently makes the row a **fix**, and that answer is the clause of intent you see in the table. An
+answer that stands on its own with the code unchanged makes it `skip — question`, and that answer is
+the evidence and the reply.
+
+*"Why not use a hook rather than copying this three times?"* and *"why is this constant in a utils
+file?"* are both sincerely interrogative and both fixes; *"what does this flag do?"* is the same shape
+and a skip, because its answer is an answer. Nothing in the wording separates them. Where a standing
+convention in the repository settles it — a `CLAUDE.md`, an `AGENTS.md`, a rules file — the row names
+that convention and what it says, the way `already addressed` names a real commit: evidence you can
+open, rather than an assertion that a rule exists.
+
+This is also why the answer is written down either way. You are reading the reasoning that produced the
+classification at the gate, rather than inferring it from the verdict.
+
+**Why did it reply in a thread I had already stopped watching?**
+
+Because your comment got an outcome and the thread is where you would look for it. **Every review
+thread the table covers gets exactly one reply**, whatever its rows were classified — fix, skip and
+unclassified alike, under both modes. A thread is one conversation, so several of its comments share
+one reply that names each.
+
+Replies are one line: a fix carries its clause and the short sha and subject of the commit that
+answered it, a skip carries its named reason and that reason's evidence, an unclassified row says the
+run did not classify it. `disagreed with` is the single exception and carries its reasoning in full,
+because that is the reply that overrules a human.
+
+Every comment and reply the run writes ends with a hidden `<!-- replied from /pr-comments -->` marker
+and a visible `🤖 Generated with Claude Code` footer. `gh` authenticates as you, so without the footer
+all of it would read as written by you.
+
+A comment with no thread to reply in — a review body, a top-level issue comment — has no reply
+primitive on GitHub, so none is invented for it. Its reason travels in the table, and the conclusion
+comment names which those were.
+
 **A row says `unclassified` and nothing happened to it.**
 
 That is the honest outcome, not a gap. The four skip reasons are a closed list — no fifth is invented
-at run time, and free text never stands where a reason goes — and each takes evidence: the verbatim
-fragment that makes a comment a question, a commit this pull request actually holds, the separate piece
-of work a deferral names, or the reasoning in full. A comment none of them fits, or one whose evidence
-cannot be produced, is reported as unclassified with what it appeared to ask. It is the signal that the
-vocabulary needs widening, which is a deliberate change and never a run's decision.
+at run time, and free text never stands where a reason goes — and each takes evidence: the answer to a
+question, a commit this pull request actually holds, the separate piece of work a deferral names, or
+the reasoning in full. A comment none of them fits, or one whose evidence cannot be produced, is
+reported as unclassified with what it appeared to ask, and its thread is told as much. It is the signal
+that the vocabulary needs widening, which is a deliberate change and never a run's decision.
 
 **Two comments on the same lines became two commits.**
 
@@ -275,6 +326,10 @@ one branch, one push, one comment thread to report into.
   can check.
 - Each skip names **one of four reasons** and shows its evidence; each `disagreed with` carries `(!)`
   and an expansion in full.
+- **Every review thread the table covers has exactly one reply in it** — whatever its rows were
+  classified, and whether or not a single row was a fix.
+- Each reply is a line, carrying the strings the table already carries, and ends with the Claude Code
+  footer. Only `disagreed with` runs longer.
 - Fifteen rows read as easily as three, because every row is one line and everything longer lives
   beneath the table.
 - The gate, the plan file and the conclusion comment all render **the same table** — never a second
@@ -283,8 +338,8 @@ one branch, one push, one comment thread to report into.
   the run ended.
 - The conclusion comment's commit list matches `git log` on that branch, with the planned count beside
   the made count.
-- The review threads are still unresolved, the draft/ready state is unchanged, and no body anyone wrote
-  has been edited.
+- The review threads are still unresolved — the answered ones included — the draft/ready state is
+  unchanged, and no body anyone wrote has been edited.
 - A run that ended left its worktree standing and named it, by path, in that comment.
 - Under `auto`, one `start` message is paired with exactly one closing message carrying `ready`, `halt`
   or `failed` — and a reason.

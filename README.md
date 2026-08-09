@@ -124,7 +124,7 @@ of what a lane costs.**
 
 **Gated** by default — you approve the comment table before anything below it runs. `auto` suppresses
 that question only: the table is posted on the pull request in the gate's place, and the run's
-conclusion beside it.
+conclusion beside it. Either way, every review thread the table covers is answered in that thread.
 
 - [**How a run works**](./docs/pr-comments.md) — the table that *is* the plan, what a run
   refuses to do and why, both run shapes, common questions, "it's working if". A run loads none of it.

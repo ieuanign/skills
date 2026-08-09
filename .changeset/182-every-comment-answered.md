@@ -38,6 +38,10 @@ The reply mutation now passes its body through `gh` with `-F b=@-`, so multi-par
 backticks and quotes is serialised rather than hand-escaped. `Step 2`'s key list gains the `id` the
 reader has always emitted.
 
+`docs/pr-comments.md`, `CONTEXT.md` and `README.md` describe the behaviour that now ships — the run's
+step list, the write budget, both new questions in the FAQ, and the glossary's `Fix`, `Skip`,
+`Unclassified` and lane entries.
+
 Nothing about append-only is relaxed: a thread is replied to, never resolved, and no state, label,
 body or comment of anyone else's is touched. The hard rules shed the fourteen bullets that restated a
 step, keeping the write budget, append-only, and the two destructive operations that stay explicit
