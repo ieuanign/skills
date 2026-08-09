@@ -1,4 +1,4 @@
-# Prototpye fixture — /pr-comments unattended run
+# Prototype fixture — /pr-comments unattended run
 
 A throwaway file. It exists so that an unattended `/pr-comments auto` run has a real pull request
 with real unresolved comments to work against, and it is deleted with the pull request it belongs to.
