@@ -78,7 +78,7 @@ Classification is **your own plain reading of each body**, and dispatches no age
 
 **Every fix row carries a commit ordinal, and the default is one ordinal per fix.** Grouping is decided here rather than after the gate, because the table is the plan: approving these rows is what approves the commits.
 
-Two fix rows share an ordinal **only where they ask for the same change** — two reviewers wanting one rename — and a shared ordinal states what makes them one. **Proximity is never sameness**: two comments on the same region of one file are one commit each, because touching the same lines is not asking for the same thing. Silent merging is what the table exists to prevent, so a merge carrying no reason is not one.
+Two fix rows share an ordinal **only where they ask for the same change** — two reviewers wanting one rename — and a shared ordinal states what makes them one, in an expansion beneath the table. **Proximity is never sameness**: two comments on the same region of one file are one commit each, because touching the same lines is not asking for the same thing. Silent merging is what the table exists to prevent, so a merge carrying no reason is not one.
 
 **Ordinals run file by file, ascending by anchor within each.** One file's fixes take adjacent ordinals, ordered by the line each sits at — `originalLine` where `line` is null — and the fixes anchored to no file come last. They all run in **one sub-lane**: sequential commits in one worktree is the only thing that makes a later fix open a file with the earlier one already in it, and splitting a run's fixes across sub-lanes or branches races them instead.
 
@@ -104,7 +104,7 @@ A **skip** and an **unclassified** row have no ordinal, and nothing acts on eith
 
 ### Expansions
 
-Beneath the table, one block per row that needs one, keyed by that row's `#`:
+Beneath the table, one block per row that needs one, keyed by the `#` of every row it covers:
 
 ```markdown
 **[3] disagreed with**
@@ -113,6 +113,16 @@ Beneath the table, one block per row that needs one, keyed by that row's `#`:
 ```
 
 **Every `disagreed with` row has one, carrying the reasoning in full**; a row with that reason and no expansion is an unfinished table. Any other row may have one where its clause would not fit.
+
+**Every shared ordinal has one too**, keyed by all the rows sharing it and naming the commit they become:
+
+```markdown
+**[2,5] commit 3 — one change**
+
+<what makes them one change>
+```
+
+No cell carries this. The **Why** cell states what a fix will do and the **Reason** cell belongs to skips, so a merge stated in either is a merge stated nowhere a reader looks for it — and the ordinals alone show only *that* two rows merged, never why. **A shared ordinal with no expansion is an unfinished table**, on the same ground a silent merge is refused above: grouping is the one structural choice the plan makes, and one nobody stated is one nobody can check. An expansion that only locates the rows has not given a reason. Step 5's file carries the same statement into the plan the writer reads.
 
 `(!)` is the mark, carried by no other reason. It is plain ASCII on purpose: it reads the same in a terminal as in GitHub's renderer, and nothing here says anything with colour.
 
