@@ -7,7 +7,7 @@ set -euo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO"
 
-for d in .scratch/*/; do
-  [ -d "$d" ] || continue
-  printf '%s\t%s\n' "$(du -sh "$d" | cut -f1)" "${d%/}"
+for dir in .scratch/*/; do
+  [ -d "$dir" ] || continue
+  printf '%s\t%s\n' "$(du -sh "$dir" | cut -f1)" "${dir%/}"
 done
