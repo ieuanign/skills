@@ -13,3 +13,8 @@ with real unresolved comments to work against, and it is deleted with the pull r
 
 It is not a decision record and it is not part of the plugin manifest. Nothing under
 `.claude-plugin/` names it, and no skill loads it at run time.
+
+## Removing it
+
+Close the pull request, delete the branch, and the file goes with it. Nothing else in the repository
+refers to it, so there is nothing else to unpick.
