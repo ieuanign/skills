@@ -1,5 +1,272 @@
 # ieuanign-skills
 
+## 0.15.0
+
+### Minor Changes
+
+- [`3e74d35`](https://github.com/ieuanign/skills/commit/3e74d35ebf886930bafd43e09495d6fe99bdc644) Thanks [@ieuanign](https://github.com/ieuanign)! - `/pr-comments` turns one pull request's unresolved comments into a table, and the approved
+  fix into a pushed commit.
+
+  It reads the comments through the normaliser the folder already held, classifies each **fix** or
+  **skip** on its own plain reading, and shows every one of them — the skips included, since those are
+  the half a human is likeliest to disagree with. Nothing below the approval gate runs without an
+  explicit answer, and exactly one **fix** row may proceed: more than one shows the table and stops,
+  because grouping several fixes into commits is not built.
+
+  The fix itself runs on `/dev-loop`'s existing execute phase — writer, review loop and suite gate,
+  dispatched with no phase script of its own and no edit to that one. The worktree attaches to the pull
+  request's **existing** head branch and invents none, its tip sha becoming the sub-lane's base so the
+  reviewer diffs this run's work rather than the human's whole pull request. There is no issue behind a
+  review comment, so no acceptance-criteria axis is passed and none is reported.
+
+  The artifacts belong to someone else, so the whole run makes two writes: one `git push` to the branch
+  the pull request already has — never forced, in any form — and one `gh pr comment` carrying the
+  findings ledger. No review thread is resolved, no draft state converted, no label added, no body
+  edited. A sub-lane that ends pushes nothing and keeps its worktree; removal happens only after a
+  push has succeeded.
+
+  Gated only — there is no unattended mode and no token that asks for one.
+
+- [`60801bc`](https://github.com/ieuanign/skills/commit/60801bc76dac564466674bacdafa70fa6d8a0f55) Thanks [@ieuanign](https://github.com/ieuanign)! - `/pr-comments` skips are now checkable rather than taken on trust.
+
+  A skip carries one reason from a closed list of four — `question`, `already addressed`, `out of
+scope for this branch`, `disagreed with` — and free text never stands where a reason goes. Each
+  takes its own kind of evidence: a verbatim fragment of the body for a question, the short sha and
+  subject of a commit **this pull request holds** for one already addressed, the separate piece of
+  work for one deferred, the reasoning in full for one disagreed with. A skip whose evidence cannot
+  be produced is not a skip: it comes back as `unclassified`, a third intent beside **fix** and
+  **skip**, which the run states plainly and nothing acts on. A comment fitting none of the four is
+  the signal to widen the vocabulary deliberately, never a licence for prose.
+
+  `already addressed` is the one reason whose evidence lives outside the comment set, so it reads
+  `gh pr view <n> --json commits` and names a commit that read returned. Thread metadata is not
+  evidence — an outdated comment is one whose code moved, which says nothing about whether anyone did
+  what it asked.
+
+  The table gains a reason column so the eye runs down it, and stays **one line per comment**:
+  anything longer than a clause goes to a keyed expansion beneath it. A `disagreed with` row is
+  marked `(!)` — plain ASCII, legible in a terminal and in GitHub's renderer alike — and its
+  expansion is mandatory, because that row is the harness overruling a human reviewer. Fix rows state
+  their intent in one clause, and it is that clause, character for character, that reaches the writer.
+
+  One table definition renders in all three places it appears: the approval gate, the file the execute
+  phase reads, and the ledger comment — the only copy that outlives the run.
+
+  Still read-only up to the gate and append-only past it. The one new call, `gh pr view <n> --json
+commits`, is a read; no thread is resolved, least of all one reasoned `already addressed`.
+
+- [`5261058`](https://github.com/ieuanign/skills/commit/5261058a1597960bd8e7f1b8379953264e27f529) Thanks [@ieuanign](https://github.com/ieuanign)! - `/pr-comments` runs a whole pull request's comments in one pass, and the table says which
+  commit each fix becomes.
+
+  The one-fix ceiling is gone: every **fix**-classified comment proceeds, and the default is one commit
+  each. Two share an ordinal only where they ask for the same change — two reviewers wanting one rename
+  — and that row states what makes them one. **Proximity is never sameness**: two comments on the same
+  region of a file take one commit each, because silent merging is the thing the table exists to
+  prevent. A run left with no fix row shows the table and stops, provisioning no worktree and
+  dispatching no phase.
+
+  Grouping is decided at classification time, the table being the plan — approving those rows is what
+  approves the commits. Ordinals run file by file and ascending by anchor within each, fixes anchored to
+  no file last, and all of them in **one** sub-lane: sequential commits in one worktree is the only
+  thing that makes a later fix open a file with the earlier one already in it. The table gains a Commit
+  column and is ordered by it, so a shared ordinal shows by adjacency; every row is still one line and
+  an excerpt rather than a body, so fifteen rows read as three do.
+
+  The file the execute phase reads grows a real breakdown — one entry per ordinal, each naming by number
+  and url exactly the comment(s) it satisfies and carrying their bodies verbatim, every message unique,
+  and every anchor labelled a **pre-run** position, since the first commit's edit moves the second's line
+  number. The `commits` array handed to the phase is that breakdown entry for entry, and is never empty.
+
+  The ledger reads its commit list from `git log <base>..<branch>` in the worktree rather than from the
+  writer's returned one, and reports `<n> planned, <m> made`: a `wip:` commit is listed and not counted,
+  and a planned commit the branch does not hold is named as not made.
+
+  Unchanged: the gate above every write, the two writes below it, no force-push in any form, and nothing
+  under `skills/dev-loop/` touched — its execute phase already ran a sub-lane's commits sequentially in
+  one worktree.
+
+- [`6e6f1b8`](https://github.com/ieuanign/skills/commit/6e6f1b8e2b30e78bd7c7810e48bff10bf1b1a741) Thanks [@ieuanign](https://github.com/ieuanign)! - `/pr-comments auto <pull request>` runs the whole harness unattended, and reports itself on
+  the pull request rather than into a terminal nobody is watching.
+
+  A leading `auto` — the same token in the same position `/dev-loop` takes it in — is read off the
+  arguments once and carried as one value: no later step re-derives it, and no other argument and no
+  profile key overrides it. It suppresses the approval gate and nothing else. Every comment is still
+  classified, the table is still rendered and still written to the file the execute phase reads, and
+  each of the gate's questions resolves to a stated default: every **fix** row proceeds, a **skip** stays
+  skipped with its reason and evidence, an **unclassified** row is reported and acted on by nothing, and
+  a table with no fix row at all stops the run having provisioned nothing. The preconditions are not
+  gates and fire under both modes, so no unattended default is invented for a profile key.
+
+  Where the gate asked, an unattended run posts the table on the pull request. Where it finishes — or
+  ends mid-flight — it posts one conclusion comment beside that one: the findings ledger where the
+  commits reached the branch, and where they did not, the step that stopped it and that step's message
+  verbatim, the table in full either way, the kept worktree and table file by path, and the run handle
+  that locates the run's transcript. Two comments per run, never a third, and the second is never an
+  edit to the first — one only where the run ended at its read of the comments, that explanation being
+  the whole account of a run there was never a table to post for.
+
+  A `start` message goes out once the preconditions pass, and exactly one closing message as the run's
+  last act — the pull request's number, a state token, the reason, the link — through the sibling
+  skill's `notify.sh` with the payload on standard input. `halt` where something deliberately stopped,
+  `failed` where something broke, `ready` where the commits reached the branch; `draft` cannot apply
+  here and no sixth token is invented, which is what keeps a `start` with no close after it readable as
+  a dead run. No notification failure changes the run it reports.
+
+  Unchanged: the append-only discipline, narrower here than `/dev-loop`'s because the artifacts belong
+  to someone else — no thread resolved, no draft or ready state converted, no label on anything, no body
+  or comment edited — one push, no force-push in any form, and nothing under `skills/dev-loop/` touched.
+  No notifier is dispatched either: one lane with one sub-lane returns to a session that can write every
+  event itself.
+
+- [`dbf573c`](https://github.com/ieuanign/skills/commit/dbf573c5c8c2af39cad022a75eb19a10ec9ff3db) Thanks [@ieuanign](https://github.com/ieuanign)! - `/pr-comments` gets the written record: a narrative a human reads and no run loads, and the
+  glossary entries that make it readable.
+
+  **`docs/pr-comments.md`** is modelled section-for-section on `docs/dev-loop.md`. What it does,
+  the four words you need before the rest reads, when to reach for it over `/dev-loop` or
+  `/code-review-mp`, prerequisites, what one run does in order, both run shapes end to end, the questions
+  people actually ask — each answered with the reason rather than the rule — and an "it's working if"
+  list of observable signals. It is in `docs/` rather than the skill because every byte of a `SKILL.md`
+  is loaded by every run of that skill, and a file no orchestrator opens costs a run nothing. The review
+  loop's bound is linked to `docs/dev-loop-internals.md`, not restated: `npm run check` cross-checks that
+  number against the pipeline, and a second prose home for it is drift waiting to happen.
+
+  It states the refusals plainly and gives the reason behind each: no review thread resolved, no draft or
+  ready conversion, no label, no body or comment edited, no comment re-classified to reach a different
+  intent, and a push that is never forced. The discipline is deliberately narrower than `/dev-loop`'s
+  because every artifact in sight belongs to somebody else — this run opens no pull request, so it has no
+  state of its own to set.
+
+  **`CONTEXT.md`** gains **comment table**, **fix**, **skip**, **unclassified** and the **pull
+  request-comment lane**. The last defines itself rather than leaning on "lane", which the glossary does
+  not carry, and names what it lacks: no architect-authored plan, because the table's fix rows _are_ the
+  plan the execute phase runs on; no acceptance criteria, and so no spec axis and no criterion verdicts;
+  and no pull request created, because it pushes to one that already exists.
+
+  **No decision record accompanies any of this, and that is the call rather than an omission.** This
+  repository keeps none — `docs/agents/domain.md` says so outright, and `1653f05` deleted the eight it
+  had. The comment-table-is-the-plan decision is written into the narrative instead, with the
+  alternative it beat (a planning stage between the comments and the writer) and the reason it lost: the
+  comments are already the brief, and a derived plan would have the gate approving a table while the
+  writer worked from a paraphrase of it.
+
+  `README.md` links the narrative. Nothing under `skills/` or `agents/` changes, and a run behaves
+  byte-identically before and after.
+
+- [`e99f8cd`](https://github.com/ieuanign/skills/commit/e99f8cda9e8cf69cb8cea32c1a27c59828c24c02) Thanks [@ieuanign](https://github.com/ieuanign)! - `/pr-comments` answers a skipped comment in the thread that raised it.
+
+  A skip used to be delivered only in the run's table, and both of this skill's comments post at the
+  foot of the pull request — so the person whose comment was skipped was notified about _the pull
+  request_ rather than about _their comment_, and the thread they were watching stayed silent. For a
+  `disagreed with` skip that is the worst shape it can take: the harness overrules a human reviewer,
+  somewhere that reviewer has no reason to look.
+
+  Every skip whose entry carries a `threadId` now gets one reply in that thread, immediately after the
+  gate — its named reason and that reason's evidence, the same strings the table carries and never a
+  second wording, a `disagreed with` reply carrying its reasoning in full. One reply per thread however
+  many of its comments were skipped, since a thread is one conversation.
+
+  Immediately after the gate rather than with the ledger, because the skip rows are settled at approval
+  and nothing downstream depends on them: a reply held to the end never arrives on any path that ends
+  before it. The cost is that a reply carries no link to the table, the comment holding it not having
+  been posted yet.
+
+  A skip with no thread — a review body, an issue comment — has no reply primitive to use, so none is
+  invented for it; nothing acts on an `unclassified` row, a reply included. The ledger names both, plus
+  every thread the run did reply in and every reply that failed. A failed reply is reported and changes
+  nothing else about the run, the same way a failed notification does.
+
+  The write budget in the hard rules moves with it: one push, one comment under `gated` or two under
+  `unattended`, and one reply per skipped thread. Nothing else about append-only is relaxed — a thread
+  is replied to, never resolved, and no state, label, body or comment of anyone else's is touched.
+
+- [`912ac0f`](https://github.com/ieuanign/skills/commit/912ac0f4304e6cd03797026a45b3153789cd6933) Thanks [@ieuanign](https://github.com/ieuanign)! - `/pr-comments` answers every comment in the thread that raised it, and reads a question for its
+  answer rather than its grammar.
+
+  [#178](https://github.com/ieuanign/skills/issues/178) gave the skipped reviewer a reply in their own thread and left three holes behind it. The reply
+  never fired on the run most likely to need it: Step 4 ended the run where no row was a **fix**,
+  _above_ the section that replies, so a pull request whose every comment was skipped answered nobody.
+  A comment that was _acted on_ heard nothing at all, leaving its author to read a diff to find out.
+  And the mutation's JSON was hand-written by the agent, so a multi-paragraph `disagreed with` reply
+  was a parse error rather than an escaped string.
+
+  **Every review thread the table covers now gets exactly one reply, whatever its rows were
+  classified** — fix, skip and unclassified alike, under both modes. `gated` and `unattended` differ
+  only at the listing step, where a developer sees what will be fixed and skipped and why; that
+  difference no longer reaches the threads. A thread holding no fix row is answered at Step 4; one
+  holding a fix waits for Step 10, so its reply carries the short sha and subject of the commit that
+  answered it — or, where nothing was pushed, what stopped it, never a sha the remote does not hold.
+  Replies are one line, the strings the table already carries; `disagreed with` remains the single
+  exception and carries its reasoning in full. The gated gate now asks on every path that reaches it,
+  which is what closes the hole.
+
+  **A question is classified on what its answer implies, never on its grammar.** Answer it first, then
+  look at the answer: an answer naming something the code should do differently makes the row a
+  **fix**, and that answer is its clause of intent; an answer that stands on its own with the code
+  unchanged makes it `skip — question`, and that answer is its evidence and its reply. _"Why not use a
+  hook rather than copying this three times?"_ and _"why is this constant in a utils file?"_ are both
+  sincerely interrogative and both fixes. A comment settled by a standing convention names the
+  convention — the file and what it says — the way `already addressed` names a real commit.
+
+  **Every write carries its provenance**: a hidden `<!-- replied from /pr-comments -->` marker and a
+  visible `🤖 Generated with Claude Code` footer. `gh` authenticates as the human who invoked the run,
+  so without the footer every comment and reply read as written by them.
+
+  The reply mutation now passes its body through `gh` with `-F b=@-`, so multi-paragraph prose full of
+  backticks and quotes is serialised rather than hand-escaped. `Step 2`'s key list gains the `id` the
+  reader has always emitted.
+
+  `docs/pr-comments.md`, `CONTEXT.md` and `README.md` describe the behaviour that now ships — the run's
+  step list, the write budget, both new questions in the FAQ, and the glossary's `Fix`, `Skip`,
+  `Unclassified` and lane entries.
+
+  Nothing about append-only is relaxed: a thread is replied to, never resolved, and no state, label,
+  body or comment of anyone else's is touched. The hard rules shed the fourteen bullets that restated a
+  step, keeping the write budget, append-only, and the two destructive operations that stay explicit
+  bans; the shell and provenance rules every write shares move into one **How this run writes** section
+  rather than being restated at each site.
+
+### Patch Changes
+
+- [`0e6eac9`](https://github.com/ieuanign/skills/commit/0e6eac9af2f68328131b6a3a9831c8b606bf65de) Thanks [@ieuanign](https://github.com/ieuanign)! - A pull request's unresolved comments now read as one list, whatever kind each comment started as.
+
+  `skills/pr-comments/read-comments.mjs` returns thread-anchored review comments, review bodies and
+  issue comments in a single shape. Resolved threads are excluded on GraphQL's own `isResolved` rather
+  than on an inference — REST does not expose thread resolution, and guessing hands back every comment
+  a long-lived pull request ever carried. Hidden comments are excluded too, because minimising one is
+  a human saying it is dealt with.
+
+  Bodies are carried byte for byte and never reach a shell: `gh` is spawned with an argument array and
+  its stdout is parsed, which is what makes a body containing backticks, `$(...)` and quotes inert.
+
+  Every entry names the thread it sits in. Replies on one conversation share a `threadId`, which is
+  null on a review body and an issue comment because neither belongs to a thread — so a consumer can
+  answer a conversation once rather than once per reply.
+
+  Absence stays absence. An outdated comment keeps `line: null` while its stale `originalLine` anchor
+  travels separately, so a consumer can tell _no line_ from _line moved_ rather than being handed a
+  location the file no longer has. Every connection is paginated, and a failed read exits non-zero with
+  no JSON — an empty list can only ever mean no unresolved comments.
+
+  The folder holds the module and nothing else: no `SKILL.md` and no manifest entry, so nothing
+  installs or invokes it yet.
+
+- [#161](https://github.com/ieuanign/skills/pull/161) [`f89fd2f`](https://github.com/ieuanign/skills/commit/f89fd2fd0f55b4d7f32816938a833cda5d010fe1) Thanks [@ieuanign](https://github.com/ieuanign)! - A bundled module invoked through a symlinked skill directory now runs, instead of exiting 0 having
+  done nothing.
+
+  `read-comments.mjs` and `cost-report.mjs` are invoked by path, and on a checkout that links its
+  skills into `.claude/skills/` that path runs through a symlink. Node resolves a module's own path
+  through symlinks when it sets `import.meta.url` but leaves `process.argv[1]` exactly as the caller
+  typed it, so a main-module guard comparing the two unresolved was false there and `main()` never ran.
+
+  The failure had the worst shape available to it: exit 0, no output, nothing on stderr. A silent
+  success reads as an empty result, so `read-comments.mjs` reported every pull request as having no
+  unresolved comments and `cost-report.mjs` reported every run as having cost nothing. Both now
+  resolve the invoked path before comparing.
+
+  `npm run check` gained the check that would have caught it: every bundled module with a `main` entry
+  is invoked through a symlinked parent with no arguments and must answer with its usage and a
+  non-zero exit. Neither module reaches the network before parsing an argument, so it stays offline.
+
 ## 0.14.0
 
 ### Minor Changes
