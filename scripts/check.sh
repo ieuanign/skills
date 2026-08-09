@@ -79,6 +79,18 @@ while IFS= read -r script; do
   fi
 done < <(git -C "$REPO" ls-files '*.sh' | sort)
 
+# --- roster listing from any directory ---------------------------------------
+# list-agents.sh runs from wherever the caller stands, so a cwd-relative repo
+# root leaves it listing nothing — silently, everywhere but scripts/.
+if out="$(cd / && bash "$REPO/scripts/list-agents.sh" 2>&1)" \
+  && [ -n "$out" ] && ! grep -qvE '^agents/.+\.md$' <<<"$out"; then
+  echo "ok    list-agents.sh from any directory"
+else
+  echo "FAIL  list-agents.sh from any directory: expected agents/*.md paths, got" >&2
+  echo "$out" >&2
+  failed=1
+fi
+
 # --- bundled script executability --------------------------------------------
 # The skill invokes its bundled scripts BY PATH, so one committed 644 is
 # unrunnable while `bash -n` still passes — a different failure with the same

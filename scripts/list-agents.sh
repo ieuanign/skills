@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
 # Prints every roster agent definition in this repo, one path per line —
 # the agents/ counterpart to scripts/list-skills.sh.
 
-cd ..
+REPO="$(cd "$(dirname "$0")/.." && pwd)"
 
+cd "$REPO"
 find agents -name '*.md' | sort
