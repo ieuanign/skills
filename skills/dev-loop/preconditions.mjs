@@ -10,21 +10,24 @@ import { existsSync, readFileSync, realpathSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-const PROFILE = 'docs/agents/dev-loop.md'
+// Two profiles, split by what the facts describe: the pipeline's own artifacts, and what any skill
+// needs to make a fresh worktree runnable and prove a change good.
+const PIPELINE = 'docs/agents/dev-loop.md'
+const WORKTREE = 'docs/agents/worktree.md'
 const WORKTREEINCLUDE = '.worktreeinclude'
 
-const profileKey = (key, supplies) => ({
+const profileKey = (file, key, supplies) => ({
   label: key,
-  where: `\`${PROFILE}\`, under \`## ${key}\``,
+  where: `\`${file}\`, under \`## ${key}\``,
   supplies,
-  answered: profile => hasContent(profile, key),
+  answered: profiles => hasContent(profiles.get(file), key),
 })
 
 const worktreeinclude = supplies => ({
   label: `\`${WORKTREEINCLUDE}\``,
   where: 'the repository root, tracked, in gitignore syntax',
   supplies,
-  answered: (_profile, root) => existsSync(join(root, WORKTREEINCLUDE)),
+  answered: (_profiles, root) => existsSync(join(root, WORKTREEINCLUDE)),
 })
 
 // The caller selects the remediation as well as the key set: naming a run that cannot supply the
@@ -32,24 +35,24 @@ const worktreeinclude = supplies => ({
 const CALLERS = {
   'dev-loop': {
     blocking: [
-      profileKey('Setup command', 'one gated `/dev-loop` run asks for it at the first provisioning'),
-      profileKey('Full-suite command', "one gated `/dev-loop` run asks for it at Act 0's step 9"),
+      profileKey(WORKTREE, 'Setup command', 'one gated `/dev-loop` run asks for it at the first provisioning'),
+      profileKey(WORKTREE, 'Full-suite command', "one gated `/dev-loop` run asks for it at Act 0's step 9"),
       worktreeinclude('one gated `/dev-loop` run offers the candidates and writes the file'),
     ],
     defaults: [
-      ['Branch template', '`feat/{issue}`, sub-lanes `feat/{issue}-{area}`'],
-      ['PR title format', '`<type>(<scope>): #<issue> - <title>`'],
-      ['PR body template', 'the core elements alone, in the order Gate 2 lists them'],
-      ['Fix cycles', '`2`'],
+      [PIPELINE, 'Branch template', '`feat/{issue}`, sub-lanes `feat/{issue}-{area}`'],
+      [PIPELINE, 'PR title format', '`<type>(<scope>): #<issue> - <title>`'],
+      [PIPELINE, 'PR body template', 'the core elements alone, in the order Gate 2 lists them'],
+      [WORKTREE, 'Fix cycles', '`2`'],
     ],
   },
   'pr-comments': {
     blocking: [
-      profileKey('Setup command', 'one gated `/pr-comments` run asks for it at Step 6'),
-      profileKey('Full-suite command', 'one gated `/pr-comments` run asks for it at Step 6'),
+      profileKey(WORKTREE, 'Setup command', 'one gated `/pr-comments` run asks for it at Step 6'),
+      profileKey(WORKTREE, 'Full-suite command', 'one gated `/pr-comments` run asks for it at Step 6'),
       worktreeinclude('one gated `/dev-loop` run writes it at Act 0; `/pr-comments` never asks for it'),
     ],
-    defaults: [['Fix cycles', '`2`']],
+    defaults: [[WORKTREE, 'Fix cycles', '`2`']],
   },
 }
 
@@ -81,17 +84,23 @@ function sections(text) {
 const hasContent = (profile, key) =>
   (profile.get(key.toLowerCase()) ?? []).some(line => line.trim() !== '')
 
-function check(root, caller) {
-  // A repository with no profile is missing every key, which is a report and not an error.
-  let text = ''
+// A repository with no profile is missing every key, which is a report and not an error.
+function read(root, file) {
   try {
-    text = readFileSync(join(root, PROFILE), 'utf8')
-  } catch {}
-  const profile = sections(text)
+    return readFileSync(join(root, file), 'utf8')
+  } catch {
+    return ''
+  }
+}
+
+function check(root, caller) {
+  // One map per file, never merged: a key absent from the profile that holds it is missing, and
+  // reading the other one would let a run start on a key nobody supplied.
+  const profiles = new Map([PIPELINE, WORKTREE].map(file => [file, sections(read(root, file))]))
   const spec = CALLERS[caller]
   return {
-    blocking: spec.blocking.filter(entry => !entry.answered(profile, root)),
-    defaults: spec.defaults.filter(([key]) => !hasContent(profile, key)),
+    blocking: spec.blocking.filter(entry => !entry.answered(profiles, root)),
+    defaults: spec.defaults.filter(([file, key]) => !hasContent(profiles.get(file), key)),
   }
 }
 
@@ -100,7 +109,7 @@ const NEVER_PERSISTED =
 
 function render({ blocking, defaults }) {
   const cannot = blocking.map(e => `- **${e.label}** — ${e.where} — ${e.supplies}.`)
-  const taken = defaults.map(([key, value]) => `- **${key}** — ${value}`)
+  const taken = defaults.map(([, key, value]) => `- **${key}** — ${value}`)
   return [
     '### Missing, cannot run',
     '',
@@ -116,7 +125,7 @@ const USAGE = `usage: preconditions.mjs <repo-root> <dev-loop|pr-comments>
 
 Prints two blocks for the caller named: the prerequisites an unattended run cannot supply for
 itself, and the ones it takes a default for. Exits non-zero when the first block is non-empty.
-Reads the repo profile and stats one file — it writes nothing and reaches nothing.`
+Reads both repo profiles and stats one file — it writes nothing and reaches nothing.`
 
 function main(argv) {
   const [root, caller] = argv
