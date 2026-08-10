@@ -53,9 +53,10 @@ whether it should run the phases you just asked for.
 
 **The Workflow tool.** `/dev-loop` dispatches every stage through it. A session without it is refused
 at intake, told the setting — `"enableWorkflows": true` in `~/.claude/settings.json` — and told that a
-**restart is required**, because tool availability is fixed at session start. You are asked once per
-machine and the answer is persisted in that settings file; a persisted refusal is honoured without
-asking again.
+**restart is required**, because tool availability is fixed at session start. A supervised run asks you
+once per machine and persists the answer in that settings file; a persisted refusal is honoured without
+asking again. An unattended run asks nothing and writes nothing there — it refuses, and the next
+supervised run is what offers you the choice.
 
 **The plugin, installed rather than linked.** `/plugin install ieuanign-skills@ieuanign` is what
 installs the agent roster. `npx skills add` picks up the skills alone, and a lane with no roster has
@@ -64,17 +65,20 @@ nothing to dispatch.
 **`gh`, authenticated.** Every `gh` command runs inside a checkout of your repository, so the
 repository is inferred from the remote and never passed.
 
-**Nothing else is required.** Everything the pipeline needs about *your* repository it either derives
-at intake or asks you once and writes down. There is no configuration step to do first.
+**Nothing else is required — of a supervised run.** Everything the pipeline needs about *your*
+repository it either derives at intake or asks you once and writes down, so there is no configuration
+step to do first. An unattended run has nobody to ask, and three of those answers have no honest
+default it could take instead: **Setup command**, **Full-suite command** and `.worktreeinclude`. Until
+one supervised run has supplied all three, `auto` refuses and says which of them are missing.
 
 ## What one run does
 
 Six acts, in order.
 
 1. **Act 0 — intake.** Parse the arguments, derive the facts, read the repository profile, check the
-   gitignore preconditions, fetch the issues, refuse lanes whose blockers are open, work out what a
-   resumed run already has, ask for anything the profile is missing, then label each surviving issue
-   in-progress.
+   gitignore preconditions, refuse the whole run when an unattended one lacks a prerequisite, fetch the
+   issues, refuse lanes whose blockers are open, work out what a resumed run already has, ask for
+   anything the profile is still missing, then label each surviving issue in-progress.
 2. **Act 1 — Phase A.** One architect per issue, in parallel. Each produces a plan file and summary
    bullets, and comments those bullets on the issue.
 3. **Gate 1 — plan approval.** Every lane presented at once: summary, plan path, open questions. This
@@ -146,6 +150,15 @@ resolves to its unattended answer. Lanes with a `READY` plan proceed; a dependen
 rather than deferred; each sub-lane pushes and opens the pull request its terminal state names — ready,
 draft, or none.
 
+**And it never interviews you.** The one-time preconditions are not gates, so suppression is not what
+governs them; they resolve on a rule of their own. A key with a documented default takes it for that
+run and is written into no profile — persisting a value nobody chose would spend the repository's one
+question, and the human who would have chosen it would never be asked — and the pull request body lists
+which defaults the work was built on. A prerequisite with no honest default refuses the run instead:
+one report naming every missing one, commented on every issue you named and sent as a single `failed`
+message. It fires before any lane is claimed, so no label is written and no `start` message goes out,
+and nothing is left marked in-progress by a run that never began.
+
 Three things an unattended run does that a supervised one does not: it writes workflow labels and
 issue comments as it goes, it sends a one-line message per lane at start and close, and it writes the
 cost log. All three are reporting; none of them changes what a lane does.
@@ -181,8 +194,10 @@ There is one rule, and it decides where a new value goes without a debate:
 
 Your repository's own answers live in `docs/agents/dev-loop.md`, written by the pipeline itself under
 **ask-then-persist**: the first time a run genuinely needs a value it asks once, writes the answer
-down, and never asks again. A persisted `none` counts as an answer. A repository with no profile at
-all runs on pure defaults — the interview is a convenience, not a precondition.
+down, and never asks again. A persisted `none` counts as an answer. **The interview is the supervised
+run's alone**: an unattended run asks nothing and writes nothing here, taking a key's documented default
+for that run only where it has one and refusing where it does not. So a repository with no profile is
+never one you have to configure first — it is one whose first gated run does the configuring.
 
 The rule **refuses** three things. `SKILL.md` states those refusals, because they bind a run; this page
 carries only the reasoning behind them, which is what the skill deliberately does not load:
