@@ -13,7 +13,8 @@ Three independent parts. Run any one alone — no part depends on another, and n
    carry, so a finding the user rejected stops being filed.
 2. **Workflow labels** — the strings an unattended `/dev-loop auto` run reports itself through.
 3. **The `.claude/rules/` conventions** — how pull requests are separated, how stacked branches are
-   rebased, and the comment and scratch habits every session in the repo obeys.
+   rebased, how a worktree is removed, and the comment and scratch habits every session in the repo
+   obeys.
 
 **Every part explores, proposes, and writes only on an explicit yes.** All three mutate files the user
 owns, so this holds without restatement below: a step that says "write" means write what was accepted.
@@ -143,7 +144,7 @@ create the equivalents in whatever tracker it is; the mapping file is already wr
 
 ## Part 3 — the `.claude/rules/` conventions
 
-Four rules, each with a template in this folder. Propose them one at a time, in the order below. A
+Five rules, each with a template in this folder. Propose them one at a time, in the order below. A
 declined rule is a real answer: say nothing more about it.
 
 Show each rule's full text before writing it. `.claude/rules/*.md` loads at launch with the same
@@ -191,6 +192,15 @@ installed and 1 when not, needs no authentication and makes no network call.
   worth scoping, so a docs-only session does not carry it;
 - the scratch rule's directory, if the repo's is not `.scratch/`.
 
+### `worktree-removal.md` — always propose
+
+[worktree-removal-template.md](./worktree-removal-template.md). Fixed text, no substitutions: never
+`git worktree remove --force`, because the refusal is the guard and what it guards exists in one copy.
+
+`/dev-loop`, `/pr-comments` and `/dev-loop-cleanup` already hold this for the worktrees they create,
+and it is still worth writing: none of them binds a human typing the command themselves, and in a repo
+where setup ran but no plugin is installed this file is the only copy of the rule.
+
 ## Done
 
 Tell the user what was written and which skills read it:
@@ -201,8 +211,9 @@ Tell the user what was written and which skills read it:
 - `docs/agents/triage-labels.md`'s Workflow roles section — `/dev-loop auto`, and nothing else. A
   supervised `/dev-loop` writes no label, so a repo that never runs unattended needs none of it.
 - each `.claude/rules/` file written — in every session in the repo from the next one onward, plugin
-  or no plugin, and `pr-separation.md` additionally at `/dev-loop`'s plan and Gate 1 steps. Name the
-  ones the user declined too, so nothing looks written that is not.
+  or no plugin; `pr-separation.md` additionally at `/dev-loop`'s plan and Gate 1 steps, and
+  `worktree-removal.md` by a human at a terminal, which no skill covers. Name the ones the user
+  declined too, so nothing looks written that is not.
 
 If Part 2 ran and the user declined the label creation, say plainly that the roles are mapped but the
 labels do not exist yet, so an unattended run will report each failed write and carry on regardless.
