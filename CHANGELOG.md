@@ -1,5 +1,107 @@
 # ieuanign-skills
 
+## 0.16.0
+
+### Minor Changes
+
+- [`16dd78e`](https://github.com/ieuanign/skills/commit/16dd78eedef56937088b04cdd6ad98735e54704a) Thanks [@ieuanign](https://github.com/ieuanign)! - Under `auto`, every precondition now resolves — to a documented default or to a refusal — in
+  `/dev-loop` and `/pr-comments` alike. Before this, both skills exempted their ask-then-persist
+  preconditions from gate suppression, so an unattended run in a repository whose profile was incomplete
+  raised a question with nobody there to answer it.
+
+  **Preconditions are the fourth thing the run mode decides**, stated once in `/dev-loop`'s Run mode
+  section and binding pipeline-wide, beside gate suppression, notifications and the cost log. Under
+  `gated` nothing changes: same questions, same persistence, same one-question-ever guarantee. Under
+  `unattended` nothing is asked. Each precondition site says which of the two answers is its own, and
+  never whether it fires.
+
+  **An unattended default is used, reported and written into no profile.** Persisting one would spend the
+  repository's single question, and the human who would have chosen the value would never be asked — so
+  the branch template, PR title format, PR body template and fix cycles apply to that run alone, and the
+  pull request body carries a **Defaults taken** element naming which.
+
+  **A refusal names every missing prerequisite at once**, each with the key or file, where it belongs, and
+  the run that supplies it — a report naming only the first turns one fix into three failed runs. The
+  wording lives in one new bundled module, `skills/dev-loop/preconditions.mjs`, invoked
+  `node <path> <repo-root> dev-loop|pr-comments`: it reads the profile, stats `.worktreeinclude`, prints
+  a **Missing, cannot run** and a **Missing, default taken** block, and exits non-zero when the first is
+  non-empty. It writes nothing, reaches nothing, and neither `SKILL.md` restates a line of it. The caller
+  selects the remediation as well as the key set, because naming a run that cannot supply the thing is
+  worse than naming nothing.
+
+  `/dev-loop` refuses in Act 0 **above the step that claims a lane** — no label of any role, no `start`
+  message, nothing a later run has to clear — and reports it as one comment on every issue the arguments
+  named plus one `failed` message for the run. `/pr-comments` runs the same check as Step 1's
+  precondition 6, before its own `start`, and comments the report on the pull request; its Step 6 ask is
+  now `gated`-only with its timing untouched, and an unattended run takes fix cycles `2`, reported in the
+  conclusion comment.
+
+  Because a refusal can close a run that never opened one, the pairing property in
+  `skills/dev-loop/notifications.md` is now one-directional: a `start` is never left unpaired, and a close
+  with no `start` reads as a run that never began.
+
+  `CONTEXT.md` gains **Precondition**, whose _Avoid_ names **gate** — a gate is a human approval point
+  inside the run's flow and is suppressed wholesale, where a precondition is what the run needs in order
+  to have a flow at all and resolves instead. `docs/dev-loop.md`, `docs/pr-comments.md` and `README.md`
+  say which prerequisites refuse an unattended run and which default, so an operator can read what to fix
+  without opening a transcript.
+
+- [`6e25608`](https://github.com/ieuanign/skills/commit/6e256089569cf1a78707e391822650304591b738) Thanks [@ieuanign](https://github.com/ieuanign)! - `/retire-adr` retires one architecture decision record: it deletes the record and refactors everything
+  that pointed at it, in one gated operation.
+
+  A stale record actively misleads — someone debugging reads it as normative and hunts for behaviour
+  that changed years ago — and deleting the file alone makes that worse, because every doc, rule,
+  comment and changelog entry citing it becomes a dangling reference. So retirement is a refactor. The
+  human names one record; the skill derives the set of forms the repo actually cites it by (filename,
+  stem, title, path, and the bare identifier in whatever formats appear locally), sweeps tracked files
+  only for every one of them, and gives each hit one disposition from a closed set of four — **rewrite**,
+  **delink**, **drop**, **leave**. A changelog entry defaults to **delink**: it states what was true when
+  it was written, so removing the pointer keeps it honest where a rewrite would falsify it.
+
+  A decision still binding the code is relocated to the code it binds — carrying the reasoning itself and
+  never a pointer, since a pointer is what retirement removes. The relocation is named before anything is
+  written and lands before the record is deleted, so no interruption leaves the reasoning nowhere.
+
+  The gate is the whole protection: the record, each relocation and a table of every reference with its
+  current text, disposition and replacement are rendered, and then the run stops. Nothing is written
+  before the answer, and declining writes nothing at all. There is no unattended mode and no "find stale
+  records" scan — zero references is not evidence of staleness in a repo whose comment conventions forbid
+  citing a record at all. The skill commits nothing and names how to review and undo what it wrote.
+
+- [#198](https://github.com/ieuanign/skills/pull/198) [`552860b`](https://github.com/ieuanign/skills/commit/552860b3cc8e26ac47b35b05e7037e493159424f) Thanks [@ieuanign](https://github.com/ieuanign)! - `/setup-ieuanign-skills` Part 3 offers a fifth `.claude/rules/` convention: never force a worktree
+  removal.
+
+  `/dev-loop`, `/pr-comments` and `/dev-loop-cleanup` each already refuse to pass `--force` to a
+  removal of a worktree they made. Those copies bind a running pipeline and nothing else — they say
+  nothing to a person at a terminal typing the command themselves, and a repo that ran setup may have
+  no plugin installed at all. A convention that binds with or without the plugin is `.claude/rules/`
+  territory by this skill's own uninstall test, so the rule is now proposed like the other four and
+  named in the closing summary.
+
+  The rule forbids _forcing_ a removal, never removal itself: a refusal is the guard doing its job,
+  what it guards exists in exactly one copy, and `git status --porcelain` says what to commit or move
+  before the plain removal succeeds. `rm -rf` on the directory is named as the same forcing under
+  another name, and the main worktree as never a removal candidate.
+
+- [#199](https://github.com/ieuanign/skills/pull/199) [`94e797e`](https://github.com/ieuanign/skills/commit/94e797ef957ef2b1e31f143fa52c7474db66e7e9) Thanks [@ieuanign](https://github.com/ieuanign)! - The architecture engineer reads decision records where the repo says it keeps them, instead of
+  listing `docs/adr/` on every run.
+
+  A decision-record directory is not a fixture of every repository. Baking one path in means the
+  orienting step points at nothing in a repo that keeps no records, and at the wrong place in a repo
+  that keeps them somewhere else — while the repo's own `docs/agents/` layer already states the answer,
+  exactly as it does for the reviewer's smell overrides and the notifier's label vocabulary. So the
+  sweep is now a read of that configuration rather than a directory listing: where it names locations,
+  the same limiter applies and only the records governing the area are opened; where it names none, or
+  is itself absent, that is the ordinary state — proceed silently, never report it missing, never ask,
+  and never guess at a directory to make up for it. A repo that keeps no records gets none planned into
+  a plan's touchpoints.
+
+  The respect clause generalises with it: the decisions a repo records bind the plan wherever it keeps
+  them, including the ones written inline at the code they bind, which is the shape a repo with no
+  directory uses. And because the architect now sweeps agent configuration too, the Hard-constraints
+  section's "only channel" sentence widens to cover it — the Code Writer does not open that file either,
+  so a rule living there still reaches the writer only by being stated outright.
+
 ## 0.15.0
 
 ### Minor Changes
