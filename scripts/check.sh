@@ -205,6 +205,32 @@ else
   failed=1
 fi
 
+# --- worktree removal guardrail ----------------------------------------------
+# Every skill that removes a worktree states the never-force guard itself, none
+# of them loading the others; the sentence carries no markup so it greps.
+guard_phrase='Worktree removal never passes --force.'
+guard_carriers=0
+guard_missing=""
+while IFS= read -r skill; do
+  rel="${skill#"$REPO/"}"
+  grep -q 'worktree remove' "$skill" || continue
+  if grep -qF "$guard_phrase" "$skill"; then
+    guard_carriers=$((guard_carriers + 1))
+  else
+    guard_missing="$guard_missing $rel"
+  fi
+done < <(find "$REPO/skills" -name 'SKILL.md' -not -path '*/node_modules/*' | sort)
+if [ -n "$guard_missing" ]; then
+  echo "FAIL  worktree removal guardrail missing from:$guard_missing" >&2
+  echo "      each must state it verbatim, any markup outside the sentence: $guard_phrase" >&2
+  failed=1
+elif [ "$guard_carriers" -eq 0 ]; then
+  echo "FAIL  worktree removal guardrail: no skill mentions 'worktree remove'" >&2
+  failed=1
+else
+  echo "ok    worktree removal guardrail ($guard_carriers skills)"
+fi
+
 # --- agent types are resolved, never literal ---------------------------------
 # A phase script dispatches roster agents by name, and the SAME definition is
 # registered bare when it is linked into `.claude/agents/` and namespaced
