@@ -13,8 +13,8 @@ Three independent parts. Run any one alone — no part depends on another, and n
    carry, so a finding the user rejected stops being filed.
 2. **Workflow labels** — the strings an unattended `/dev-loop auto` run reports itself through.
 3. **The `.claude/rules/` conventions** — how pull requests are separated, how stacked branches are
-   rebased, how a worktree is removed, and the comment and scratch habits every session in the repo
-   obeys.
+   rebased, how a worktree is removed, where a review finds the repo's standards, and the comment and
+   scratch habits every session in the repo obeys.
 
 **Every part explores, proposes, and writes only on an explicit yes.** All three mutate files the user
 owns, so this holds without restatement below: a step that says "write" means write what was accepted.
@@ -144,7 +144,7 @@ create the equivalents in whatever tracker it is; the mapping file is already wr
 
 ## Part 3 — the `.claude/rules/` conventions
 
-Five rules, each with a template in this folder. Propose them one at a time, in the order below. A
+Six rules, each with a template in this folder. Propose them one at a time, in the order below. A
 declined rule is a real answer: say nothing more about it.
 
 Show each rule's full text before writing it. `.claude/rules/*.md` loads at launch with the same
@@ -201,6 +201,19 @@ installed and 1 when not, needs no authentication and makes no network call.
 and it is still worth writing: none of them binds a human typing the command themselves, and in a repo
 where setup ran but no plugin is installed this file is the only copy of the rule.
 
+### `code-review.md` — always propose
+
+[code-review-template.md](./code-review-template.md). Fixed text, no substitutions: the repo's
+recorded smell overrides are a standards source that only subtracts, and a near-empty root `CLAUDE.md`
+is not a repo without conventions.
+
+The pointer sits in `.claude/rules/` rather than beside the file it names because it is judgement
+guidance any reviewer needs, and the rules directory is the only place a review session loads without
+a bespoke lookup.
+
+Propose it whether or not Part 1 found anything to record. An absent overrides file is the ordinary
+case, and this pointer is what makes one discoverable whenever it does appear.
+
 ## Done
 
 Tell the user what was written and which skills read it:
@@ -211,9 +224,10 @@ Tell the user what was written and which skills read it:
 - `docs/agents/triage-labels.md`'s Workflow roles section — `/dev-loop auto`, and nothing else. A
   supervised `/dev-loop` writes no label, so a repo that never runs unattended needs none of it.
 - each `.claude/rules/` file written — in every session in the repo from the next one onward, plugin
-  or no plugin; `pr-separation.md` additionally at `/dev-loop`'s plan and Gate 1 steps, and
-  `worktree-removal.md` by a human at a terminal, which no skill covers. Name the ones the user
-  declined too, so nothing looks written that is not.
+  or no plugin; `pr-separation.md` additionally at `/dev-loop`'s plan and Gate 1 steps,
+  `worktree-removal.md` by a human at a terminal, which no skill covers, and `code-review.md` by the
+  `reviewer` agent and the code-review Standards axis. Name the ones the user declined too, so nothing
+  looks written that is not.
 
 If Part 2 ran and the user declined the label creation, say plainly that the roles are mapped but the
 labels do not exist yet, so an unattended run will report each failed write and carry on regardless.
