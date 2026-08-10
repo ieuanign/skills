@@ -36,7 +36,7 @@ The table is not a report of the run. It **is** the plan — see [below](#the-co
 | Unresolved comments on one open pull request | `/pr-comments 128` |
 | The same, and you will not be at the keyboard | `/pr-comments auto 128` |
 | An issue rather than a pull request | `/dev-loop` |
-| A diff you want judged rather than fixed | `/code-review-mp` |
+| A diff you want judged rather than fixed | `/mattpocock-skills:code-review` |
 | Comments on a pull request opened from a fork | nothing here — see **Prerequisites** |
 
 One run reads one pull request; there is no batch. A pull request may be given as a number or a URL,
