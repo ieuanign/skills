@@ -22,6 +22,7 @@
     "./skills/dev-loop-cleanup",
     "./skills/pr-comments",
     "./skills/code-review-mp",
+    "./skills/retire-adr",
     "./skills/setup-ieuanign-skills"
   ]
 }
