@@ -21,7 +21,7 @@ You are the orchestrator and you stay in the MAIN worktree. The fix rows run thr
 
 `auto` present ⇒ **unattended**; absent ⇒ **gated**. Read it off the arguments ONCE, before Step 1, and carry that single value through the run — no later step re-derives it from the arguments, and **no other argument and no profile key overrides it**. Same token and same leading position as `/dev-loop [auto] <issues>`, so the two read alike.
 
-> **Gate suppression.** Step 4 raises its question under `gated` and raises none under `unattended`. That is the only question this value decides; what an unattended run writes in place of an answer is Step 4's comment and the messages below.
+> **Gate suppression.** Step 4 raises its question under `gated` and raises none under `unattended`. It is this run's only gate; what an unattended run writes in place of an answer is Step 4's comment and the messages below.
 
 **Suppression removes the question, not the work.** Every step of Step 4 still runs: every comment is still classified, the table is still rendered, every thread is still answered, and it is still written to Step 5's file. Each question resolves to its unattended answer instead.
 
@@ -34,7 +34,7 @@ You are the orchestrator and you stay in the MAIN worktree. The fix rows run thr
 
 **No comment is re-classified to reach a different intent**, least of all here. Under `gated` a `disagreed with` skip is a disagreement a human can overrule at the gate; under `unattended` it is this skill overruling a reviewer with nobody left to overrule it back, which is why its reasoning is replied into the thread that reviewer is watching as well as posted in full with the table.
 
-**The preconditions are not gates and fire under both modes** — Step 1's five refusals, and the three profile keys Step 6 reads under that profile's own ask-then-persist rule. Suppression is scoped to the question above, so **no unattended default is invented for a profile key**: a run needing one the profile lacks asks once and persists the answer, exactly as a gated run does.
+> **Preconditions.** Not gates, so the suppression above does not reach them: `/dev-loop`'s Run mode **Preconditions** rule decides them here as it does there, and nothing in this file restates a line of it. What is local to this skill is which is which. Step 1's first five refuse under both modes, and its sixth runs the shared check under `unattended`. Of the three profile keys Step 6 reads, **Setup command** and **Full-suite command** have no honest default, so that check is where a repository lacking either stops; **Fix cycles** has one, so it takes it for this run, written into no profile and reported in Step 10's comment. Under `gated` all three are asked at Step 6 exactly as they always were.
 
 ### The messages an unattended run sends
 
@@ -369,7 +369,7 @@ The file is gitignored working material and nothing may depend on it surviving: 
 5. `.worktreeinclude` copies, the same mechanism `/dev-loop` provisions with: `git -C <MAIN> ls-files -oi --exclude-from=.worktreeinclude --directory` lists the matches — files, plus fully-ignored directories collapsed to one entry — and each is fast-copied from MAIN into the worktree at the same relative path, parent directories created, the trailing slash git puts on a directory entry stripped first. No `.worktreeinclude` ⇒ no copies and no question asked: `/dev-loop`'s Act 0 owns that one.
 6. Run the profile's Setup command from inside the worktree.
 
-**Three profile keys, all read from `docs/agents/dev-loop.md`**: Setup command, Full-suite command and Fix cycles. For one the file lacks, follow its own ask-then-persist rule — ask once, write the answer in, never ask again, **under `unattended` as much as under `gated`**: an invented default is a value nobody chose, persisted as though somebody had. This skill adds no key of its own, no second profile and no argument that changes what the pipeline does.
+**Three profile keys, all read from `docs/agents/dev-loop.md`**: Setup command, Full-suite command and Fix cycles. Under `gated`, one the file lacks is asked for **here**, under that profile's own ask-then-persist rule — ask once, write the answer in, never ask again — and here rather than earlier because a run stopping at Step 4 with no fix row needs none of the three, and a question hoisted above that stop spends the repository's one question on nothing. Under `unattended` nothing is asked and **nothing is written**: Step 1's precondition 6 already refused a repository missing either command, so **Fix cycles** is the only one that can still be absent, and it takes `2` for this run alone — carried to Step 10's comment, and persisted nowhere. This skill adds no key of its own, no second profile and no argument that changes what the pipeline does.
 
 ## Step 7 — dispatch the execute phase
 
@@ -388,7 +388,7 @@ Run the Workflow tool with `scriptPath: <DEV-LOOP>/phase-execute.js`, and these 
     }]
   }],
   "mode": "<gated or unattended>",
-  "fixCycleThreshold": <the profile's Fix cycles>,
+  "fixCycleThreshold": <Fix cycles, as Step 6 resolved it>,
   "suiteCommand": "<the profile's Full-suite command>",
   "agentNamespace": "<NAMESPACE>"
 }
@@ -396,7 +396,7 @@ Run the Workflow tool with `scriptPath: <DEV-LOOP>/phase-execute.js`, and these 
 
 **`commits` is Step 5's `## Commit / PR breakdown`, entry for entry** — one element per entry, same order, same message strings verbatim, ordinals from `1`. An array disagreeing with the file sends the writer at a commit nothing describes. It is never empty; Step 4 already ended the run where no fix row was left. **One sub-lane, always** — Step 3 decided that, and the array is what makes those commits sequential in one worktree.
 
-`planPath` and `worktree` are **absolute** — `.scratch` and the worktrees directory both live under MAIN. `mode` is the run's real mode, literally `gated` or `unattended` and never the `auto` token the developer typed: with no `skillDir` below it changes nothing the script does, and a record saying `gated` for an unattended run is a false record. `fixCycleThreshold` and `suiteCommand` are the profile's values passed verbatim, never literals written here — and `fixCycleThreshold` is a **number**: the script tests it with `Number.isInteger` and a quoted one silently becomes the default instead.
+`planPath` and `worktree` are **absolute** — `.scratch` and the worktrees directory both live under MAIN. `mode` is the run's real mode, literally `gated` or `unattended` and never the `auto` token the developer typed: with no `skillDir` below it changes nothing the script does, and a record saying `gated` for an unattended run is a false record. `suiteCommand` is the profile's value and `fixCycleThreshold` is the one Step 6 resolved — the profile's, or the default taken for a key it lacked — both verbatim and neither a literal written here, and `fixCycleThreshold` is a **number**: the script tests it with `Number.isInteger` and a quoted one silently becomes the default instead.
 
 Four keys are left out, each deliberately:
 
@@ -436,7 +436,7 @@ Four things, in this order — git before the replies, so a reply can name its c
 
 **3. Post one comment: the run's conclusion** — the ledger where it finished, the explanation where it ended. **It posts on every path that got past Step 4, in both modes** — under `gated` that means the gate was answered — **plus an unattended Step 2 ending**. Under `unattended` it is a second comment beside Step 4's table and never an edit to it; under `gated` it is the run's only one. A run refused on preconditions 1–5 wrote nothing anywhere, is not this pull request's business, and still writes nothing here; one refused on precondition 6 posted its report at Step 1 and never reached this step.
 
-What it says — the commit list from step 1 above, everything else from the sub-lane record:
+What it says — the commit list from step 1 above, the defaults block carried from Step 1, everything else from the sub-lane record:
 
 | Section | What it holds |
 |---|---|
@@ -448,6 +448,7 @@ What it says — the commit list from step 1 above, everything else from the sub
 | won't-fix | `wontFix`, each with the writer's reason |
 | notes | `reviewNotes` verbatim, and `reviewTrajectory` where a bound ended the review loop |
 | suite | `suite.state`: `passed`, `failed` with its failing identifiers, or `not run` with why. A suite that did not run never reads as green |
+| defaults taken | on an `unattended` run that took one — the **Missing, default taken** block Step 1's check printed, verbatim, so a reader sees which value this run supplied for a repository that had not. Left out under `gated`, where every value the run used is the repository's own, and on a run that took none |
 | attempt log | `attempts` in order, on a run that ended — what was tried after the first thing went wrong |
 
 `<planned>` counts the ordinals Step 7 dispatched, and every planned message the log does not hold is named as not made: a commit nobody wrote is the one thing a claimed list cannot show. A `wip:` commit is listed and **not** counted in `<made>` — it is abandoned work kept as evidence, and counting one reports a failure as delivery.
