@@ -47,8 +47,9 @@ than quietly reinterpreted as this repository's pull request of the same number.
 
 **The Workflow tool.** The execute phase is dispatched through it, so a session without it stops the
 run at the first precondition — which names the setting, `"enableWorkflows": true` in
-`~/.claude/settings.json`, and says a **restart is required**. It asks nothing and writes nothing:
-`/dev-loop` owns that question and asks it once per machine, and a second asker is a second question.
+`~/.claude/settings.json`, and says a **restart is required**. It asks nothing and writes nothing: a
+supervised `/dev-loop` run owns that question and asks it once per machine, and a second asker is a
+second question.
 
 **The sibling `dev-loop` skill folder.** `phase-execute.js` travels with it and is what runs the fix.
 The two install together, and nothing here reimplements it.
@@ -59,18 +60,26 @@ merged or closed pull request may already have had its branch deleted, a fork's 
 another remote so the one push cannot be made from this checkout at all, and a pull request opened from
 the default branch would take that push to the trunk.
 
-**Your `/dev-loop` profile, or the questions that write it.** Three keys are read from
+**Your `/dev-loop` profile, or the supervised run that writes it.** Three keys are read from
 `docs/agents/dev-loop.md` under that profile's own ask-then-persist rule — Setup command, Full-suite
-command, Fix cycles. A key the file lacks is asked once and written in, **under `auto` as much as
-under a supervised run**: an invented default is a value nobody chose, persisted as though somebody
-had. This skill adds no key, no second profile and no argument of its own.
+command, Fix cycles. A key the file lacks is asked once and written in by a **supervised** run, which
+is the only kind that asks: a default persisted is a value nobody chose, written down as though
+somebody had. This skill adds no key, no second profile and no argument of its own.
+
+**Under `auto`, three prerequisites have no default honest enough to take.** **Setup command**,
+**Full-suite command**, and `.worktreeinclude` — the repo-root file naming which gitignored files a
+worktree needs, which no run here ever asks for, and whose absence costs a supervised run only those
+copies. Until one supervised run has supplied all three — a `/dev-loop` run, for the file — `auto`
+refuses and names every one that is missing. **Fix cycles** is the key that defaults: `2`, used for
+that run and written into no profile.
 
 ## What one run does
 
 In order:
 
-1. **Preconditions** — the five above, under both modes. A run refused here has written nothing
-   anywhere.
+1. **Preconditions** — the five above under both modes, plus, under `auto` alone, the check for what
+   that run has nobody to ask for. A run refused on the first five has written nothing anywhere; the
+   sixth is the one refusal that writes.
 2. **The read.** One bundled normaliser prints every unresolved comment as a single JSON document,
    review threads, review bodies and issue comments in one shape. It excludes resolved threads,
    minimised comments and unsubmitted or bodyless reviews, and a non-zero exit is a **failed read**
@@ -99,7 +108,8 @@ In order:
 12. **The worktree, removed last** — and only where the push succeeded.
 
 **Nothing touches the pull request before the gate** — everything up to it is a read, and under `auto`
-the table posted in the gate's place is the run's first write. A supervised run you stop at the gate
+the table posted in the gate's place is the run's first write, unless the sixth precondition refused
+first, in which case its report is the only write there is. A supervised run you stop at the gate
 leaves no trace on it at all.
 
 ## What it refuses to do
@@ -168,8 +178,8 @@ run with nothing written.
 deciding whether you will ever be asked should be the second one you type.
 
 **Suppression removes the question, not the work.** Every comment is still classified, the table is
-still rendered and still becomes the plan file, and the preconditions and profile questions still fire.
-Each of the gate's questions resolves to its unattended answer:
+still rendered and still becomes the plan file, and the preconditions still fire. Each of the gate's
+questions resolves to its unattended answer:
 
 | The gate's question | Its unattended answer |
 |---|---|
@@ -181,21 +191,30 @@ Each of the gate's questions resolves to its unattended answer:
 The table is **posted on the pull request** where the question would have been — a table nobody was
 watching would otherwise be a decision that vanished with the terminal. That is the run's first write.
 
+**And it never interviews you.** The preconditions are not gates, so suppression is not what governs
+them; they resolve on a rule of their own, `/dev-loop`'s. **Fix cycles** takes its documented `2` for
+that run and is written into no profile — persisting a value nobody chose would spend the repository's
+one question, and the human who would have chosen it would never be asked — and the conclusion comment
+names the default the work ran on. The three with no honest default refuse the run instead, before it
+has read a comment: one report naming every missing one, posted on the pull request in place of both
+the table and the conclusion, and sent as a single `failed` message.
+
 **The threads are answered under `auto` exactly as they are under a supervised run.** The two modes
 differ only at the listing step, where you see what will be fixed and skipped and why; that difference
 never reaches the threads, which is what puts a `disagreed with` reply in front of the reviewer it
 disagrees with even when nobody is left to overrule it.
 
-An unattended run also sends **one `start` message at intake and exactly one closing message**, paired,
-through the same notifier `/dev-loop` uses — silent when your channel is unconfigured, and no
-notification failure ever changes the run it reports. The closing token answers one question: did
-something deliberately stop, or did something break?
+An unattended run also sends **one `start` message at intake and exactly one closing message**, through
+the same notifier `/dev-loop` uses — silent when your channel is unconfigured, and no notification
+failure ever changes the run it reports. The pairing is **one-directional**: every `start` is closed,
+and the refusal above is a close with no `start` before it, which reads as the run that never began.
+The closing token answers one question: did something deliberately stop, or did something break?
 
 | Token | When |
 |---|---|
 | `ready` | clean, the commits pushed — with the fixed, skipped and unclassified counts |
 | `halt` | nothing to do, git refused to attach the worktree, or the lane stopped deliberately |
-| `failed` | the read failed, the lane broke, or nothing was pushed when something should have been |
+| `failed` | a prerequisite refused the run, the read failed, the lane broke, or nothing was pushed when something should have been |
 
 `draft` never applies, because this run opens no pull request and converts nobody's state, and no
 further token is invented. A closed set is what makes a dead run readable by inspection — a `start`
@@ -309,7 +328,8 @@ and counting one would report a failure as delivery.
 
 **How many fix cycles does the review loop get?**
 
-Whatever your profile's Fix cycles key says, under the pipeline's own ceiling. This skill changes
+Whatever your profile's Fix cycles key says, under the pipeline's own ceiling — or `2`, where an
+unattended run found the key absent and took the default rather than asking. This skill changes
 nothing under `/dev-loop`: the loops, their bounds and every ending belong to `phase-execute.js` and
 are documented in [internals](./dev-loop-internals.md), which is the only place their numbers are
 written down.
@@ -322,7 +342,8 @@ one branch, one push, one comment thread to report into.
 ## It's working if
 
 - **Nothing appears on the pull request before you are asked.** Under `auto`, the first thing that
-  appears is the table itself, not a fix.
+  appears is the table itself, not a fix — or, where a prerequisite refused the run, that refusal and
+  nothing after it.
 - **Every unresolved comment has a row**, skips included — a table showing only the work is one nobody
   can check.
 - Each skip names **one of four reasons** and shows its evidence; each `disagreed with` carries `(!)`
@@ -343,4 +364,4 @@ one branch, one push, one comment thread to report into.
   unchanged, and no body anyone wrote has been edited.
 - A run that ended left its worktree standing and named it, by path, in that comment.
 - Under `auto`, one `start` message is paired with exactly one closing message carrying `ready`, `halt`
-  or `failed` — and a reason.
+  or `failed` — and a reason. A refused run sends that closing message alone.
