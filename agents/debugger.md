@@ -50,7 +50,7 @@ REPRODUCED: yes|no
 `OWNER` carries two routing values and two reporting values. `code-writer` and `retry` route — each names the stage that runs next. `replan` and `user` stop the work where it stands and differ only in where they send the reader, so choose between them by who must act next, never by how bad the failure looks.
 
 - OWNER `code-writer`: the failure traces to the change under work — state it as a finding (`file:line — defect — failure scenario`) so it slots directly into code-writer's fix mode; describe what a fix must address, not the fix itself.
-- OWNER `replan`: the root cause is the implementation plan itself (wrong approach, unsatisfiable constraint) — name the plan section that must change so the orchestrator can re-invoke the architect.
+- OWNER `replan`: the root cause is the implementation plan itself (wrong approach, unsatisfiable constraint) — name the plan section that must change; who revises it, and how, is the orchestrator's business rather than yours.
 - OWNER `user`: environment, credentials, infra, or a pre-existing failure outside any agent's scope — include the exact command or action the user must take.
 - OWNER `retry`: flake or transient — include the rerun evidence that justifies it.
 
