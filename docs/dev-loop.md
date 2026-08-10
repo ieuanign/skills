@@ -84,10 +84,10 @@ one supervised run has supplied all three, `auto` refuses and says which of them
 
 Six acts, in order.
 
-1. **Act 0 — intake.** Parse the arguments, derive the facts, read the repository profile, check the
+1. **Act 0 — intake.** Parse the arguments, derive the facts, read both repository profiles, check the
    gitignore preconditions, refuse the whole run when an unattended one lacks a prerequisite, fetch the
    issues, refuse lanes whose blockers are open, work out what a resumed run already has, ask for
-   anything the profile is still missing, then label each surviving issue in-progress.
+   anything they are still missing, then label each surviving issue in-progress.
 2. **Act 1 — Phase A.** One architect per issue, in parallel. Each produces a plan file and summary
    bullets, and comments those bullets on the issue.
 3. **Gate 1 — plan approval.** Every lane presented at once: summary, plan path, open questions. This
@@ -215,12 +215,20 @@ There is one rule, and it decides where a new value goes without a debate:
 
 > **Varies per run → argument. Varies per repository → profile. Does not vary → constant.**
 
-Your repository's own answers live in `docs/agents/dev-loop.md`, written by the pipeline itself under
-**ask-then-persist**: the first time a run genuinely needs a value it asks once, writes the answer
-down, and never asks again. A persisted `none` counts as an answer. **The interview is the supervised
-run's alone**: an unattended run asks nothing and writes nothing here, taking a key's documented default
-for that run only where it has one and refusing where it does not. So a repository with no profile is
-never one you have to configure first — it is one whose first gated run does the configuring.
+Your repository's own answers live in two files, split by what a fact describes rather than by who
+reads it. `docs/agents/dev-loop.md` holds this pipeline's own artifacts — **Branch template**, **PR
+title format**, **PR body template**, **Constraints**. `docs/agents/worktree.md` holds what any skill
+provisioning a worktree needs, this pipeline or not — **Setup command**, **Full-suite command**, **Fix
+cycles** — which is how `/pr-comments` reads those three without reading a profile named for a
+pipeline it is not. Each key lives in exactly one of the two and is looked up there alone: one the
+file lacks is missing, and is asked for rather than found in the other.
+
+Both are written by the pipeline itself under **ask-then-persist**: the first time a run genuinely
+needs a value it asks once, writes the answer down, and never asks again. A persisted `none` counts as
+an answer. **The interview is the supervised run's alone**: an unattended run asks nothing and writes
+nothing to either file, taking a key's documented default for that run only where it has one and
+refusing where it does not. So a repository with no profile is never one you have to configure first —
+it is one whose first gated run does the configuring.
 
 The rule **refuses** three things. `SKILL.md` states those refusals, because they bind a run; this page
 carries only the reasoning behind them, which is what the skill deliberately does not load:
@@ -284,10 +292,10 @@ median of three. A ceiling would not have caught a runaway; it would have refuse
 
 **The suite gate says `not run`.**
 
-That is a state of its own and is never reported as passed. Either your profile's Full-suite command
-is `none` — a real, persisted answer for a repository whose suite needs infrastructure the pipeline
-does not stand up — or the gate found the command unrunnable. Either way the pull request body says
-so, rather than showing an empty result that reads as green.
+That is a state of its own and is never reported as passed. Either the Full-suite command in
+`docs/agents/worktree.md` is `none` — a real, persisted answer for a repository whose suite needs
+infrastructure the pipeline does not stand up — or the gate found the command unrunnable. Either way
+the pull request body says so, rather than showing an empty result that reads as green.
 
 **A sub-lane ended and its worktree is still there.**
 
