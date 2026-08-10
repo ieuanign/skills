@@ -2,6 +2,7 @@ node_modules/
 .DS_Store
 .scratch/
 *.log
+.claude/settings.local.json
 
 # Lane worktrees, which /dev-loop nests inside the main checkout.
 .claude/worktrees/
