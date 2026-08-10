@@ -64,8 +64,10 @@ You are the orchestrator; the roster does the work, installed alongside the skil
 | `debugger` | Report-only root-cause investigator for red tests and builds |
 | `notifier` | Writes an ended lane's label, comment and message from inside the phase script (unattended only) |
 
-The skill is repo- and machine-agnostic; per-repo settings live in `docs/agents/dev-loop.md`
-(ask-then-persist on first run).
+The skill is repo- and machine-agnostic; per-repo settings live in two files (ask-then-persist on
+first run) — `docs/agents/dev-loop.md` for the branches and pull requests this pipeline writes, and
+`docs/agents/worktree.md` for the Setup command, Full-suite command and Fix cycles any skill
+provisioning a worktree reads.
 
 ### Unattended reporting
 
@@ -127,10 +129,10 @@ of what a lane costs.**
 ```
 
 **Gated** by default — you approve the comment table before anything below it runs. `auto` suppresses
-that question and resolves the `/dev-loop` profile ones itself: the table is posted on the pull request
-in the gate's place, and the run's conclusion beside it — or, where a prerequisite it needs has no
-honest default, one refusal comment in place of both. Either way, every review thread the table covers
-is answered in that thread.
+that question and resolves the `docs/agents/worktree.md` ones itself: the table is posted on the pull
+request in the gate's place, and the run's conclusion beside it — or, where a prerequisite it needs
+has no honest default, one refusal comment in place of both. Either way, every review thread the
+table covers is answered in that thread.
 
 - [**How a run works**](./docs/pr-comments.md) — the table that *is* the plan, what a run
   refuses to do and why, both run shapes, common questions, "it's working if". A run loads none of it.

@@ -60,11 +60,13 @@ merged or closed pull request may already have had its branch deleted, a fork's 
 another remote so the one push cannot be made from this checkout at all, and a pull request opened from
 the default branch would take that push to the trunk.
 
-**Your `/dev-loop` profile, or the supervised run that writes it.** Three keys are read from
-`docs/agents/dev-loop.md` under that profile's own ask-then-persist rule — Setup command, Full-suite
-command, Fix cycles. A key the file lacks is asked once and written in by a **supervised** run, which
-is the only kind that asks: a default persisted is a value nobody chose, written down as though
-somebody had. This skill adds no key, no second profile and no argument of its own.
+**Your worktree profile, or the supervised run that writes it.** Three keys are read from
+`docs/agents/worktree.md` under that profile's own ask-then-persist rule — Setup command, Full-suite
+command, Fix cycles. That file holds what any skill provisioning a worktree needs, which is why a run
+here reads it rather than `docs/agents/dev-loop.md`, the profile for a pipeline this is not. A key the
+file lacks is asked once and written in by a **supervised** run, which is the only kind that asks: a
+default persisted is a value nobody chose, written down as though somebody had. This skill adds no
+key, no second profile and no argument of its own.
 
 **Under `auto`, three prerequisites have no default honest enough to take.** **Setup command**,
 **Full-suite command**, and `.worktreeinclude` — the repo-root file naming which gitignored files a
@@ -331,11 +333,11 @@ and counting one would report a failure as delivery.
 
 **How many fix cycles does the review loop get?**
 
-Whatever your profile's Fix cycles key says, under the pipeline's own ceiling — or `2`, where an
-unattended run found the key absent and took the default rather than asking. This skill changes
-nothing under `/dev-loop`: the loops, their bounds and every ending belong to `phase-execute.js` and
-are documented in [internals](./dev-loop-internals.md), which is the only place their numbers are
-written down.
+Whatever the Fix cycles key in `docs/agents/worktree.md` says, under the pipeline's own ceiling — or
+`2`, where an unattended run found the key absent and took the default rather than asking. This skill
+changes nothing under `/dev-loop`: the loops, their bounds and every ending belong to
+`phase-execute.js` and are documented in [internals](./dev-loop-internals.md), which is the only place
+their numbers are written down.
 
 **Can I point it at several pull requests?**
 
