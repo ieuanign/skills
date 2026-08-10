@@ -49,7 +49,10 @@ Then once per repo — independent, either order:
 **Gated** by default — humans answer at plan approval (Gate 1) and push/PR (Gate 2). `auto` runs
 **unattended**: it suppresses the questions, not the work, and the run reports itself instead — labels
 each issue before spending a token, comments the plan, labels and comments each lane the moment it
-ends, and messages you at every lane's start and finish.
+ends, and messages you at every lane's start and finish. It never interviews you either: a one-time
+profile question takes its documented default, used for that run and persisted nowhere, or — where no
+default would be honest — refuses the batch up front, naming every missing prerequisite on every issue
+you named.
 
 You are the orchestrator; the roster does the work, installed alongside the skills with no copy step:
 
@@ -124,8 +127,10 @@ of what a lane costs.**
 ```
 
 **Gated** by default — you approve the comment table before anything below it runs. `auto` suppresses
-that question only: the table is posted on the pull request in the gate's place, and the run's
-conclusion beside it. Either way, every review thread the table covers is answered in that thread.
+that question and resolves the `/dev-loop` profile ones itself: the table is posted on the pull request
+in the gate's place, and the run's conclusion beside it — or, where a prerequisite it needs has no
+honest default, one refusal comment in place of both. Either way, every review thread the table covers
+is answered in that thread.
 
 - [**How a run works**](./docs/pr-comments.md) — the table that *is* the plan, what a run
   refuses to do and why, both run shapes, common questions, "it's working if". A run loads none of it.

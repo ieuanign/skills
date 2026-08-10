@@ -26,6 +26,22 @@ The **vertical** unit: a chain of branches each based on the one below. Its **tr
 
 A stack asserts dependency: the layer above needs what the layer below creates. Two lanes that merely touch the same file are not a stack, whatever ordering they end up in.
 
+## Precondition
+
+Something a run needs settled before it does any work: a fact it tests (the Workflow tool, a pull
+request that is open and not a fork) or a value it must hold (a profile key, `.worktreeinclude`). The
+ones carrying a value are **ask-then-persist** — under `gated`, asked once ever and written down, then
+never asked again.
+
+Under `unattended` none of them is asked. Each resolves instead: to a **documented default**, used for
+that run, reported, and written into no profile — persisting one would spend the repository's one
+question, and the human who would have chosen the value would never be asked — or, where no default
+would be honest, to a **refusal** naming every missing prerequisite at once.
+
+_Avoid_: **gate**. A gate is a human approval point inside the run's flow, and `unattended` suppresses
+gates wholesale; a precondition is what the run needs in order to have a flow at all, and under that
+same mode it resolves rather than disappears.
+
 ## Fix cycle
 
 One round of `/dev-loop`'s review loop: a reviewer verdict, the writer applying its findings, and the
