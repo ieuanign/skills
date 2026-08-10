@@ -179,12 +179,26 @@ This is also the answer to "the session died". Type the same command again.
 
 ### Cleanup
 
-`/dev-loop-cleanup` is its own skill, so reaping does not load the pipeline. It reaps what has an exact
-done-signal — the local branch and the plan file, once the pull request is **merged** — and **lists**
-what does not. It removes no worktree. It is safe to run at
-any time, including while another batch is mid-layer, and that property is deliberate: a worktree still
-standing is one nothing proved done, and a merge tells you nothing about whether the run holding that
-checkout has finished with it.
+`/dev-loop-cleanup` is its own skill, so reaping does not load the pipeline. It **proposes, then
+reaps**. One table lists every candidate a lane left behind, a row per branch:
+
+`Lane | PR | Worktree | Branch | Scratch | Recommend | Why`
+
+Both modes print that table and both stop at it — `/dev-loop-cleanup <issue>` gathers one lane, a bare
+`/dev-loop-cleanup` gathers every lane, and the argument decides only what you are shown. Nothing has
+happened when it prints; what you pick from it is the whole of what gets deleted.
+
+`remove` is recommended only where both halves hold: the pull request is **merged**, and the worktree
+is clean — or absent, which is the ordinary case and has nothing to be dirty. The merge alone will not
+do, because it says nothing about whether the run holding that checkout has finished with it — the
+clean half is what answers that, and your pick is what authorises the deletion. Every other row is
+`keep`, with **Why** naming the half that failed.
+
+Each row you pick is reaped in one order — worktree, then branch, then scratch files — since a branch
+checked out in a worktree is held by that checkout for as long as it stands. That first step is the
+hand-off for the worktree `/dev-loop` deliberately left standing: cleanup is where its removal is
+offered to you, once its pull request has merged. Safe to run at any time, including while another
+batch is mid-layer.
 
 ## Configuration
 
@@ -268,8 +282,9 @@ so, rather than showing an empty result that reads as green.
 
 **A sub-lane ended and its worktree is still there.**
 
-Under `gated` that is the design: you are here, and you are expected to pick that branch up in that
-checkout. Under `unattended` it means one of two things — the push did not succeed, or
+Under `gated` that is the design: you are here, you are expected to pick that branch up in that
+checkout, and `/dev-loop-cleanup` is what later proposes its removal for you to accept, once the pull
+request has merged. Under `unattended` it means one of two things — the push did not succeed, or
 `git worktree remove` refused. A refusal means work was left behind, and the refusal **is** the
 dirty-work guard: the pipeline never passes `--force`, so it can never talk its way past one. The run
 reports `git status --porcelain` verbatim so you can see what.

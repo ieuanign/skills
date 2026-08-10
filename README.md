@@ -34,7 +34,7 @@ Then once per repo — independent, either order:
 | Skill | What it does |
 |---|---|
 | [`/dev-loop`](./skills/dev-loop/SKILL.md) | GitHub issues → pull requests: plan → implement → review → full-suite gate, one git worktree per lane, lanes in parallel |
-| [`/dev-loop-cleanup`](./skills/dev-loop-cleanup/SKILL.md) | Deletes the branch and plan of every **merged** lane; *lists* lingering worktrees with a reason, removing none |
+| [`/dev-loop-cleanup`](./skills/dev-loop-cleanup/SKILL.md) | Lists every candidate a lane left behind — worktree, local branch, scratch files — each with a recommendation and its reason, then reaps only the ones you pick |
 | [`/pr-comments`](./skills/pr-comments/SKILL.md) | One pull request's unresolved comments, classified **fix** or **skip** for your approval; the approved fix then runs through `/dev-loop`'s execute phase and is pushed to that pull request's own branch |
 | [`/code-review-mp`](./skills/code-review-mp/SKILL.md) | Reviews a diff on two parallel axes — **Standards** (`CLAUDE.md`, `.claude/rules/`, Fowler smells, your `docs/agents/smell-overrides.md`) and **Spec** (the originating issue/PRD) |
 | [`/retire-adr`](./skills/retire-adr/SKILL.md) | Retires one decision record you name — **a refactor, not a delete**: sweeps every form the repo cites it by, relocates reasoning that still binds the code, then rewrites the references and deletes the record |
