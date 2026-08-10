@@ -18,7 +18,7 @@ You are the orchestrator. You stay in the MAIN worktree; the agents plan, write,
 
 ### Run mode — `gated` or `unattended`
 
-`auto` present ⇒ **unattended**; absent ⇒ **gated**. Act 0 parses it ONCE and carries it as a single value for the whole run — no later stage re-derives it from the arguments. In this file it decides exactly three things:
+`auto` present ⇒ **unattended**; absent ⇒ **gated**. Act 0 parses it ONCE and carries it as a single value for the whole run — no later stage re-derives it from the arguments. In this file it decides exactly four things:
 
 > **Gate suppression.** Both gates raise their questions under `gated`, and neither raises any under `unattended`.
 
@@ -26,7 +26,9 @@ You are the orchestrator. You stay in the MAIN worktree; the agents plan, write,
 
 > **Cost log.** Under `unattended` you write Act 4's per-lane cost log; under `gated`, none. Act 4 says what to write and never whether, and the transcript directories it needs are captured under both modes.
 
-These three lines are the only place any of it is decided: no argument and no profile key overrides them.
+> **Preconditions.** The one-time ask-then-persist preconditions are not gates, so gate suppression does not reach them — this line decides them instead. Under `gated` every one asks its question exactly as it always has. Under `unattended` not one of them asks: each resolves either to a **documented default**, used for this run, reported, and written into no profile — a value persisted unattended spends the repository's one question, and the human who would have chosen it is never asked — or, where no default is honest, to a **refusal** naming every missing prerequisite at once. Each precondition below says which of the two its answer is, and never whether it fires.
+
+These four lines are the only place any of it is decided: no argument and no profile key overrides them.
 
 **Suppression removes the questions, not the work.** Every step of both gates still runs; each question resolves to its unattended answer instead:
 
@@ -68,7 +70,7 @@ The commands:
 - **A comment is `gh issue comment <n> --body-file -`**, with the body piped in from a **quoted** heredoc (`<<'BODY'`), whatever the body carries.
 - **A message is `<this-skill-dir>/notify.sh <<'MSG' … MSG`**, which reads its payload on standard input the same way. It implements the specification's channel contract, so an unconfigured channel is already handled inside it: it needs no check, no question and no profile key.
 
-Touchpoint intersection, sub-lane splitting, the profile's Constraints, the push and the PR itself are gate *work*, and happen identically under both modes. The one-time ask-then-persist preconditions are not gates and fire under both — including Act 0's step 9, which owns the two profile keys Phase B needs. What a sub-lane's *ending* means for its PR's state — ready, draft, or none — is the phase script's **terminal-state table**, which it has already applied: every sub-lane result carries a `terminal` of `{pr, reasons}`, so under `unattended` you open what it names rather than deciding it here.
+Touchpoint intersection, sub-lane splitting, the profile's Constraints, the push and the PR itself are gate *work*, and happen identically under both modes. The one-time ask-then-persist preconditions are not gates either, and gate suppression is not what governs them: the **Preconditions** rule above is, and no step that performs one restates it. What a sub-lane's *ending* means for its PR's state — ready, draft, or none — is the phase script's **terminal-state table**, which it has already applied: every sub-lane result carries a `terminal` of `{pr, reasons}`, so under `unattended` you open what it names rather than deciding it here.
 
 ## Derived facts (compute once at Act 0 — never hardcode, never persist)
 
@@ -104,14 +106,16 @@ These are **homes, not an inventory**: a value this pipeline does not have yet s
 
 The per-repo config, read at Act 0. Optional: a repo without one runs on pure defaults. The rule for every non-derivable value: when a run first NEEDS it and the profile lacks it, AskUserQuestion ONCE, persist the answer into the profile (create the file if needed), and never ask again — a persisted "none" counts as an answer. Never store derivable facts there.
 
+That rule is the `gated` arm entire. Under `unattended` no key here is asked and **no key here is written**: a key the profile answers is read as always, and a key it lacks either takes the default stated below — for this run, reported at Gate 2 — or, having none, is a prerequisite this run cannot supply for itself, so the run refuses rather than invent it.
+
 Profile keys:
 
-- **Branch template** — default offered: `feat/{issue}`, sub-lanes `feat/{issue}-{area}`. Asked on the first run in a repo.
+- **Branch template** — default offered: `feat/{issue}`, sub-lanes `feat/{issue}-{area}`. Asked on the first run in a repo; under `unattended` that default is taken instead.
 - **PR title format** — default: `<type>(<scope>): #<issue> - <title>`.
-- **PR body template** — the shape this repository wants its pull request bodies in. Asked once, at the **first Gate 2**, under the same ask-then-persist rule as every key here; declined ⇒ the core elements alone, in the order Gate 2 lists them. Whatever shape it takes, **Gate 2's core elements must survive**.
-- **Setup command** — what a cold checkout runs before its tests pass (e.g. `npm ci`). Asked at the first provisioning.
-- **Full-suite command** — the ONE command that runs the repo's whole test suite from a provisioned worktree (e.g. `npm test`, or a compound command joining a backend and a frontend suite). Asked by **Act 0's step 9**, which is the only step that asks for it. `none` is a real answer, persisted like any other, and makes the gate report **not run**. Configuration, never discovery.
-- **Fix cycles** — the review loop's **no-progress threshold**. A counter starts at 1 on the loop's first `CHANGES_REQUESTED` round, advances by one on every round that brings nothing previously unseen, and resets to 1 whenever a round brings something new; reaching this number ends the sub-lane with its findings open — so it is a position the counter reaches, not a count of tolerated rounds, and `2` ends the loop on the first round that repeats itself. Not a flat cap: a loop still surfacing new findings keeps going, under a hard ceiling the phase script holds. Default offered: `2`. Asked by **Act 0's step 9**, which is the only step that asks for it. `0` is a real answer, and spends no fix cycle at all.
+- **PR body template** — the shape this repository wants its pull request bodies in. Asked once, at the **first Gate 2**, under the same ask-then-persist rule as every key here; declined ⇒ the core elements alone, in the order Gate 2 lists them, which is also what `unattended` takes. Whatever shape it takes, **Gate 2's core elements must survive**.
+- **Setup command** — what a cold checkout runs before its tests pass (e.g. `npm ci`). Asked at the first provisioning; under `unattended` a missing one refuses the run, there being no honest default for what a checkout of an unseen repository needs.
+- **Full-suite command** — the ONE command that runs the repo's whole test suite from a provisioned worktree (e.g. `npm test`, or a compound command joining a backend and a frontend suite). Asked by **Act 0's step 9**, which is the only step that asks for it. `none` is a real answer, persisted like any other, and makes the gate report **not run** — which is why `unattended` refuses a repository missing this key rather than defaulting it: assuming `none` would hand the run a green-looking batch nothing tested. Configuration, never discovery.
+- **Fix cycles** — the review loop's **no-progress threshold**. A counter starts at 1 on the loop's first `CHANGES_REQUESTED` round, advances by one on every round that brings nothing previously unseen, and resets to 1 whenever a round brings something new; reaching this number ends the sub-lane with its findings open — so it is a position the counter reaches, not a count of tolerated rounds, and `2` ends the loop on the first round that repeats itself. Not a flat cap: a loop still surfacing new findings keeps going, under a hard ceiling the phase script holds. Default offered: `2`. Asked by **Act 0's step 9**, which is the only step that asks for it; under `unattended` that `2` applies to the run and is persisted nowhere. `0` is a real answer, and spends no fix cycle at all.
 - **Constraints** — free-form repo cautions (e.g. "backend tests share one database — never run two backend lanes concurrently"). Honor them when deciding lanes vs layers (Gate 1) and when provisioning (Act 2).
 
 ## Act 0 — Intake (before any agent runs)
@@ -121,17 +125,17 @@ Profile keys:
    Then read the **agent namespace** off your own roster: find `code-writer` among your available agent types — listed bare, the namespace is the empty string; listed as `<prefix>:code-writer`, it is `<prefix>`. This is the ONLY place it is derived — carry that one value from here too, and take it from the roster rather than from a literal, a path, a package name or a manifest.
 2. **The pipeline requires the Workflow tool.** Every stage is dispatched through it, so a session without it in your toolset → refuse the run here, whatever the run mode, before a single agent is dispatched and before this Act asks the user anything else. Tell them the setting, `"enableWorkflows": true` in the per-machine settings file (`~/.claude/settings.json`), and that a **restart is required**. Asked once, then never again on this machine, with the settings file itself as the persistence:
 
-   - key **absent** → AskUserQuestion once. Yes → write `"enableWorkflows": true` into that file (create it if missing; preserve every other key). No → write `"enableWorkflows": false`, which is a real answer and is why the question does not return.
-   - key **present** → do not ask. `true` means the setting is already made and the session predates it: say so and say to restart. `false` means they declined: name the file and the key so they can change their mind.
+   - key **absent** → under `gated`, AskUserQuestion once. Yes → write `"enableWorkflows": true` into that file (create it if missing; preserve every other key). No → write `"enableWorkflows": false`, which is a real answer and is why the question does not return. Under `unattended` the answer is a **refusal**: the setting is a prerequisite this run cannot supply for itself, nothing is asked and nothing is written to that file, and the next gated run on this machine is what offers the choice.
+   - key **present** → do not ask, under either mode. `true` means the setting is already made and the session predates it: say so and say to restart. `false` means they declined: name the file and the key so they can change their mind.
 
    Either way this run stops. This is per-machine, so it persists to the per-machine settings and never to the repo profile or a setup skill.
-3. Compute the Derived facts and read the repo profile (first run in a repo: ask-then-persist the branch template).
+3. Compute the Derived facts and read the repo profile (first run in a repo: ask-then-persist the branch template under `gated`; under `unattended` it takes its default and the profile is not written).
 4. Worktree preconditions:
    - Both gitignore checks **probe a path underneath the directory, never the directory itself**; everything under an ignored directory is ignored, and the probe path need not exist.
    - `.claude/worktrees` not gitignored (`git check-ignore -q .claude/worktrees/probe` fails) → append `.claude/worktrees/` to `.gitignore` and tell the user.
    - `.scratch` not gitignored (`git check-ignore -q .scratch/probe` fails) → append `.scratch/` to `.gitignore` and tell the user; plans live there.
    - **Neither remedy appends a line `.gitignore` already carries** — read the file first, and where the exact line is present skip the append and report nothing.
-   - `.worktreeinclude` missing — the repo-root file naming which gitignored files worktrees need (gitignore syntax) → ask-then-persist, the file itself being the persistence: offer candidates from `git ls-files -oi --exclude-standard --directory`, write the selection as a tracked file. "None" writes a comment-only file, which counts as answered. Offer only what a cold checkout cannot run without — env files and local config. Dependencies belong to the Setup command.
+   - `.worktreeinclude` missing — the repo-root file naming which gitignored files worktrees need (gitignore syntax) → under `gated`, ask-then-persist, the file itself being the persistence: offer candidates from `git ls-files -oi --exclude-standard --directory`, write the selection as a tracked file. "None" writes a comment-only file, which counts as answered. Offer only what a cold checkout cannot run without — env files and local config. Dependencies belong to the Setup command. Under `unattended` the answer is a **refusal**, and no file is written: only a human knows which ignored files a worktree cannot run without, and an empty guess provisions lanes that fail at their first command.
    - `.worktreeinclude`'s LAST line must be `!.claude/worktrees/**` — append or move it there (gitignore matching is last-match-wins). It keeps every copy mechanism — Act 2 and Claude Code's native worktrees alike — from cloning existing worktrees into a new one.
 5. `git fetch origin <DEFAULT>` once.
 6. Per issue: `gh issue view <n> --json number,title,body,state,labels`. CLOSED → drop the lane, tell the user. KEEP the body: Phase B hands it to the reviewer as its Spec axis, and nothing downstream fetches it again.
@@ -144,7 +148,7 @@ Profile keys:
 
    **Skip the whole step unless this run will reach Phase B** — no lane survived steps 6–8, and nothing is asked. Then, per key, **skip a key the profile already carries**: a persisted value is an answer and is never revisited, and `none` and `0` are persisted answers like any other, so a repository is asked at most once ever.
 
-   It is **not a gate**: gate suppression does not touch it and it fires under both run modes.
+   It is **not a gate**, so gate suppression does not touch it. Under `unattended` it asks nothing and persists nothing: a repository missing **Full-suite command** refused at the top of this Act and never reaches here, and a missing **Fix cycles** takes its default `2` for this run alone.
 
    - **Full-suite command** — AskUserQuestion: the ONE command that runs this repository's whole test suite from a provisioned worktree. Offer plausible options and let them choose; never persist a command you discovered and nobody confirmed — **configuration, never discovery**. Offer **`none`** as a real option, which makes every sub-lane's suite report **not run**. Declined ⇒ persist `none`, and say so.
    - **Fix cycles** — AskUserQuestion: **how tolerant this repository is of a review loop that repeats itself.** State the **Fix cycles** arithmetic above rather than a phrase that rounds it off, and say what it is *not*: not a cap on cycles — a loop still surfacing new findings keeps going, under a hard ceiling the phase script holds. Offer **`2`** (the default — the loop ends on the first round that repeats itself), a higher value, and **`0`**, which spends no fix cycle at all: the first `CHANGES_REQUESTED` ends the sub-lane and a human reads every finding. Declined ⇒ the default `2` applies and is persisted.
@@ -268,6 +272,7 @@ For sub-lanes that ended on contested findings, present both sides of each conte
    | **Attempt log** | on a sub-lane that ended — the ledger's, in order, so a draft PR carries what the pipeline tried. Omitted on a clean sub-lane |
    | **Run handle** | on a sub-lane that ended — the **RUN HANDLE** derived fact, this body being the only copy that outlives the run. Omitted where Act 0 found no identifier, and on a clean sub-lane |
    | **Local-only artifacts** | every File touchpoint the plan named that this repo gitignores and this sub-lane's worktree has, per step 3's check — saying they are in no commit and so exist on no machine once that worktree goes. Omitted when the plan named none, which is the ordinary case. The pull request is the ONLY durable place this reaches anyone |
+   | **Defaults taken** | on an `unattended` run that took any — Act 0's **Missing, default taken** block, verbatim, so whoever merges sees which repository answers this pull request was built without. Omitted under `gated`, where every answer is the repository's own, and on a run whose block was empty |
    | **Why this is a draft** | one line per entry in `terminal.reasons`, at the TOP where the merger sees it first — which trigger fired, without making them hunt. Omitted on a ready PR, which has none |
 
    **A repository with no profile still opens a pull request carrying every element above**, in that order. Then the footer:
@@ -360,7 +365,7 @@ Then tell the user where the logs are. `cost-report.mjs` measures on the metric 
 
 ## Hard rules
 
-- Invoking `/dev-loop` IS the user's explicit opt-in to multi-agent orchestration. Enter Phase A and Phase B directly — running a phase is NOT a gate. The ONLY human gates in this pipeline are Gate 1 (plan approval) and Gate 2 (push/PR), and under `unattended` neither asks anything. The one-time ask-then-persist preconditions are not gates and survive both modes: the profile's keys, `.worktreeinclude`, and the runner setting Act 0 asks about, each asked once ever. **Every one of them belongs to a named step that performs it**, and the two Phase B needs — **Full-suite command** and **Fix cycles** — are Act 0's step 9's.
+- Invoking `/dev-loop` IS the user's explicit opt-in to multi-agent orchestration. Enter Phase A and Phase B directly — running a phase is NOT a gate. The ONLY human gates in this pipeline are Gate 1 (plan approval) and Gate 2 (push/PR), and under `unattended` neither asks anything. The one-time ask-then-persist preconditions are not gates: the profile's keys, `.worktreeinclude`, and the runner setting Act 0 asks about are each asked once ever under `gated`, and under `unattended` none of them asks at all — the **Preconditions** rule under Run mode is what says how each resolves. **Every one of them belongs to a named step that performs it**, and the two Phase B needs — **Full-suite command** and **Fix cycles** — are Act 0's step 9's.
 - Proceed past a gate only on explicit user approval, unless the run mode is `unattended`.
 - **Append-only, whoever is watching.** The run may append to issues and pull requests (`gh issue comment`, `gh pr comment`), may add and remove its own workflow labels and no others, and may set state only on artifacts it created — its own branches, its own PRs, its own plan files. Issue bodies, acceptance-criteria checkboxes and pull requests a human opened are left exactly as they are; per-criterion verdicts are *reported*, never written back to the issue's checklist. **This invariant binds you and every agent** — there is no ending, no ceiling and no absent human that relaxes it.
 - NEVER remove, force-modify, or `rm -rf` the main worktree (first entry of `git worktree list`). Worktree removal applies only to worktrees under `<WORKTREES>`, and only via `git worktree remove` without `--force`.
