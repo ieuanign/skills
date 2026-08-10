@@ -1,5 +1,63 @@
 # ieuanign-skills
 
+## 0.16.1
+
+### Patch Changes
+
+- [`4d06ad0`](https://github.com/ieuanign/skills/commit/4d06ad0feb376c08377ac3096dffe8372348951d) Thanks [@ieuanign](https://github.com/ieuanign)! - `/dev-loop-cleanup` proposes every candidate a run left behind, and reaps only the ones a human picks.
+
+  Cleanup reaped a merged lane's branch and its plan file, and was forbidden from touching worktrees at
+  all. But `/dev-loop` deliberately keeps a sub-lane's worktree in three cases — a `gated` ending, a lane
+  held at Gate 2, a refused removal — and when that pull request later merged, nothing removed it. The
+  branch could not go either: one checked out in a surviving worktree is undeletable.
+
+  The skill is now **propose, then reap**. Candidates come from three observable sources unioned by lane
+  number — worktree directories under `<WORKTREES>`, local branches, and `.scratch/**/<n>-*.md` in any
+  folder. An argument scopes the run to one lane and no argument lists every candidate; session context
+  is never consulted for scope. One table — `Lane | PR | Worktree | Branch | Scratch | Recommend | Why` —
+  prints in both modes, and nothing has happened when it does. `remove` is recommended only where
+  `gh pr view` reports merged **and** `git status --porcelain` is empty; everything else is `keep`, with
+  **Why** naming the half that failed. A lane whose worktree is already gone is the ordinary case, not a
+  failed condition. Then the skill stops and asks, in plain text, because the table has an arbitrary
+  number of rows and `AskUserQuestion` has four options. **Naming an issue on the command line is not
+  consent to delete its artifacts** — the answer is.
+
+  Picked lanes reap worktree, then branch, then scratch, in that order because a branch is held by the
+  worktree it is checked out in. Removal is `git worktree remove` against a path under `<WORKTREES>`
+  confirmed not to be the main worktree, and a refusal is reported with that worktree's porcelain status
+  rather than retried. `git branch -d` escalates to `-D` only where the merged check already passed —
+  squash and rebase replay the work under new shas, so ancestry can no longer prove a merge — and only
+  against a local ref. Scratch reaping widens from `.scratch/*/plans/<n>-*.md` to every scratch file
+  keyed to that number in any folder, which brings `/pr-comments`'s comment table into scope; that
+  skill's sentence claiming otherwise is corrected in the same change that falsifies it.
+
+  `/dev-loop`'s hand-off now says cleanup removes the worktree that run kept, so both skills describe one
+  contract in the same words.
+
+  `npm run check` gains a **worktree removal guardrail** stage. Three skills state
+  `Worktree removal never passes --force.` because none of them loads the others, so the copies can drift
+  silently and a guardrail nobody notices going missing is one an agent can talk its way past. The stage
+  requires that sentence, verbatim and markup-free, in every `SKILL.md` under `skills/` that mentions
+  `worktree remove`, and fails naming the files that lack it — the same treatment the cost-stage
+  vocabulary and the review-loop ceiling already get.
+
+- [#196](https://github.com/ieuanign/skills/pull/196) [`7fa2e90`](https://github.com/ieuanign/skills/commit/7fa2e903426490a6bf59f5f668dfe2b690bfecff) Thanks [@ieuanign](https://github.com/ieuanign)! - The documents describing `/dev-loop-cleanup` describe propose-then-reap, and the rule inventory
+  records what that rewrite retired.
+
+  `README.md`'s row, `docs/dev-loop.md`'s **Cleanup** section and `docs/dev-loop-internals.md`'s
+  rejected alternative all still described a skill that left every worktree standing. The narrative
+  home is `docs/dev-loop.md`: both modes stop at one table —
+  `Lane | PR | Worktree | Branch | Scratch | Recommend | Why` — where `remove` is recommended only
+  where the pull request merged and the worktree is clean, your pick is what authorises a deletion, and
+  each picked row is reaped worktree, then branch, then scratch. The "a sub-lane ended and its worktree is still there" answer now names
+  `/dev-loop-cleanup` as what later proposes that worktree's removal for you to pick, rather than
+  leaving a maintainer to clear it by hand. `README.md` and the internals clause stay one line each.
+
+  `docs/dev-loop-rule-inventory.md` supersedes rather than rewrites. [#127](https://github.com/ieuanign/skills/issues/127)'s ticks, destinations and
+  totals stand; nine A16 rows carry `superseded [#187](https://github.com/ieuanign/skills/issues/187)` in their ✓ cell, and one block records what each
+  retired entry lost, what stands in its place, and — as prose, with no IDs — the rules the rewritten
+  skill introduces.
+
 ## 0.16.0
 
 ### Minor Changes
