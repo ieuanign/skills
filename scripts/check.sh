@@ -24,6 +24,78 @@ else
   echo "skip  plugin manifest (claude not on PATH)"
 fi
 
+# --- roster skill preloads ---------------------------------------------------
+# An agent's `skills:` frontmatter preloads a skill of the declared dependency by
+# `<plugin>:<skill>`. An entry that does not resolve is dropped SILENTLY: the
+# agent launches without the method and returns less, which is indistinguishable
+# from clean code. It resolves for the maintainer, whose dependency is installed
+# and enabled, and dies for the consumer whose install lacks it, disables it, or
+# whose version renamed the skill. The manifest stage above sees none of that —
+# `claude plugin validate --strict` passes on a wholly invented `<plugin>:<skill>`.
+#
+# `claude plugin details` reports a missing or disabled plugin on stdout, with an
+# exit status that has differed between CLI versions, so the `Skills (` inventory
+# line is the signal and the status is not. Every shape that does not resolve is
+# a FAIL, never a skip — a silent skip is the failure this stage exists to catch.
+#
+# Its twin is the Act 0 intake sub-step of skills/dev-loop/SKILL.md, which checks
+# these same entries against the live session; the two move together.
+if command -v claude >/dev/null 2>&1; then
+  preload_inventory=""
+  preload_resolved=""
+  preload_count=0
+  preload_broken=0
+  while IFS= read -r agent; do
+    line="$(grep -m1 '^skills:' "$REPO/$agent")" || continue
+    entries="$(printf '%s\n' "$line" | sed -nE 's/^skills:[[:space:]]*\[(.*)\][[:space:]]*$/\1/p' | tr ',' '\n')"
+    if [ -z "$entries" ]; then
+      echo "FAIL  roster skill preloads: $agent declares '$line', which this stage cannot read" >&2
+      echo "      expected the one-line flow form: skills: [<plugin>:<skill>, ...]" >&2
+      preload_broken=1
+      continue
+    fi
+    while IFS= read -r entry; do
+      entry="$(printf '%s' "$entry" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+      [ -n "$entry" ] || continue
+      if ! printf '%s' "$entry" | grep -qE '^[A-Za-z0-9._-]+:[A-Za-z0-9._-]+$'; then
+        echo "FAIL  roster skill preloads: $agent declares '$entry', which is not <plugin>:<skill>" >&2
+        preload_broken=1
+        continue
+      fi
+      plugin="${entry%%:*}"
+      skill="${entry#*:}"
+      # One details call per plugin, not per entry: it costs about three seconds,
+      # against a suite that otherwise takes three in total.
+      inventory="$(printf '%s\n' "$preload_inventory" | awk -F'\t' -v p="$plugin" '$1 == p {print $2; exit}')"
+      if [ -z "$inventory" ]; then
+        inventory="$(claude plugin details "$plugin" </dev/null 2>&1 | sed -nE 's/^[[:space:]]*Skills \([0-9]+\)[[:space:]]*//p')" || true
+        preload_inventory="$preload_inventory$plugin	$inventory
+"
+      fi
+      if [ -z "$inventory" ]; then
+        echo "FAIL  roster skill preloads: $agent declares '$entry', and plugin '$plugin' lists no skills — missing, disabled, or the CLI's output moved" >&2
+        preload_broken=1
+      elif printf '%s' "$inventory" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep -qxF "$skill"; then
+        preload_count=$((preload_count + 1))
+        preload_resolved="$preload_resolved $entry"
+      else
+        echo "FAIL  roster skill preloads: $agent declares '$entry', and plugin '$plugin' exposes no skill '$skill'" >&2
+        preload_broken=1
+      fi
+    done <<<"$entries"
+  done < <(git -C "$REPO" ls-files 'agents/*.md' | sort)
+  if [ "$preload_broken" -eq 1 ]; then
+    failed=1
+  elif [ "$preload_count" -eq 0 ]; then
+    echo "FAIL  roster skill preloads: no agent declares a skills: entry, so nothing was resolved" >&2
+    failed=1
+  else
+    echo "ok    roster skill preloads ($preload_count resolved:$preload_resolved)"
+  fi
+else
+  echo "skip  roster skill preloads (claude not on PATH)"
+fi
+
 # --- phase-script syntax -----------------------------------------------------
 # `node --check` is a silent no-op on these files and `--input-type=module`
 # rejects their top-level return; only an AsyncFunction over the Workflow globals
