@@ -7,7 +7,7 @@ description: Reads a pull request's unresolved comments, classifies each fix or 
 
 You are the orchestrator and you stay in the MAIN worktree. The fix rows run through `/dev-loop`'s execute phase — writer, review loop and suite gate, unchanged — in a worktree attached to the pull request's own head branch.
 
-**Append-only against artifacts someone else owns, whichever mode it runs in.** The whole run writes one `git push` to the branch the pull request already has, comments on it — never more than one under `gated` or two under `unattended` — and replies once in each review thread its table covers. An unattended run also sends two messages to its own channel, which touch nothing here. Nothing else leaves this session. Under `gated` no write happens before the gate below; under `unattended` the first comment **is** where that gate would have asked.
+**Append-only against artifacts someone else owns, whichever mode it runs in.** The whole run writes one `git push` to the branch the pull request already has, comments on it — never more than one under `gated` or two under `unattended` — and replies once in each review thread its table covers. An unattended run also sends two messages to its own channel, or one where Step 1's precondition 6 refuses, which touch nothing here. Nothing else leaves this session. Under `gated` no write happens before the gate below; under `unattended` the first comment **is** where that gate would have asked, unless the run stops before reaching it, in which case that stop's own comment is the first and only one.
 
 ## Arguments
 
@@ -38,7 +38,7 @@ You are the orchestrator and you stay in the MAIN worktree. The fix rows run thr
 
 ### The messages an unattended run sends
 
-A gated run has a human watching and sends none. An unattended one has nobody, so it reports itself where the approval request used to be: **one `start` message at intake and exactly one closing message**, paired. Detail belongs in the two comments — Step 4's table and Step 10's conclusion; a message is the one line somebody triages from a phone.
+A gated run has a human watching and sends none. An unattended one has nobody, so it reports itself where the approval request used to be: **one `start` message at intake and exactly one closing message**, paired — or, where Step 1's precondition 6 refuses, that closing message alone. **The pairing is one-directional**: every `start` is closed, and a close with no `start` before it is a run that never began. Detail belongs in the comments — Step 4's table, Step 10's conclusion, or the refusal's own report; a message is the one line somebody triages from a phone.
 
 **The shape** is the pull request's number, a state token, the reason where one exists, then the link — the `url` Step 1 read, on every message, that being the only artifact this run has:
 
@@ -54,10 +54,11 @@ A gated run has a human watching and sends none. An unattended one has nobody, s
 
 **The reason stays**: a token and a link alone would mean opening the pull request to learn anything at all. **No message carries the run handle** — it would crowd out that reason, and a comment is where detail goes.
 
-Which token closes the run is Step 9's question, asked of the whole run: did something deliberately stop, or did something break?
+Which token closes a run the preconditions passed is Step 9's question, asked of the whole run: did something deliberately stop, or did something break?
 
 | How the run ended | Token | Its reason clause |
 |---|---|---|
+| Step 1's precondition 6 refused | `failed` | the prerequisites the refusal names |
 | Step 2's read failed | `failed` | the read's message |
 | Step 2 found no unresolved comments, or Step 4 no **fix** row | `halt` | that there is nothing to do, with the row counts where a table was posted |
 | Step 6 could not attach the worktree, or found the branch diverged | `halt` | git's refusal |
@@ -67,7 +68,7 @@ Which token closes the run is Step 9's question, asked of the whole run: did som
 
 **`draft` never applies** — this run opens no pull request and converts nobody's state — **and no sixth token is invented.** A closed set is what makes a dead run readable by inspection: a `start` with no close after it.
 
-**The closing message is the run's last act** — Step 11 on every path that reaches it, an ended lane's included, and otherwise the stopping step itself (2, 4 or 6), after Step 10 and everything else that step does. A run refused at Step 1 sends neither: it wrote nothing anywhere, so there is no `start` to pair.
+**The closing message is the run's last act** — Step 11 on every path that reaches it, an ended lane's included, and otherwise the stopping step itself (1, 2, 4 or 6), after Step 10 and everything else that step does. A run refused on preconditions 1–5 sends neither: it wrote nothing anywhere, so there is nothing to report and no `start` to pair.
 
 - **A message is `<DEV-LOOP>/notify.sh <<'MSG' … MSG`** — that path, payload on standard input from a quoted heredoc. It owns the channel contract, so read no channel environment variable, add no configuration check, add no profile key and reimplement no send: an unconfigured channel is already silent inside it and already exits 0. The shape above is stated here because this skill is what writes it — no specification is loaded at run time.
 - **These events carry no label, on any artifact, in either mode.** `/dev-loop` pairs its own with one; those roles are defined against an issue a run is working, and this run works a pull request somebody else opened.
@@ -120,15 +121,22 @@ BODY
 
 ## Step 1 — preconditions, before anything is read or shown
 
-Each one below makes this run's promise — the fixes, pushed to this pull request's own branch — impossible to keep. Refuse on it **here**, because discovering it after a human has read a table wastes the reading as well as the read. **All five fire under both modes**, and a run refused here has written nothing anywhere.
+Each one below makes this run's promise — the fixes, pushed to this pull request's own branch — impossible to keep. Refuse on it **here**, because discovering it after a human has read a table wastes the reading as well as the read. **The first five fire under both modes**, and a run refused on one of them has written nothing anywhere; the sixth is `unattended`'s alone and is the one refusal that writes.
 
 1. **The Workflow tool.** The execute phase is dispatched through it, so a session without it in your toolset stops the run. Name the setting — `"enableWorkflows": true` in the per-machine settings file (`~/.claude/settings.json`) — and say a **restart is required**. Ask nothing and write nothing: `/dev-loop` owns that question and asks it once per machine, and a second asker is a second question.
 2. **The sibling `dev-loop` skill folder.** `<DEV-LOOP>/phase-execute.js` missing ⇒ stop, saying the two install together. That script runs the fix, and nothing here reimplements it.
 3. **The pull request is open.** `gh pr view <n> --json number,title,url,state,isCrossRepository,headRefName,baseRefName` — one read, which every later step uses. Any state but `OPEN` ⇒ stop: the branch of a merged or closed pull request may already be deleted, and pushing to one is not a fix anybody asked for.
 4. **Not a fork.** `isCrossRepository: true` ⇒ stop, saying so. The head branch lives on another remote, so the push this skill promises cannot be made from this checkout at all.
 5. **The head branch is not `<DEFAULT>`.** The one push lands on `headRefName`, and a pull request opened from the default branch would take it to the trunk.
+6. **The prerequisites this run cannot supply for itself.** Under `unattended`, a value the profile lacks is one a gated run asks a human for and this one has nobody to ask — `/dev-loop`'s Run mode **Preconditions** rule is what decides that, and nothing here restates a line of it. Run the shared check:
 
-**⟨notify⟩ Run start.** All five passed ⇒ under `unattended`, send the `start` message. This is the LAST thing Step 1 does, which is what makes a refusal above it a run that wrote nothing and left no `start` waiting to be paired.
+   ```bash
+   node <DEV-LOOP>/preconditions.mjs <MAIN> pr-comments
+   ```
+
+   It prints two blocks and exits non-zero when the first, **Missing, cannot run**, is non-empty. That block carrying anything ⇒ the run refuses: post it **verbatim** on the pull request per **How this run writes** — nothing here paraphrases or summarises it — then ONE `failed` message, and stop. **Missing, default taken** never refuses; carry it to Step 10's comment. Exit 2 is that call's own usage error and says nothing about the repository: report it and stop.
+
+**⟨notify⟩ Run start.** All six passed ⇒ under `unattended`, send the `start` message. This is the LAST thing Step 1 does, which is what leaves no `start` above it waiting to be paired: preconditions 1–5 refuse having written nothing at all, and precondition 6's refusal is a close with no `start` before it.
 
 ## Step 2 — read the unresolved comments
 
@@ -247,7 +255,7 @@ No cell carries this: the **Why** cell states what a fix will do and the **Reaso
 
 ## Step 4 — the gate, and what stands in for it
 
-**Nothing on the way to this line touched the pull request** — every command so far was a read, and unattended's `start` message goes to a channel rather than to any artifact. The one write above it belongs to a run that never arrives here: an unattended Step 2 ending posts its explanation and stops.
+**Nothing on the way to this line touched the pull request** — every command so far was a read, and unattended's `start` message goes to a channel rather than to any artifact. The two writes above it belong to runs that never arrive here: an unattended precondition 6 refusal and an unattended Step 2 ending each post their one explanation and stop.
 
 Render Step 3's table and its expansions, and count its **fix** rows. That count decides how much work follows the gate; it never decides whether the threads are answered. **Every path past this line answers them**, whatever the count: the replies are what this run owes the people who wrote the comments, and a run ending for want of code to write owes them just the same.
 
@@ -426,7 +434,7 @@ Four things, in this order — git before the replies, so a reply can name its c
 
 **2. Answer the threads Step 4 deferred.** Every review thread holding a fix row, per Step 4's reply table, on every path that reaches this step. A pushed commit's reply carries its short sha and subject from that log; a path that pushed nothing says what stopped it in one clause instead, and never cites a sha the remote does not hold.
 
-**3. Post one comment: the run's conclusion** — the ledger where it finished, the explanation where it ended. **It posts on every path that got past Step 4, in both modes** — under `gated` that means the gate was answered — **plus an unattended Step 2 ending**. Under `unattended` it is a second comment beside Step 4's table and never an edit to it; under `gated` it is the run's only one. A run refused at Step 1 wrote nothing anywhere, is not this pull request's business, and still writes nothing here.
+**3. Post one comment: the run's conclusion** — the ledger where it finished, the explanation where it ended. **It posts on every path that got past Step 4, in both modes** — under `gated` that means the gate was answered — **plus an unattended Step 2 ending**. Under `unattended` it is a second comment beside Step 4's table and never an edit to it; under `gated` it is the run's only one. A run refused on preconditions 1–5 wrote nothing anywhere, is not this pull request's business, and still writes nothing here; one refused on precondition 6 posted its report at Step 1 and never reached this step.
 
 What it says — the commit list from step 1 above, everything else from the sub-lane record:
 
@@ -478,7 +486,7 @@ A refusal is the guard working: `git worktree remove` declines on tracked modifi
 
 ## Hard rules
 
-- **One push; one comment under `gated` or two under `unattended`; one reply in each review thread the table covers; plus an unattended run's two messages — nothing else leaves this session.** The push goes to the branch the pull request already has, and nothing on the way to Step 4 writes to the pull request at all.
+- **One push; one comment under `gated` or two under `unattended`; one reply in each review thread the table covers; plus an unattended run's messages — nothing else leaves this session.** The push goes to the branch the pull request already has, and before Step 4 an unattended run writes only where it stops: precondition 6's refusal, or Step 2's ending.
 - **Append-only, and narrower than `/dev-loop`'s, because the artifacts belong to someone else.** No review thread resolved — replying to one is append-only and resolving it is not — no draft or ready state converted, no label added or removed, no issue body, pull request body or anyone's comment edited. No ending, no failure and no absent human relaxes this.
 - **Never force-push, in any form** — no `--force`, no `--force-with-lease`. The push is a fast-forward by construction, so forcing is never the repair.
 - **Push before you remove**, never remove the main worktree, and remove only with `git worktree remove` without `--force`, against a path under `<WORKTREES>`.
