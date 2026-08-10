@@ -1,39 +1,51 @@
 ---
 name: dev-loop-cleanup
-description: Reaps a finished /dev-loop run's merged branches and plan files, and lists lingering worktrees without removing any. Use for /dev-loop-cleanup, or when asked to tidy up after dev-loop runs.
+description: Lists every candidate a /dev-loop run left behind — worktree, local branch, scratch files — each with a recommendation and its reason, then reaps only the ones a human picks. Use for /dev-loop-cleanup, or when asked to tidy up after dev-loop runs.
 ---
 
-# /dev-loop cleanup — reap merged work
+# /dev-loop cleanup — propose, then reap
 
-Reap what has an exact **done-signal**; list what does not. Safe to run at any time, including while another batch is mid-layer. Dispatch no agent — this is your own plain Bash from start to finish.
+Gather every candidate, recommend a disposal for each, stop for an answer, reap the picks. Safe to run at any time, including while another batch is mid-layer. Dispatch no agent — this is your own plain Bash from start to finish.
 
-## Derived facts (compute once — never hardcode, never persist)
+## Arguments
+
+`/dev-loop-cleanup [<issue>]` — an issue number scopes the run to that lane; no argument lists every candidate. **The command line is the whole of the scope**: a lane discussed earlier in this session is a candidate only when step 2's sources hold it.
+
+## Derived facts (compute once per run)
 
 - **MAIN** — the main worktree: first entry of `git worktree list`.
 - **DEFAULT** — the default branch: `git symbolic-ref --short refs/remotes/origin/HEAD` minus the `origin/` prefix, falling back to `main`.
 - **WORKTREES** — `<MAIN>/.claude/worktrees/`. Every lane worktree lives here.
-- Every `gh` command runs inside a checkout of this repo and gh infers the repository from the remote, so no `gh` command carries `--repo`.
+- Every `gh` command runs inside a checkout of this repo, so gh reads the repository off the checkout's remote.
 
 ## Steps
 
 1. `git fetch origin <DEFAULT>`.
 
-2. **Reap on the merged signal.** A lane is done when its pull request is merged (`gh pr view <branch> --json state,mergedAt`), or its branch is fully merged into `origin/<DEFAULT>`. **The `gh` arm is the load-bearing one and the git arm is the fallback**: a repository merging by **squash** or **rebase** replays the work under new shas, so the branch's own commits are never ancestors of the default branch, `git branch --merged origin/<DEFAULT>` never lists it, and only the merged-PR check sees the truth. The git arm still earns its place for plain merge commits and for a branch that never had a pull request.
+2. **Gather candidates from three observable sources**, unioned by lane number `<n>`: a worktree directory under `<WORKTREES>` (its slug is the number), a local branch (the segment after the first `/`), and `.scratch/**/<n>-*.md` in any folder. An argument keeps that number alone. **A lane whose worktree is already gone is the ordinary case** — its Worktree cell reads absent, a state to report rather than a condition that failed.
 
-   For each done lane, delete the local branch and the lane's plan file `.scratch/*/plans/<n>-*.md`. Reaping these is why cleanup exists.
+3. **Recommend per lane.** `remove` needs both halves: `gh pr view <branch> --json number,state,mergedAt` reports merged, **and** `git -C <wt> status --porcelain` is empty. An absent worktree has nothing to be dirty, so the merged half decides that lane alone. Everything else is `keep`, with **Why** naming the half that failed — the pull request is not merged, or the worktree holds work.
 
-3. **Delete with `git branch -d`**, which succeeds whenever the branch is merged into the default branch **or** still matches its upstream — the ordinary case, since every branch that got a pull request was pushed. Squash and rebase both produce the one combination it refuses: rewritten commits whose remote branch was then deleted (GitHub's default on merge), so the ancestry no longer proves the merge and the remote-tracking ref that carried the proof instead is gone.
+4. **Print one table**, in both modes, with these columns:
 
-   **When `-d` refuses AND step 2's merged check passed, re-run it as `git branch -D`** — that check is the proof git can no longer see for itself, and without this fallback cleanup reaps nothing at all in either of the two commonest GitHub configurations.
+   `Lane | PR | Worktree | Branch | Scratch | Recommend | Why`
 
-4. **A branch checked out in a surviving worktree stays**, and git refuses to delete it — correctly, since something still holds it. List it alongside that worktree rather than working around it; the plan file still goes.
+   It is a proposal: nothing has happened when it prints, and nothing below runs until step 5 has an answer.
 
-5. **List every worktree under `<WORKTREES>`; remove none.** Per worktree, say why it is still here, from what you can observe: uncommitted or untracked work (`git -C <wt> status --porcelain` non-empty — a removal that was refused), nothing on the remote (no upstream, or `git -C <wt> rev-list --count @{u}..HEAD` unreadable — held at a gate, or a session that died mid-run), or pushed with its pull request still open. None of these has an exact done-signal, and none tells a live run's worktree from an abandoned one, so the human decides: give them the `git worktree remove <path>` line to run if they agree, and never run it for them.
+5. **Ask, then wait.** Ask in plain text for the lanes to reap — numbers, `all`, or `none` — since the table has a row per lane and AskUserQuestion's four options cannot hold an arbitrary number of them. **The answer is what authorises a deletion**; the argument only decided what to look at. Picks are lane numbers the table shows; `none`, silence and an answer you cannot read all end the run on the proposal.
 
-6. Report the two apart, so the difference is visible: **reaped** (branch, plan file) and **needs attention** (worktree, why it is lingering, the removal command). An empty second table is the good outcome.
+6. **Reap each picked lane in one order — worktree, then branch, then scratch files** — because a branch checked out in a worktree is held by that checkout for as long as it stands.
+
+   - **Worktree** — `git worktree remove <WORKTREES>/<n>`, once the path is confirmed to be under `<WORKTREES>` and not MAIN. A refusal is the guard working: report that worktree's `git -C <wt> status --porcelain` verbatim, keep it, and carry on to the next lane.
+   - **Branch** — `git branch -d <branch>`, escalating to `git branch -D` where step 3's merged check passed, since squash and rebase replay the work under new shas and ancestry can no longer prove the merge.
+   - **Scratch** — every `.scratch/**/<n>-*.md` keyed to that number, whichever folder holds it. Scratch is working material, so a plan, a comment table or a note all go the same way.
+
+7. **Confirm in one line per reaped lane**: what went, in the order it went. Step 4's table already carries every kept lane's reason, which makes the confirmation a line rather than a second table.
 
 ## Hard rules
 
-- **This skill's only worktree output is a list and a command a human may choose to run.** Remove no worktree — not MAIN, not a lane's, not one you are confident about: a worktree still standing is one nothing proved done. **NEVER remove, force-modify, or `rm -rf` MAIN** (first entry of `git worktree list`).
-- **`git branch -D` only after the merged check passed.** Everywhere else, `-d`'s refusal is information to report rather than an obstacle to get past.
-- **Reap on a merged signal, never a pushed one.** A branch whose pull request is still open keeps its branch and its plan — the plan is what a reviewer or a resume reads.
+Three prohibitions; everything above is a target to hit. `/dev-loop` and `/pr-comments` state these same worktree guardrails, deliberately — every skill that removes a worktree carries its own copy, because none of the three loads the others.
+
+- **Worktree removal never passes --force.** The refusal on a dirty worktree IS the guard, and step 6 reports it rather than getting past it.
+- **MAIN is never a removal candidate** (first entry of `git worktree list`). Only paths under `<WORKTREES>` are, and `git worktree remove` is the only command here that removes one.
+- **`git branch -D` only where step 3's merged check passed, and only against a local ref.** The remote branch belongs to the pull request and is no target of this skill.
