@@ -300,6 +300,9 @@ Touching the same lines is not asking for the same thing, and silent merging is 
 to prevent. Within a file the ordinals run ascending by anchor, so a later fix opens a file with the
 earlier one already applied; comments anchored to no file come last.
 
+*Proximity is never sameness* is `SKILL.md`'s wording, word for word, and it is repeated here on
+purpose — see [Where a rule lives](#where-a-rule-lives).
+
 **It refused to start because my local branch was ahead of `origin`.**
 
 Deliberate, and the check is worth understanding. The worktree attaches to the pull request's existing
