@@ -275,6 +275,27 @@ else
   failed=1
 fi
 
+# --- profile split -----------------------------------------------------------
+# Each of the three worktree keys resolves against one file with no fallback, so
+# a heading left in both pins a repo to the copy nothing reads.
+profile_worktree="docs/agents/worktree.md"
+profile_pipeline="docs/agents/dev-loop.md"
+split_missing=0
+for heading in '## Setup command' '## Full-suite command' '## Fix cycles'; do
+  if ! grep -qxF "$heading" "$REPO/$profile_worktree"; then
+    echo "FAIL  profile split: '$heading' absent from $profile_worktree — the key resolves there and nowhere else" >&2
+    split_missing=1
+  elif grep -qxF "$heading" "$REPO/$profile_pipeline"; then
+    echo "FAIL  profile split: '$heading' is in both $profile_worktree and $profile_pipeline — cut it from $profile_pipeline" >&2
+    split_missing=1
+  fi
+done
+if [ "$split_missing" -eq 0 ]; then
+  echo "ok    profile split"
+else
+  failed=1
+fi
+
 # --- worktree removal guardrail ----------------------------------------------
 # Every skill that removes a worktree states the never-force guard itself, none
 # of them loading the others; the sentence carries no markup so it greps.
