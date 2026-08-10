@@ -22,6 +22,10 @@ own project, and is explicitly out of scope in #121.
 | **By** | The ticket that lands it. |
 | **✓** | Ticked when that ticket has landed the rule at its destination. |
 
+A ☑ says the rule **landed**, not that it still binds — a later ticket may retire one. Where that
+has happened the cell carries `superseded #<n>`, and the section's own supersession block says what
+went.
+
 A rule with two audiences is **two entries**, not one entry with two destinations — the instruction
 and the reasoning behind it are different statements and move to different places.
 
@@ -383,23 +387,25 @@ dropped.
 
 ## A16. Cleanup mode
 
-Every rule in this section moves whole to the new skill. None is deleted and none is reworded.
+Every rule in this section moves whole to the new skill. None is deleted and none is reworded. That
+records #127's landing; [#187](https://github.com/ieuanign/skills/issues/187) has since rewritten
+the skill, and the **supersession block** after the table says which of these entries it retired.
 
 | ID | Rule | → | By | ✓ |
 |---|---|---|---|---|
-| S-212 | "Cleanup reaps what has an exact done-signal and **lists** what does not. It is safe to run at any time, including while another batch is mid-layer" | `cleanup` | #127 | ☑ |
-| S-213 | "**It removes no worktree.** … a worktree still standing is one nothing proved done." | `cleanup` | #127 | ☑ |
+| S-212 | "Cleanup reaps what has an exact done-signal and **lists** what does not. It is safe to run at any time, including while another batch is mid-layer" | `cleanup` | #127 | ☑ superseded #187 |
+| S-213 | "**It removes no worktree.** … a worktree still standing is one nothing proved done." | `cleanup` | #127 | ☑ superseded #187 |
 | S-214 | Why the old merged-based scan was wrong — "a branch merges the moment its PR lands, which says nothing about whether the run holding that checkout has finished with it" | `docs/dev-loop.md` | #127 | ☑ |
 | S-215 | "`git fetch origin <DEFAULT>`." | `cleanup` | #127 | ☑ |
-| S-216 | "**Reap, by the exact signal.** A lane is done when its PR is merged (`gh pr view <branch> --json state,mergedAt`) or its branch is fully merged into `origin/<DEFAULT>`. **The `gh` arm is the load-bearing one, and the git arm is the fallback**" | `cleanup` | #127 | ☑ |
-| S-217 | Why the git arm alone is not enough — squash and rebase replay the work under new shas, so the branch's commits are never ancestors of the default branch | `cleanup` | #127 | ☑ |
-| S-218 | "For each done lane: delete the local branch, and delete the lane's plan file `.scratch/*/plans/<n>-*.md`" | `cleanup` | #127 | ☑ |
+| S-216 | "**Reap, by the exact signal.** A lane is done when its PR is merged (`gh pr view <branch> --json state,mergedAt`) or its branch is fully merged into `origin/<DEFAULT>`. **The `gh` arm is the load-bearing one, and the git arm is the fallback**" | `cleanup` | #127 | ☑ superseded #187 |
+| S-217 | Why the git arm alone is not enough — squash and rebase replay the work under new shas, so the branch's commits are never ancestors of the default branch | `cleanup` | #127 | ☑ superseded #187 |
+| S-218 | "For each done lane: delete the local branch, and delete the lane's plan file `.scratch/*/plans/<n>-*.md`" | `cleanup` | #127 | ☑ superseded #187 |
 | S-219 | "Delete with `git branch -d` … Only when `-d` refuses AND the merged check above passed, re-run it as `git branch -D` … Never reach for `-D` in any other situation" | `cleanup` | #127 | ☑ |
-| S-220 | "**A branch checked out in a surviving worktree cannot be deleted** … List it alongside that worktree instead of working around it; the plan file still goes." | `cleanup` | #127 | ☑ |
-| S-221 | "**List every worktree under `<WORKTREES>`; remove none.** Per worktree, say why it is still here" — uncommitted work, nothing on the remote, or pushed with its PR still open | `cleanup` | #127 | ☑ |
-| S-222 | "give them the `git worktree remove <path>` line to run if they agree, and never run it for them" | `cleanup` | #127 | ☑ |
+| S-220 | "**A branch checked out in a surviving worktree cannot be deleted** … List it alongside that worktree instead of working around it; the plan file still goes." | `cleanup` | #127 | ☑ superseded #187 |
+| S-221 | "**List every worktree under `<WORKTREES>`; remove none.** Per worktree, say why it is still here" — uncommitted work, nothing on the remote, or pushed with its PR still open | `cleanup` | #127 | ☑ superseded #187 |
+| S-222 | "give them the `git worktree remove <path>` line to run if they agree, and never run it for them" | `cleanup` | #127 | ☑ superseded #187 |
 | S-223 | "NEVER touch MAIN (the first entry of `git worktree list`) — it is not a candidate under any condition" | `cleanup` | #127 | ☑ |
-| S-224 | "Report the two apart … **reaped** (branch, plan file) and **needs attention** (worktree, why it is lingering, the removal command). An empty second table is the good outcome." | `cleanup` | #127 | ☑ |
+| S-224 | "Report the two apart … **reaped** (branch, plan file) and **needs attention** (worktree, why it is lingering, the removal command). An empty second table is the good outcome." | `cleanup` | #127 | ☑ superseded #187 |
 
 `S-214` is **re-destined from `cleanup` to `docs/dev-loop.md`**. It is the only entry in this group that
 is pure rationale — why the *previous* implementation's merged-based worktree scan was unsafe — and a
@@ -407,6 +413,40 @@ skill is not where a superseded design is argued with. It already reads verbatim
 `docs/dev-loop.md`'s **Cleanup** section, so the re-destination records where it actually landed rather
 than moving anything. The rule it justifies, `S-213`, stays in the skill with its operative clause
 attached: *a worktree still standing is one nothing proved done.*
+
+### Superseded by #187
+
+[#187](https://github.com/ieuanign/skills/issues/187) rewrote the skill as **propose, then reap**:
+one table lists every candidate a lane left behind, and only the rows a human picks are deleted.
+#127 did land every entry above at its destination, so no ✓ is withdrawn, nothing is re-destined,
+and the Coverage and Progress tables stand — a marked row records what the skill said, and the
+marker says the entry stopped binding. `S-215`, `S-219` and `S-223` are unmarked because the rewrite
+leaves them in force, and so is `S-214`, which now reads at `docs/dev-loop.md`'s **Cleanup** section
+reframed rather than verbatim: why the merged signal alone is insufficient, which is what the
+clean-worktree half and the pick answer.
+
+| Entry | What the rewrite retired | What stands in its place |
+|---|---|---|
+| `S-212` | the reap-versus-list split — the skill no longer decides for itself which candidates it acts on | every candidate is listed and the pick decides; the safe-to-run-mid-layer clause survives verbatim |
+| `S-213` | **reversed** — a picked worktree is removed | the gate replaces the prohibition: `remove` is recommended only where the pull request merged and the worktree is clean, and only a pick deletes it |
+| `S-216` | the git fallback arm (a branch fully merged into `origin/<DEFAULT>`), and merged-alone as enough to act on | `gh pr view` merged **and** an empty `git status --porcelain`, both halves, and only as a recommendation |
+| `S-217` | the reasoning for the `gh` arm being load-bearing, retired with the fallback it argued against | nothing replaces the entry; the squash-and-rebase fact it turns on resurfaces as why a picked row's `git branch -d` escalates to `-D` |
+| `S-218` | plan files only (`.scratch/*/plans/<n>-*.md`), and "each done lane" as the trigger | every `.scratch/**/<n>-*.md` in any folder, for a picked lane, once no row of that lane is left standing |
+| `S-220` | listing an undeletable branch instead of deleting it, and letting its plan file go regardless | the reap order — a picked row's worktree first — frees its branch, and its scratch waits for the lane's last row |
+| `S-221` | **reversed** — the worktree list became a proposal, and a picked worktree is removed | the per-worktree reason became the table's **Why**, which names the half that failed on every `keep` row |
+| `S-222` | retired outright — the skill runs `git worktree remove` itself, on a picked row | the pick is the authorisation the printed command used to stand in for; `--force` is still never passed and MAIN is still never a candidate (`S-223`) |
+| `S-224` | the reaped / needs-attention split, and an empty second table as the good outcome | one proposal table, `Lane \| PR \| Worktree \| Branch \| Scratch \| Recommend \| Why`, before anything happens — then one confirmation line per picked row reaped |
+
+**What the rewrite introduces**, as prose and with no IDs, because nothing later ticks these:
+candidates come from three observable sources unioned by lane number — worktree directories under
+`<WORKTREES>`, local branches, and `.scratch/**/<n>-*.md` — so each sub-lane contributes its own
+row; the command line is the whole of the scope, and a lane discussed earlier in the session is not
+a candidate; the table prints under both modes and the run stops at it for a plain-text answer,
+since `AskUserQuestion`'s four options cannot hold an arbitrary number of rows; that answer is what
+authorises a deletion, and `none`, silence or an answer that cannot be read all end the run on the
+proposal; a lane whose worktree is already gone is the ordinary case to report rather than a
+condition that failed; and a picked row's refused `git worktree remove` is reported with that
+worktree's `git status --porcelain` verbatim and kept.
 
 ## A17. Hard rules
 
