@@ -56,8 +56,8 @@ const CALLERS = {
 /**
  * The profile's `## <Heading>` sections, lowercased, → the lines beneath each.
  *
- * Fenced lines are content and never headings: the PR body template's own fence carries `##` lines,
- * and reading one as a section would end the template early and invent sections nobody wrote.
+ * Fenced lines and deeper headings are content, never boundaries: the PR body template's own fence
+ * carries `##` lines, and a key answered under a `### <variant>` of its own is still answered.
  */
 function sections(text) {
   const found = new Map()
@@ -65,7 +65,7 @@ function sections(text) {
   let fenced = false
   for (const line of text.split('\n')) {
     if (/^\s*(```|~~~)/.test(line)) fenced = !fenced
-    else if (!fenced && /^#{1,6}\s/.test(line)) {
+    else if (!fenced && /^#{1,2}\s/.test(line)) {
       const heading = /^##\s+(\S.*?)\s*$/.exec(line)
       key = heading ? heading[1].toLowerCase() : null
       if (key && !found.has(key)) found.set(key, [])
