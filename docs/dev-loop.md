@@ -62,6 +62,15 @@ supervised run is what offers you the choice.
 installs the agent roster. `npx skills add` picks up the skills alone, and a lane with no roster has
 nothing to dispatch.
 
+**The roster's preloaded skills, resolving.** Two of those agents preload a skill of the declared
+dependency through their frontmatter — `code-writer` takes `mattpocock-skills:tdd`, `debugger` takes
+`mattpocock-skills:diagnosing-bugs`. An entry that does not resolve is dropped silently, so the agent
+launches without the method it was written around and returns less, which is indistinguishable from
+clean code. Intake looks for each entry among the session's own skills and refuses the run when one is
+absent, naming the agent and the entry — under both run modes, and asking nothing. Installing the
+plugin is what supplies them; a dependency that is present but disabled, or whose version renamed the
+skill, refuses the same way.
+
 **`gh`, authenticated.** Every `gh` command runs inside a checkout of your repository, so the
 repository is inferred from the remote and never passed.
 
