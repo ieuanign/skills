@@ -213,7 +213,9 @@ guard_carriers=0
 guard_missing=""
 while IFS= read -r skill; do
   rel="${skill#"$REPO/"}"
-  grep -q 'worktree remove' "$skill" || continue
+  # A carrier names what it removes. A mention followed only by a flag is prose
+  # about the rule — a skill documenting it, not one performing a removal.
+  grep -qE 'worktree remove +[^-` ]' "$skill" || continue
   if grep -qF "$guard_phrase" "$skill"; then
     guard_carriers=$((guard_carriers + 1))
   else
