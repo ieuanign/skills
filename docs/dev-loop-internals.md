@@ -531,8 +531,9 @@ pushed, and **that is the intent rather than an oversight**. It is working mater
 a reason to remove the worktree, not a cost of doing so.
 
 Two alternatives were weighed and rejected: **keeping the worktree** strands one per sub-lane that
-writes anything, and `/dev-loop-cleanup` removes none of them; **copying the files back** writes throwaway
-output into the main checkout, where nothing ever reaps it.
+writes anything for its pull request's whole life, since `/dev-loop-cleanup` offers it for removal only
+once that pull request has merged and only where you pick it; **copying the files back** writes
+throwaway output into the main checkout, where nothing ever reaps it.
 
 What was wrong was only that the loss was **silent** — including when the plan's own acceptance
 criteria asked for the artifact, so the pipeline could require a file at a path it was about to
