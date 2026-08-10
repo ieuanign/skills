@@ -27,7 +27,7 @@ Retirement is a **refactor**, not a delete: a record removed on its own turns ev
 
 4. **Gate.** Render the record to be deleted, each relocation with the sentence going to it and where it lands, and a table of every reference — file:line, its current text, its disposition, its replacement. Then **stop and ask**. Nothing has been written when this prints, and declining writes nothing at all.
 
-5. **Write, in this fixed order**: relocations, then reference dispositions, then RECORD's deletion (`git rm`) last. Interrupted anywhere, the reasoning still exists somewhere.
+5. **Write, in this fixed order**: relocations, then reference dispositions, then RECORD's deletion last — plain `rm`, never `git rm`: staging the deletion hides it from step 6's `git diff` and puts the path beyond `git restore`. Interrupted anywhere, the reasoning still exists somewhere.
 
 6. **Report** what changed, what was left, and the commands to review and undo it (`git status`, `git diff`, `git restore`). Re-run step 2's sweep first: what it returns now should be exactly the references deliberately left.
 
