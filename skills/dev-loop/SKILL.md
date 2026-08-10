@@ -18,7 +18,7 @@ You are the orchestrator. You stay in the MAIN worktree; the agents plan, write,
 
 ### Run mode — `gated` or `unattended`
 
-`auto` present ⇒ **unattended**; absent ⇒ **gated**. Act 0 parses it ONCE and carries it as a single value for the whole run — no later stage re-derives it from the arguments. In this file it decides exactly four things:
+`auto` present ⇒ **unattended**; absent ⇒ **gated**. Act 0 parses it ONCE and carries it as a single value for the whole run — no later stage re-derives it from the arguments. It decides exactly four things — the first three in this file, the fourth **pipeline-wide**:
 
 > **Gate suppression.** Both gates raise their questions under `gated`, and neither raises any under `unattended`.
 
@@ -26,7 +26,7 @@ You are the orchestrator. You stay in the MAIN worktree; the agents plan, write,
 
 > **Cost log.** Under `unattended` you write Act 4's per-lane cost log; under `gated`, none. Act 4 says what to write and never whether, and the transcript directories it needs are captured under both modes.
 
-> **Preconditions.** The one-time ask-then-persist preconditions are not gates, so gate suppression does not reach them — this line decides them instead. Under `gated` every one asks its question exactly as it always has. Under `unattended` not one of them asks: each resolves either to a **documented default**, used for this run, reported, and written into no profile — a value persisted unattended spends the repository's one question, and the human who would have chosen it is never asked — or, where no default is honest, to a **refusal** naming every missing prerequisite at once. Each precondition below says which of the two its answer is, and never whether it fires.
+> **Preconditions.** The one-time ask-then-persist preconditions are not gates, so gate suppression does not reach them — this line decides them instead. Under `gated` every one asks its question exactly as it always has. Under `unattended` not one of them asks: each resolves either to a **documented default**, used for this run, reported, and written into no profile — a value persisted unattended spends the repository's one question, and the human who would have chosen it is never asked — or, where no default is honest, to a **refusal** naming every missing prerequisite at once. Each precondition site says which of the two its answer is, and never whether it fires — the sites below, and every one in any other skill running this pipeline's preconditions.
 
 These four lines are the only place any of it is decided: no argument and no profile key overrides them.
 
