@@ -37,6 +37,7 @@ Then once per repo — independent, either order:
 | [`/dev-loop-cleanup`](./skills/dev-loop-cleanup/SKILL.md) | Deletes the branch and plan of every **merged** lane; *lists* lingering worktrees with a reason, removing none |
 | [`/pr-comments`](./skills/pr-comments/SKILL.md) | One pull request's unresolved comments, classified **fix** or **skip** for your approval; the approved fix then runs through `/dev-loop`'s execute phase and is pushed to that pull request's own branch |
 | [`/code-review-mp`](./skills/code-review-mp/SKILL.md) | Reviews a diff on two parallel axes — **Standards** (`CLAUDE.md`, `.claude/rules/`, Fowler smells, your `docs/agents/smell-overrides.md`) and **Spec** (the originating issue/PRD) |
+| [`/retire-adr`](./skills/retire-adr/SKILL.md) | Retires one decision record you name — **a refactor, not a delete**: sweeps every form the repo cites it by, relocates reasoning that still binds the code, then rewrites the references and deletes the record |
 | [`/setup-ieuanign-skills`](./skills/setup-ieuanign-skills/SKILL.md) | Per-repo config in three independent parts: smell overrides, the workflow labels, `.claude/rules/` conventions. Nothing written without an explicit yes |
 
 ## `/dev-loop`
