@@ -51,8 +51,14 @@ destinations are gitignored and every link is relative, so the checkout stays cl
 ## Temporary files
 
 Every throwaway artifact goes under `.scratch/` at the repo root — scratch scripts, intermediate
-output, working notes, a `/dev-loop` run's plans. Create it if missing; it is gitignored. Reach for
-`.scratch/` where you would otherwise reach for `/tmp` or a system temp dir.
+output, working notes, a `/dev-loop` run's plans. Create it if missing; it is gitignored.
+
+**This overrides whatever temp directory the harness hands you.** Reach for `.scratch/` where you
+would otherwise reach for `/tmp`, a system temp dir, or a session- or job-scoped one such as
+`$CLAUDE_JOB_DIR/tmp` or anything under `~/.claude/` — a background job included. Working material
+written outside the checkout is invisible to everyone reviewing the repo, survives on one machine
+with no rule reaping it, and sits beyond the reach of `.claude/rules/scratch-files.md`, which is what
+says when a scratch file must be committed, pasted onto the issue, or deleted.
 
 ## Portability rule
 
