@@ -5,8 +5,9 @@ after that only ever add bullets under the right area. Everything below the line
 
 # Smell overrides
 
-Exceptions to the code-smell baseline the `reviewer` agent and `/code-review-mp`'s Standards axis
-carry: patterns this repository uses deliberately that would otherwise be reported as smells.
+Exceptions to the code-smell baseline the `reviewer` agent and `/mattpocock-skills:code-review`'s
+Standards axis carry: patterns this repository uses deliberately that would otherwise be reported as
+smells.
 
 **Every entry here was earned.** Each records a finding a human actually rejected, twice — once is a
 one-off, not a pattern. Nothing in this file was distilled from `CLAUDE.md` or guessed in advance, and

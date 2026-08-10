@@ -9,8 +9,8 @@ disable-model-invocation: true
 Three independent parts. Run any one alone — no part depends on another, and none depends on
 `/mattpocock-skills:setup-matt-pocock-skills` having run.
 
-1. **Smell overrides** — the exceptions the `reviewer` agent and `/code-review-mp`'s Standards axis
-   carry, so a finding the user rejected stops being filed.
+1. **Smell overrides** — the exceptions the `reviewer` agent and `/mattpocock-skills:code-review`'s
+   Standards axis carry, so a finding the user rejected stops being filed.
 2. **Workflow labels** — the strings an unattended `/dev-loop auto` run reports itself through.
 3. **The `.claude/rules/` conventions** — how pull requests are separated, how stacked branches are
    rebased, how a worktree is removed, where a review finds the repo's standards, and the comment and
@@ -36,7 +36,7 @@ review has actually filed a finding the user rejected. Say so in one line and mo
 
 Its real firing is later, when the user brings one back. `/dev-loop`'s Gate 2 ledger is where they
 come from: findings the writer **disputed** and the reviewer retracted, and findings a human accepted
-at arbitration. `/code-review-mp` produces them directly.
+at arbitration. `/mattpocock-skills:code-review` produces them directly.
 
 ### 1. Get the finding
 
@@ -51,9 +51,9 @@ Two questions, and both must survive:
 - **Has this recurred?** One rejection is a one-off; the pattern is what earns a permanent
   suppression. If it has been rejected once, say so plainly and offer to wait for the second — a
   file of one-off exceptions blinds the reviewer to a whole smell class.
-- **Is the deliberate thing the *pattern* or this *hunk*?** "Our phase scripts restate the smell list
-  in two places because one is an agent contract and one is a skill" is a pattern. "This particular
-  function is fine" is not, and is not recordable.
+- **Is the deliberate thing the *pattern* or this *hunk*?** "Our phase scripts each restate the stage
+  vocabulary because a phase script imports nothing, and a check compares the copies" is a pattern.
+  "This particular function is fine" is not, and is not recordable.
 
 Then check it belongs here at all. A rule the repo wants to *state* is a rule and goes to `CLAUDE.md`
 or `.claude/rules/`; only an exception to the baseline belongs in this file. **No derived copies**
@@ -215,9 +215,10 @@ case, and this pointer is what makes one discoverable whenever it does appear.
 
 Tell the user what was written and which skills read it:
 
-- `docs/agents/smell-overrides.md` — the `reviewer` agent and `/code-review-mp`'s Standards axis. Only
-  mention it if Part 1 actually wrote something; an absent file is the correct state of a repo where
-  no finding has recurred, and reporting it as missing is what this part exists to stop.
+- `docs/agents/smell-overrides.md` — the `reviewer` agent and `/mattpocock-skills:code-review`'s
+  Standards axis. Only mention it if Part 1 actually wrote something; an absent file is the correct
+  state of a repo where no finding has recurred, and reporting it as missing is what this part exists
+  to stop.
 - `docs/agents/triage-labels.md`'s Workflow roles section — `/dev-loop auto`, and nothing else. A
   supervised `/dev-loop` writes no label, so a repo that never runs unattended needs none of it.
 - each `.claude/rules/` file written — in every session in the repo from the next one onward, plugin
