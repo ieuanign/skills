@@ -1,5 +1,52 @@
 # ieuanign-skills
 
+## 0.16.2
+
+### Patch Changes
+
+- [#211](https://github.com/ieuanign/skills/pull/211) [`dce7b05`](https://github.com/ieuanign/skills/commit/dce7b0538298ebbb89e26c0e4bf6f5bbb8f2c4a4) Thanks [@ieuanign](https://github.com/ieuanign)! - `docs/pr-comments.md` says where a rule lives, so a passage standing in both it and the skill file
+  reads as deliberate rather than as drift.
+
+  A run loads none of that page: `skills/pr-comments/SKILL.md` is the whole of the host load, so a
+  sentence moved out of it is a sentence the run no longer has. The page's new final section says
+  nothing is deleted from the skill file on the grounds that the page carries it; that what may live
+  here alone is the justification that survives its removal, while a "why" welded into an operative
+  sentence stays in the skill file and is said again here in this page's own words; and that where a
+  rule is stated in both, the repetition is deliberate — the vocabulary is fixed, so restating a rule
+  in different words would describe a run that does not exist. What is forbidden is the two
+  disagreeing: an edit to a rule lands in both files or in neither.
+
+  The overlap is broad rather than incidental, and measured: 69 shared runs of seven words or more, the
+  longest 88 words — the gate's question-and-answer table, repeated whole. That is why deliberateness
+  is one rule covering the file pair rather than 69 annotations. The one verbatim pair the audit named,
+  _Proximity is never sameness_, also says at its own site that it is repeated on purpose, and the four
+  audited clauses ride along as worked examples, each with its classification and where it now lives.
+
+  [#145](https://github.com/ieuanign/skills/issues/145)'s sixth criterion — the skill's own file carries steps and tables only, with rationale in the
+  narrative — is narrowed there with its reason: a skill's file cannot cite a page it never loads, so
+  that can only ever mean the justification which survives its removal. No `SKILL.md` was edited.
+
+- [#210](https://github.com/ieuanign/skills/pull/210) [`d07a8d9`](https://github.com/ieuanign/skills/commit/d07a8d95fbc81af8c0fa4ee325e9c97fa0d511bf) Thanks [@ieuanign](https://github.com/ieuanign)! - The worktree-removal guardrail asks for the guard sentence only from skills that actually remove a
+  worktree.
+
+  [#187](https://github.com/ieuanign/skills/issues/187) added the stage, and it selected the skills it binds with a bare substring match on
+  `worktree remove`. That caught `skills/setup-ieuanign-skills/SKILL.md`, whose single mention is prose
+  describing the fixed text of `worktree-removal-template.md` — the rule file it proposes to a consuming
+  repo — rather than an instruction to remove anything. The skill was required to state
+  `Worktree removal never passes --force.` verbatim for an operation it never performs, and `main` went
+  red the moment both changes sat on it: each pull request was green on its own, because the mention and
+  the stage arrived from different ones.
+
+  A carrier now has to **name what it removes**. The three skills that do write the target beside the
+  command — `git worktree remove <WORKTREES>/<slug>`, `git worktree remove <path>`,
+  `git -C <MAIN> worktree remove <WORKTREES>/pr-<n>` — while a mention followed only by a flag is prose
+  about the rule, which is what the stage's own comment meant by "every skill that removes a worktree".
+  It reports three carriers rather than failing on a fourth that was never one, and it still fails,
+  naming the file, when a skill that does remove a worktree drops the sentence.
+
+  The guard phrase is unchanged and no `SKILL.md` was edited to satisfy it — a skill made to carry a
+  sentence about something it does not do would have made the false positive permanent.
+
 ## 0.16.1
 
 ### Patch Changes
