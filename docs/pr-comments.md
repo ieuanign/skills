@@ -365,3 +365,39 @@ one branch, one push, one comment thread to report into.
 - A run that ended left its worktree standing and named it, by path, in that comment.
 - Under `auto`, one `start` message is paired with exactly one closing message carrying `ready`, `halt`
   or `failed` — and a reason. A refused run sends that closing message alone.
+
+## Where a rule lives
+
+A run loads **none of this page**. [`skills/pr-comments/SKILL.md`](../skills/pr-comments/SKILL.md) is
+the whole of the **host load** — what the orchestrator carries in its own context for a whole run — so
+a sentence moved from there to here is a sentence the run no longer has. **Nothing is deleted from the
+skill file on the grounds that this page says it.**
+
+What may live here alone is **the justification that survives its removal**: reasoning you can lift out
+of an operative sentence and leave that sentence standing, grammatical and still binding. A "why"
+welded into its operative sentence stays in `SKILL.md`, and this page says it again in its own words.
+
+**Where a rule is stated in both files, the repetition is deliberate.** The vocabulary is fixed, so
+restating a rule here in different words would make this page describe a run that does not exist. The
+overlap is broad rather than incidental: roughly seventy passages of seven words or more are shared,
+the longest 88 words — the gate's question-and-answer table, repeated whole. What is forbidden is the
+two **disagreeing**: an edit to a rule lands in both files or in neither.
+
+The audit that prompted this rule, as four worked examples of it:
+
+- *"Proximity is never sameness"* — **rule**. In `SKILL.md`'s **Which commit each fix becomes** section
+  and here under **Two comments on the same lines became two commits.**: the one verbatim pair the
+  audit named, and it stays.
+- *"Fifteen rows read as three do"* — **justification**. It left `SKILL.md`; the constraints it
+  justifies — one line per entry, anything longer to an expansion — are still in that file's **The
+  table** section, and the property they buy is carried here alone, under **It's working if**.
+- *"a decision made in a terminal that closes"* — **justification, welded** into its operative
+  sentence, so it stays in `SKILL.md`'s **`unattended`** section; **Unattended** above says it in this
+  page's own words.
+- *"marks its own homework"* — **justification, welded**, so it stays in `SKILL.md`'s **Step 10**
+  section; **What it refuses to do** above says it in this page's own words.
+
+This is also where #145's sixth criterion — *the skill's own file carries steps and tables only, with
+rationale living in the narrative* — is **narrowed**, with the reason: a skill's file cannot cite a page
+it never loads, so "rationale lives in the narrative" can only ever mean the justification that
+survives its removal. Every rule stays where the run reads it.
