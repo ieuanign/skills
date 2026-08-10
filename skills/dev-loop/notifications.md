@@ -8,6 +8,8 @@ This file is the single source of truth for what an unattended run writes to the
 
 | Event | When | Writer |
 |---|---|---|
+| refusal: one comment per issue the run was asked to work | at intake, a prerequisite missing | host |
+| message: refusal (`failed`), one for the whole run | at intake, a prerequisite missing | host |
 | in-progress label added | before planning | host |
 | message: started (`start`) | before planning | host |
 | plan comment | after planning | host |
@@ -51,21 +53,22 @@ Two drafts have no ending behind them, and those the **host** labels awaiting-hu
 
 A message and a comment are different artifacts with different readers, and the split is the whole of what this section says: a **message** is one line someone triages from a phone, and **detail belongs on the issue**. What a message actually looks like is the next section's, stated there once.
 
-**At most one comment of each kind per lane** — one plan comment after planning, and, if anything in the lane ends, one ending comment. Each is an extremely concise summary plus open questions, never a transcript: the plan file already survives on disk at tens of kilobytes, and no agent ever reads the comment (the writer and the reviewer both take the plan from disk), so inlining it buries the thread to serve nobody. The ending comment is the *last* one its lane posts, whatever the conclusion goes on to push or open.
+**At most one comment of each kind per lane** — one plan comment after planning, and, if anything in the lane ends, one ending comment. Each is an extremely concise summary plus open questions, never a transcript: the plan file already survives on disk at tens of kilobytes, and no agent ever reads the comment (the writer and the reviewer both take the plan from disk), so inlining it buries the thread to serve nobody. The ending comment is the *last* one its lane posts, whatever the conclusion goes on to push or open. A run refused at intake posts one comment per issue and nothing else — it began no lane, and no label of any role is written for one.
 
 ## Message format — stated once, here
 
 Every message is composed freshly by whoever writes it, so without a stated shape they drift between runs and cannot be scanned or filtered. The shape is fixed here and nowhere else.
 
-**Five state tokens, partitioned across the three message events** in the table above, so that no message ever carries two axes at once. The partition matters rather than being tidiness: an ended sub-lane opens a *draft* pull request, so a single enum spanning endings and pull-request states would force one token to say both.
+**Five state tokens, partitioned across the message events** in the table above, so that no message ever carries two axes at once. The partition matters rather than being tidiness: an ended sub-lane opens a *draft* pull request, so a single enum spanning endings and pull-request states would force one token to say both.
 
 | Message | Writer | Tokens |
 |---|---|---|
+| refusal | host, at intake | `failed` |
 | started | host, at intake | `start` |
 | ending | notifier, mid-lane | `halt`, `failed` |
 | completion | host, after the phase script | `draft`, `ready` |
 
-The two ending tokens are `SKILL.md`'s two ending labels in lower case, so there is no second vocabulary to keep in step with it.
+The two ending tokens are `SKILL.md`'s two ending labels in lower case, so there is no second vocabulary to keep in step with it. `failed` is the one token with two writers, and that is the axis holding rather than leaking: a break is a break whether a phase script hit it or the run never got past intake, and inventing a sixth token would split one question — *is this worth retrying?* — across two vocabularies.
 
 **The shape is the issue number, the state token, the reason where one exists, then the link** — the pull request link where a pull request exists, the issue link otherwise:
 
@@ -84,11 +87,11 @@ The two ending tokens are `SKILL.md`'s two ending labels in lower case, so there
 
 **The reason stays.** Triage from a phone is that line's whole purpose, and a message carrying only a state and a link would mean opening the tracker to learn anything at all.
 
-**A lane with one sub-lane — the common case — emits the single-line shape exactly.** A lane with several emits one line per sub-lane under a shared header naming the issue once: the state and the link are per sub-lane, and such a lane has no single one of either.
+**A lane with one sub-lane — the common case — emits the single-line shape exactly.** A lane with several emits one line per sub-lane under a shared header naming the issue once: the state and the link are per sub-lane, and such a lane has no single one of either. A refusal is that header applied to the run rather than to a lane — its state and reason once, then one line per issue the run was asked to work, that run having no single issue and no lane at all.
 
 **No message carries the run handle**, per the section below.
 
-**The four closing tokens are exhaustive**, which is what makes *Ordering and durability*'s one-closing-message-per-lane property readable by inspection: a `start` with no `halt`, `failed`, `draft` or `ready` after it is a run that died.
+**The four closing tokens are exhaustive**, which is what makes *Ordering and durability*'s one-closing-message-per-lane property readable by inspection: a `start` with no `halt`, `failed`, `draft` or `ready` after it is a run that died. **That pairing is one-directional** — every `start` is closed, and a close with no `start` before it is a run that never began, which is what a refusal is.
 
 **The wording is composed by the notifier and the host from this file.** Nothing asserts the finished string: the format is a specification concern, and the state-machine harness can check only that a writer was handed the inputs the format needs.
 
@@ -120,7 +123,7 @@ The payload arrives on standard input and never enters a shell string: it is age
 - Labels are written before a single token is spent, so a crash still leaves the marker behind.
 - Labels are crash-safe; messaging is best-effort. Neither costs tokens.
 - **No notification failure changes the lane it is reporting.** A `gh` command that fails, a role with no label string, a label string naming a label the tracker does not have, an unreachable channel — each is reported and then let go. The lane's ending, its push, its pull request and its worktree are what they would have been had the write succeeded. A run whose reporting is broken still does the work; a run that stopped because its reporting broke would be strictly worse than one that never reported.
-- Exactly one closing message per lane, so a start with no close plus a stale in-progress label reads as a dead run by inspection.
+- Exactly one closing message per lane, so a start with no close plus a stale in-progress label reads as a dead run by inspection. **The rule binds in that direction only**: a refusal closes a run that claimed no lane, so it carries no `start` before it and no label behind it, and reading it as a dead run would be reading a run that never began.
 - An unconfigured channel is silent, per the channel contract above — opting out is a supported state, not a fault.
 
 ## Recorded hazards
