@@ -1,13 +1,13 @@
 ---
 name: pr-comments
-description: Reads a pull request's unresolved comments, classifies each fix or skip for a human's approval, answers every review thread it read, and drives the approved fixes through /dev-loop's execute phase onto that pull request's own branch. Use for `/pr-comments <pull request>`, or `/pr-comments auto <pull request>` for an unattended run.
+description: Reads a pull request's unresolved comments, classifies each fix or skip for a human's approval, answers every review thread it read, and drives the approved fixes through its own fix phase onto that pull request's own branch. Use for `/pr-comments <pull request>`, or `/pr-comments auto <pull request>` for an unattended run.
 ---
 
 # /pr-comments — a pull request's comments, through to a pushed fix
 
-You are the orchestrator and you stay in the MAIN worktree. The fix rows run through `/dev-loop`'s execute phase — writer, review loop and suite gate, unchanged — in a worktree attached to the pull request's own head branch.
+You are the orchestrator and you stay in the MAIN worktree. The fix rows run through this skill's own fix phase — writer, review loop and suite gate — in a worktree attached to the pull request's own head branch.
 
-**Append-only against artifacts someone else owns, whichever mode it runs in.** The whole run writes one `git push` to the branch the pull request already has, comments on it — never more than one under `gated` or two under `unattended` — and replies once in each review thread its table covers. An unattended run also sends two messages to its own channel, or one where Step 1's precondition 6 refuses, which touch nothing here. Nothing else leaves this session. Under `gated` no write happens before the gate below; under `unattended` the first comment **is** where that gate would have asked, unless the run stops before reaching it, in which case that stop's own comment is the first and only one.
+**Append-only against artifacts someone else owns, whichever mode it runs in.** The whole run writes one `git push` to the branch the pull request already has, comments on it — never more than one under `gated` or two under `unattended` — and replies once in each review thread its table covers. An unattended run also sends two messages to its own channel, or fewer where Step 1's precondition 5 refuses, which touch nothing here. Nothing else leaves this session. Under `gated` no write happens before the gate below; under `unattended` the first comment **is** where that gate would have asked, unless the run stops before reaching it, in which case that stop's own comment is the first and only one.
 
 ## Arguments
 
@@ -34,11 +34,11 @@ You are the orchestrator and you stay in the MAIN worktree. The fix rows run thr
 
 **No comment is re-classified to reach a different intent**, least of all here. Under `gated` a `disagreed with` skip is a disagreement a human can overrule at the gate; under `unattended` it is this skill overruling a reviewer with nobody left to overrule it back, which is why its reasoning is replied into the thread that reviewer is watching as well as posted in full with the table.
 
-> **Preconditions.** Not gates, so the suppression above does not reach them: `/dev-loop`'s Run mode **Preconditions** rule decides them here as it does there, and nothing in this file restates a line of it. What is local to this skill is which is which. Step 1's first five refuse under both modes, and its sixth runs the shared check under `unattended`. Of the three profile keys Step 6 reads, **Setup command** and **Full-suite command** have no honest default, so that check is where a repository lacking either stops; **Fix cycles** has one, so it takes it for this run, written into no profile and reported in Step 10's comment. Under `gated` all three are asked at Step 6 exactly as they always were.
+> **Preconditions.** Not gates, so the suppression above does not reach them: `/dev-loop`'s Run mode **Preconditions** rule decides them here as it does there, and nothing in this file restates a line of it. What is local to this skill is which is which. Step 1's first four refuse under both modes, and its fifth runs the shared check under `unattended`. Of the three profile keys Step 6 reads, **Setup command** and **Full-suite command** have no honest default, so that check is where a repository lacking either stops; **Fix cycles** has one, so it takes it for this run, written into no profile and reported in Step 10's comment. Under `gated` all three are asked at Step 6 exactly as they always were.
 
 ### The messages an unattended run sends
 
-A gated run has a human watching and sends none. An unattended one has nobody, so it reports itself where the approval request used to be: **one `start` message at intake and exactly one closing message**, paired — or, where Step 1's precondition 6 refuses, that closing message alone. **The pairing is one-directional**: every `start` is closed, and a close with no `start` before it is a run that never began. Detail belongs in the comments — Step 4's table, Step 10's conclusion, or the refusal's own report; a message is the one line somebody triages from a phone.
+A gated run has a human watching and sends none. An unattended one has nobody, so it reports itself where the approval request used to be: **one `start` message at intake and exactly one closing message**, paired — or, where Step 1's precondition 5 refuses on the shared check, that closing message alone — and none at all where it refuses on the sibling folder, the sender being one of the two files that refusal is about. **The pairing is one-directional**: every `start` is closed, and a close with no `start` before it is a run that never began. Detail belongs in the comments — Step 4's table, Step 10's conclusion, or the refusal's own report; a message is the one line somebody triages from a phone.
 
 **The shape** is the pull request's number, a state token, the reason where one exists, then the link — the `url` Step 1 read, on every message, that being the only artifact this run has:
 
@@ -58,17 +58,17 @@ Which token closes a run the preconditions passed is Step 9's question, asked of
 
 | How the run ended | Token | Its reason clause |
 |---|---|---|
-| Step 1's precondition 6 refused | `failed` | the prerequisites the refusal names |
+| Step 1's precondition 5 refused on the shared check | `failed` | the prerequisites the refusal names |
 | Step 2's read failed | `failed` | the read's message |
 | Step 2 found no unresolved comments, or Step 4 no **fix** row | `halt` | that there is nothing to do, with the row counts where a table was posted |
 | Step 6 could not attach the worktree, or found the branch diverged | `halt` | git's refusal |
-| Step 7's lane returned an `ending`, or crashed | `halt` for HALT; `failed` for FAILED and for a crash | the ending's reason |
+| Step 7 returned an `ending`, or crashed | `halt` for HALT; `failed` for FAILED and for a crash | the ending's reason |
 | Step 8 pushed nothing — rejected, or no commit made | `failed` | that nothing was pushed, and why |
 | clean, the commits pushed | `ready` | the fixed, skipped and unclassified counts |
 
 **`draft` never applies** — this run opens no pull request and converts nobody's state — **and no sixth token is invented.** A closed set is what makes a dead run readable by inspection: a `start` with no close after it.
 
-**The closing message is the run's last act** — Step 11 on every path that reaches it, an ended lane's included, and otherwise the stopping step itself (1, 2, 4 or 6), after Step 10 and everything else that step does. A run refused on preconditions 1–5 sends neither: it wrote nothing anywhere, so there is nothing to report and no `start` to pair.
+**The closing message is the run's last act** — Step 11 on every path that reaches it, an ended run's included, and otherwise the stopping step itself (1, 2, 4 or 6), after Step 10 and everything else that step does. A run refused on preconditions 1–4 sends neither: it wrote nothing anywhere, so there is nothing to report and no `start` to pair.
 
 - **A message is `<DEV-LOOP>/notify.sh <<'MSG' … MSG`** — that path, payload on standard input from a quoted heredoc. It owns the channel contract, so read no channel environment variable, add no configuration check, add no profile key and reimplement no send: an unconfigured channel is already silent inside it and already exits 0. The shape above is stated here because this skill is what writes it — no specification is loaded at run time.
 - **These events carry no label, on any artifact, in either mode.** `/dev-loop` pairs its own with one; those roles are defined against an issue a run is working, and this run works a pull request somebody else opened.
@@ -79,7 +79,7 @@ Which token closes a run the preconditions passed is Step 9's question, asked of
 - **DEFAULT** — the default branch: `git symbolic-ref --short refs/remotes/origin/HEAD` minus the `origin/` prefix, falling back to `main`.
 - **WORKTREES** — `<MAIN>/.claude/worktrees/`, where this run's worktree goes.
 - **NAMESPACE** — the agent namespace, read off your own roster: find `code-writer` among your available agent types — listed bare, it is the empty string; listed as `<prefix>:code-writer`, it is `<prefix>`. This is the ONLY place it is derived, and it comes from the roster rather than from a path, a package name or a manifest.
-- **DEV-LOOP** — the sibling skill folder, `<this-skill-dir>/../dev-loop`. Both install paths put skill folders side by side, so the sibling relation holds on either and no absolute path is written down.
+- **DEV-LOOP** — the sibling skill folder, `<this-skill-dir>/../dev-loop`. Both install paths put skill folders side by side, so the sibling relation holds on either and no absolute path is written down. Two files in it are read and no others — `preconditions.mjs` and `notify.sh`, both `unattended`'s alone — so a `gated` run never resolves this at all.
 - **RUN HANDLE** — the identifier that locates this run's own transcript, read once from your environment: `$CLAUDE_CODE_SESSION_ID`. Empty or unset ⇒ **there is no handle**: write no line for it, ask nothing, and change nothing else about the run. It is written in exactly one place — Step 10's comment on a run that ended — and never in a message.
 - Every `gh` command runs inside a checkout of this repo and gh infers the repository from the remote, so no `gh` command carries `--repo`.
 
@@ -121,14 +121,15 @@ BODY
 
 ## Step 1 — preconditions, before anything is read or shown
 
-Each one below makes this run's promise — the fixes, pushed to this pull request's own branch — impossible to keep. Refuse on it **here**, because discovering it after a human has read a table wastes the reading as well as the read. **The first five fire under both modes**, and a run refused on one of them has written nothing anywhere; the sixth is `unattended`'s alone and is the one refusal that writes.
+Each one below makes this run's promise — the fixes, pushed to this pull request's own branch — impossible to keep. Refuse on it **here**, because discovering it after a human has read a table wastes the reading as well as the read. **The first four fire under both modes**, and a run refused on one of them has written nothing anywhere; the fifth is `unattended`'s alone and is the one refusal that writes.
 
-1. **The Workflow tool.** The execute phase is dispatched through it, so a session without it in your toolset stops the run. Name the setting — `"enableWorkflows": true` in the per-machine settings file (`~/.claude/settings.json`) — and say a **restart is required**. Ask nothing and write nothing: `/dev-loop` owns that question and asks it once per machine, and a second asker is a second question.
-2. **The sibling `dev-loop` skill folder.** `<DEV-LOOP>/phase-execute.js` missing ⇒ stop, saying the two install together. That script runs the fix, and nothing here reimplements it.
-3. **The pull request is open.** `gh pr view <n> --json number,title,url,state,isCrossRepository,headRefName,baseRefName` — one read, which every later step uses. Any state but `OPEN` ⇒ stop: the branch of a merged or closed pull request may already be deleted, and pushing to one is not a fix anybody asked for.
-4. **Not a fork.** `isCrossRepository: true` ⇒ stop, saying so. The head branch lives on another remote, so the push this skill promises cannot be made from this checkout at all.
-5. **The head branch is not `<DEFAULT>`.** The one push lands on `headRefName`, and a pull request opened from the default branch would take it to the trunk.
-6. **The prerequisites this run cannot supply for itself.** Under `unattended`, a value the profile lacks is one a gated run asks a human for and this one has nobody to ask — `/dev-loop`'s Run mode **Preconditions** rule is what decides that, and nothing here restates a line of it. Run the shared check:
+1. **The Workflow tool.** The fix phase is dispatched through it, so a session without it in your toolset stops the run. Name the setting — `"enableWorkflows": true` in the per-machine settings file (`~/.claude/settings.json`) — and say a **restart is required**. Ask nothing and write nothing: `/dev-loop` owns that question and asks it once per machine, and a second asker is a second question.
+2. **The pull request is open.** `gh pr view <n> --json number,title,url,state,isCrossRepository,headRefName,baseRefName` — one read, which every later step uses. Any state but `OPEN` ⇒ stop: the branch of a merged or closed pull request may already be deleted, and pushing to one is not a fix anybody asked for.
+3. **Not a fork.** `isCrossRepository: true` ⇒ stop, saying so. The head branch lives on another remote, so the push this skill promises cannot be made from this checkout at all.
+4. **The head branch is not `<DEFAULT>`.** The one push lands on `headRefName`, and a pull request opened from the default branch would take it to the trunk.
+5. **The prerequisites this run cannot supply for itself.** `unattended`'s alone, and the only precondition that reads the sibling folder. `<DEV-LOOP>/preconditions.mjs` or `<DEV-LOOP>/notify.sh` missing ⇒ stop, saying the two skills install together: this branch needs the shared check below and the channel every message above goes to. Post that on the pull request per **How this run writes** and send no message: the sender is one of the two files this refusal is about.
+
+   Otherwise, a value the profile lacks is one a gated run asks a human for and this one has nobody to ask — `/dev-loop`'s Run mode **Preconditions** rule is what decides that, and nothing here restates a line of it. Run the shared check:
 
    ```bash
    node <DEV-LOOP>/preconditions.mjs <MAIN> pr-comments
@@ -136,7 +137,7 @@ Each one below makes this run's promise — the fixes, pushed to this pull reque
 
    It prints two blocks and exits non-zero when the first, **Missing, cannot run**, is non-empty. That block carrying anything ⇒ the run refuses: post it **verbatim** on the pull request per **How this run writes** — nothing here paraphrases or summarises it — then ONE `failed` message, and stop. **Missing, default taken** never refuses; carry it to Step 10's comment. Exit 2 is that call's own usage error and says nothing about the repository: report it and stop.
 
-**⟨notify⟩ Run start.** All six passed ⇒ under `unattended`, send the `start` message. This is the LAST thing Step 1 does, which is what leaves no `start` above it waiting to be paired: preconditions 1–5 refuse having written nothing at all, and precondition 6's refusal is a close with no `start` before it.
+**⟨notify⟩ Run start.** All five passed ⇒ under `unattended`, send the `start` message. This is the LAST thing Step 1 does, which is what leaves no `start` above it waiting to be paired: preconditions 1–4 refuse having written nothing at all, and precondition 5's refusal is a close with no `start` before it, or no message at all where it refused on the sibling folder.
 
 ## Step 2 — read the unresolved comments
 
@@ -197,7 +198,7 @@ One test, applied to every question. The answer is written down either way, so t
 
 Two fix rows share an ordinal **only where they ask for the same change** — two reviewers wanting one rename — and a shared ordinal states what makes them one, in an expansion beneath the table. **Proximity is never sameness**: two comments on the same region of one file are one commit each, because touching the same lines is not asking for the same thing. Silent merging is what the table exists to prevent, so a merge carrying no reason is not one.
 
-**Ordinals run file by file, ascending by anchor within each.** One file's fixes take adjacent ordinals, ordered by the line each sits at — `originalLine` where `line` is null — and the fixes anchored to no file come last. They all run in **one sub-lane**: sequential commits in one worktree is the only thing that makes a later fix open a file with the earlier one already in it, and splitting a run's fixes across sub-lanes or branches races them instead.
+**Ordinals run file by file, ascending by anchor within each.** One file's fixes take adjacent ordinals, ordered by the line each sits at — `originalLine` where `line` is null — and the fixes anchored to no file come last. They all run in **one dispatch**: sequential commits in one worktree is the only thing that makes a later fix open a file with the earlier one already in it, and splitting a run's fixes across worktrees or branches races them instead.
 
 A **skip** and an **unclassified** row have no ordinal, and no commit is made for either.
 
@@ -255,7 +256,7 @@ No cell carries this: the **Why** cell states what a fix will do and the **Reaso
 
 ## Step 4 — the gate, and what stands in for it
 
-**Nothing on the way to this line touched the pull request** — every command so far was a read, and unattended's `start` message goes to a channel rather than to any artifact. The two writes above it belong to runs that never arrive here: an unattended precondition 6 refusal and an unattended Step 2 ending each post their one explanation and stop.
+**Nothing on the way to this line touched the pull request** — every command so far was a read, and unattended's `start` message goes to a channel rather than to any artifact. The two writes above it belong to runs that never arrive here: an unattended precondition 5 refusal and an unattended Step 2 ending each post their one explanation and stop.
 
 Render Step 3's table and its expansions, and count its **fix** rows. That count decides how much work follows the gate; it never decides whether the threads are answered. **Every path past this line answers them**, whatever the count: the replies are what this run owes the people who wrote the comments, and a run ending for want of code to write owes them just the same.
 
@@ -301,7 +302,7 @@ This run's comments post at the foot of the pull request, so a commenter is noti
 
 ## Step 5 — the fix rows become the plan
 
-`phase-execute.js` hands the writer a `planPath` and the writer reads it before anything else — a path that does not exist comes straight back as BLOCKED. So the table's fix rows are written as one file, at `<MAIN>/.scratch/pr-comments/<n>-comments.md`, creating the directory. `/dev-loop-cleanup` reaps `.scratch/**/<n>-*.md` from any folder, so an issue sharing a number with this pull request lists this table among its candidates — no subdirectory puts it out of reach, and what keeps a live table is that skill's gate rather than where the file sits: it deletes nothing without an answer.
+`phase-fix.js` hands the writer a `planPath` and the writer reads it before anything else — a path that does not exist comes straight back as BLOCKED. So the table's fix rows are written as one file, at `<MAIN>/.scratch/pr-comments/<n>-comments.md`, creating the directory. `/dev-loop-cleanup` reaps `.scratch/**/<n>-*.md` from any folder, so an issue sharing a number with this pull request lists this table among its candidates — no subdirectory puts it out of reach, and what keeps a live table is that skill's gate rather than where the file sits: it deletes nothing without an answer.
 
 Plan-shaped, and carrying the comments' own content:
 
@@ -317,10 +318,6 @@ opens a file with the earlier ones already applied.
 
 Only the comments those entries name. Every unresolved comment was classified and shown; the rest
 went to skip or unclassified and are no commit's scope.
-
-## Hard constraints
-None. A review comment supplies none, and constraints invented here would bind the writer to
-something nobody asked for.
 
 ## File touchpoints
 <every path the entries name, and plainly that a comment anchored to no file names none>
@@ -340,6 +337,8 @@ indented into the entry — a `suggestion` block's own leading tabs are the code
 <Step 3's table as it stands, every row and every expansion, rendered identically — what the rest of
 the pull request's comments were classified as, and none of it any commit's scope>
 ```
+
+**These headings are the whole file.** A section the writer does not find is an empty one, so no `## Hard constraints` heading is written: a review comment supplies none, and constraints invented here would bind the writer to something nobody asked for.
 
 **One entry per ordinal, in ordinal order, each naming by `#` and url exactly the comment(s) it satisfies** and carrying their bodies. A shared ordinal lists both and says what makes them one change; an entry naming no comment is one whose scope nobody can bound.
 
@@ -365,48 +364,35 @@ The file is gitignored working material and nothing may depend on it surviving: 
 3. The checkout must sit at `origin/<headRefName>` — **checked, not assumed**. Where a stale local branch left it behind, `git -C <worktree> merge --ff-only origin/<headRefName>` catches it up; a refusal means the local branch diverged, so no push from it could be a fast-forward.
 
    Then `git -C <worktree> rev-parse HEAD` and `git -C <worktree> rev-parse origin/<headRefName>`, and **stop unless the two shas are equal**, reporting both and how they differ. The merge alone does not settle it: to a local branch *ahead* of the remote it says `Already up to date` and exits 0, and those unpushed commits — someone's work in progress, which the first bullet of step 2 attaches whatever state it is in — would be captured as the `base` below and then ride out on Step 8's push, landing on the pull request unreviewed and absent from Step 10's ledger.
-4. **That HEAD sha is the sub-lane's `base`**, captured now, before anything is written to the branch. The reviewer diffs `base..<branch>`; the pull request's own base branch in its place would have it review the human's entire pull request, flooding findings and spending fix cycles on code this run did not write.
+4. **That HEAD sha is Step 7's `base`**, captured now, before anything is written to the branch. The reviewer diffs `base..<branch>`; the pull request's own base branch in its place would have it review the human's entire pull request, flooding findings and spending fix cycles on code this run did not write.
 5. `.worktreeinclude` copies, the same mechanism `/dev-loop` provisions with: `git -C <MAIN> ls-files -oi --exclude-from=.worktreeinclude --directory` lists the matches — files, plus fully-ignored directories collapsed to one entry — and each is fast-copied from MAIN into the worktree at the same relative path, parent directories created, the trailing slash git puts on a directory entry stripped first. No `.worktreeinclude` ⇒ no copies and no question asked: `/dev-loop`'s Act 0 owns that one.
 6. Run the profile's Setup command from inside the worktree.
 
-**Three profile keys, all read from `docs/agents/worktree.md`**: Setup command, Full-suite command and Fix cycles. Under `gated`, one the file lacks is asked for **here**, under that profile's own ask-then-persist rule — ask once, write the answer in, never ask again — and here rather than earlier because a run stopping at Step 4 with no fix row needs none of the three, and a question hoisted above that stop spends the repository's one question on nothing. Under `unattended` nothing is asked and **nothing is written**: Step 1's precondition 6 already refused a repository missing either command, so **Fix cycles** is the only one that can still be absent, and it takes `2` for this run alone — carried to Step 10's comment, and persisted nowhere. This skill adds no key of its own, no second profile and no argument that changes what the pipeline does.
+**Three profile keys, all read from `docs/agents/worktree.md`**: Setup command, Full-suite command and Fix cycles. Under `gated`, one the file lacks is asked for **here**, under that profile's own ask-then-persist rule — ask once, write the answer in, never ask again — and here rather than earlier because a run stopping at Step 4 with no fix row needs none of the three, and a question hoisted above that stop spends the repository's one question on nothing. Under `unattended` nothing is asked and **nothing is written**: Step 1's precondition 5 already refused a repository missing either command, so **Fix cycles** is the only one that can still be absent, and it takes `2` for this run alone — carried to Step 10's comment, and persisted nowhere. This skill adds no key of its own, no second profile and no argument that changes what the pipeline does.
 
-## Step 7 — dispatch the execute phase
+## Step 7 — dispatch the fix phase
 
-Run the Workflow tool with `scriptPath: <DEV-LOOP>/phase-execute.js`, and these arguments and no others:
+Run the Workflow tool with `scriptPath: <this-skill-dir>/phase-fix.js` — this skill's own, bundled beside this file — and these arguments and no others:
 
 ```json
 {
-  "lanes": [{
-    "issue": <n>,
-    "planPath": "<MAIN>/.scratch/pr-comments/<n>-comments.md",
-    "subLanes": [{
-      "branch": "<headRefName>",
-      "worktree": "<WORKTREES>/pr-<n>",
-      "base": "<the sha from Step 6>",
-      "commits": [{ "ordinal": 1, "message": "<Step 5's first message, verbatim>" }, ...]
-    }]
-  }],
-  "mode": "<gated or unattended>",
-  "fixCycleThreshold": <Fix cycles, as Step 6 resolved it>,
+  "pr": <n>,
+  "planPath": "<MAIN>/.scratch/pr-comments/<n>-comments.md",
+  "worktree": "<WORKTREES>/pr-<n>",
+  "branch": "<headRefName>",
+  "base": "<the sha from Step 6>",
+  "commits": ["<Step 5's first message, verbatim>", ...],
   "suiteCommand": "<the profile's Full-suite command>",
+  "fixCycleThreshold": <Fix cycles, as Step 6 resolved it>,
   "agentNamespace": "<NAMESPACE>"
 }
 ```
 
-**`commits` is Step 5's `## Commit / PR breakdown`, entry for entry** — one element per entry, same order, same message strings verbatim, ordinals from `1`. An array disagreeing with the file sends the writer at a commit nothing describes. It is never empty; Step 4 already ended the run where no fix row was left. **One sub-lane, always** — Step 3 decided that, and the array is what makes those commits sequential in one worktree.
+**`commits` is Step 5's `## Commit / PR breakdown`, entry for entry** — one message string per entry, same order, verbatim. **A message's position is its ordinal**, from `1`, so there is nothing for a written ordinal to disagree with; an array disagreeing with the file sends the writer at a commit nothing describes. It is never empty; Step 4 already ended the run where no fix row was left. **One dispatch, always** — Step 3 decided that, and one array in one worktree is what makes those commits sequential.
 
-`planPath` and `worktree` are **absolute** — `.scratch` and the worktrees directory both live under MAIN. `mode` is the run's real mode, literally `gated` or `unattended` and never the `auto` token the developer typed: with no `skillDir` below it changes nothing the script does, and a record saying `gated` for an unattended run is a false record. `suiteCommand` is the profile's value and `fixCycleThreshold` is the one Step 6 resolved — the profile's, or the default taken for a key it lacked — both verbatim and neither a literal written here, and `fixCycleThreshold` is a **number**: the script tests it with `Number.isInteger` and a quoted one silently becomes the default instead.
+`planPath` and `worktree` are **absolute** — `.scratch` and the worktrees directory both live under MAIN. `suiteCommand` is the profile's value and `fixCycleThreshold` is the one Step 6 resolved — the profile's, or the default taken for a key it lacked — both verbatim and neither a literal written here, and `fixCycleThreshold` is a **number**: the script tests it with `Number.isInteger` and a quoted one silently becomes the default instead.
 
-Four keys are left out, each deliberately:
-
-- **`issueBody`** and **`ownedCriteria`** — there is no issue, so there is no spec axis. The script already tells the reviewer to return an empty `criterionVerdicts` and say so in its notes; that is the existing contract's degenerate case, reached by passing less rather than by editing anything.
-- **`skillDir`** — the notifier's only purpose, and an absent one is that script's documented "no notifier is dispatched". Left out under **both** modes: its first act is the label swap the messages section already refuses, and the reason it exists — a workflow script has no shell, so a lane ending mid-script has no writer until its siblings finish — cannot arise where one lane holds one sub-lane and the call returns the moment it ends.
-- **`runHandle`** — the notifier is the only thing that writes it, and none is dispatched.
-
-**Change nothing under `<DEV-LOOP>`.** The execute phase runs as it is — writer, review loop, suite gate — and this skill adds no phase script of its own.
-
-The call returns one entry for the lane, whose single `subResults` entry carries the `ending` (`null` where the sub-lane finished clean), the commits made, the fixed and won't-fix findings, the reviewer's notes and the suite result. Everything that happens after this is decided from that record.
+The call returns the record itself, carrying the `ending` (`null` where it finished clean), the commits made, the fixed and won't-fix findings, the reviewer's notes and the suite result. Everything that happens after this is decided from that record.
 
 ## Step 8 — the push
 
@@ -434,9 +420,9 @@ Four things, in this order — git before the replies, so a reply can name its c
 
 **2. Answer the threads Step 4 deferred.** Every review thread holding a fix row, per Step 4's reply table, on every path that reaches this step. A pushed commit's reply carries its short sha and subject from that log; a path that pushed nothing says what stopped it in one clause instead, and never cites a sha the remote does not hold.
 
-**3. Post one comment: the run's conclusion** — the ledger where it finished, the explanation where it ended. **It posts on every path that got past Step 4, in both modes** — under `gated` that means the gate was answered — **plus an unattended Step 2 ending**. Under `unattended` it is a second comment beside Step 4's table and never an edit to it; under `gated` it is the run's only one. A run refused on preconditions 1–5 wrote nothing anywhere, is not this pull request's business, and still writes nothing here; one refused on precondition 6 posted its report at Step 1 and never reached this step.
+**3. Post one comment: the run's conclusion** — the ledger where it finished, the explanation where it ended. **It posts on every path that got past Step 4, in both modes** — under `gated` that means the gate was answered — **plus an unattended Step 2 ending**. Under `unattended` it is a second comment beside Step 4's table and never an edit to it; under `gated` it is the run's only one. A run refused on preconditions 1–4 wrote nothing anywhere, is not this pull request's business, and still writes nothing here; one refused on precondition 5 posted its report at Step 1 and never reached this step.
 
-What it says — the commit list from step 1 above, the defaults block carried from Step 1, everything else from the sub-lane record:
+What it says — the commit list from step 1 above, the defaults block carried from Step 1, everything else from Step 7's record:
 
 | Section | What it holds |
 |---|---|
@@ -453,9 +439,9 @@ What it says — the commit list from step 1 above, the defaults block carried f
 
 `<planned>` counts the ordinals Step 7 dispatched, and every planned message the log does not hold is named as not made: a commit nobody wrote is the one thing a claimed list cannot show. A `wip:` commit is listed and **not** counted in `<made>` — it is abandoned work kept as evidence, and counting one reports a failure as delivery.
 
-**No acceptance-criteria section**: there was no issue and so no spec axis, `criterionVerdicts` comes back empty by the contract Step 7 invoked, and a section rendering nothing claims something was judged. `terminal` goes unread too — it decides a pull request's draft state, and this run opens none.
+**No acceptance-criteria section**: there was no issue and so no spec axis, nothing in the record judges one, and a section rendering nothing claims something was judged.
 
-**A run that ended fills what it has.** It names the step that stopped it and carries that step's message verbatim — git's refusal to attach, the two shas that differed — and renders the table. **A section with nothing to put in it is left out**, for the reason the acceptance-criteria one is. A **Step 2** ending leaves out most of them and the table with them: there was nothing to classify, so it is the step, the read's message verbatim or the fact that the pull request held no unresolved comments, and nothing dressed up as more. An ended lane adds Step 9's account.
+**A run that ended fills what it has.** It names the step that stopped it and carries that step's message verbatim — git's refusal to attach, the two shas that differed — and renders the table. **A section with nothing to put in it is left out**, for the reason the acceptance-criteria one is. A **Step 2** ending leaves out most of them and the table with them: there was nothing to classify, so it is the step, the read's message verbatim or the fact that the pull request held no unresolved comments, and nothing dressed up as more. An ended run adds Step 9's account.
 
 Either way it ends with what nothing else records, this session being the last thing that knows it:
 
@@ -483,11 +469,11 @@ A refusal is the guard working: `git worktree remove` declines on tracked modifi
 
 **The branch is left alone either way, local ref and remote.** The remote one is what the pull request *is*; the local one may have been the human's before Step 6 attached to it.
 
-**⟨notify⟩ Run conclusion.** Under `unattended`, the closing message goes after the disposal above — the run's last act, its token and reason from the Run mode section's table, paired with Step 1's `start`. Every path reaching this step sends it here, an ended lane's and a rejected push's included; a run that stopped at Step 2, 4 or 6 already sent its own there.
+**⟨notify⟩ Run conclusion.** Under `unattended`, the closing message goes after the disposal above — the run's last act, its token and reason from the Run mode section's table, paired with Step 1's `start`. Every path reaching this step sends it here, an ended run's and a rejected push's included; a run that stopped at Step 2, 4 or 6 already sent its own there.
 
 ## Hard rules
 
-- **One push; one comment under `gated` or two under `unattended`; one reply in each review thread the table covers; plus an unattended run's messages — nothing else leaves this session.** The push goes to the branch the pull request already has, and before Step 4 an unattended run writes only where it stops: precondition 6's refusal, or Step 2's ending.
+- **One push; one comment under `gated` or two under `unattended`; one reply in each review thread the table covers; plus an unattended run's messages — nothing else leaves this session.** The push goes to the branch the pull request already has, and before Step 4 an unattended run writes only where it stops: precondition 5's refusal, or Step 2's ending.
 - **Append-only, and narrower than `/dev-loop`'s, because the artifacts belong to someone else.** No review thread resolved — replying to one is append-only and resolving it is not — no draft or ready state converted, no label added or removed, no issue body, pull request body or anyone's comment edited. No ending, no failure and no absent human relaxes this.
 - **Never force-push, in any form** — no `--force`, no `--force-with-lease`. The push is a fast-forward by construction, so forcing is never the repair.
 - **Worktree removal never passes --force.** Step 11's refusal on a dirty worktree IS the guard. `/dev-loop` and `/dev-loop-cleanup` state this same guardrail, deliberately — every skill that removes a worktree carries its own copy, because none of the three loads the others.
