@@ -22,25 +22,25 @@ Gather every candidate, recommend a disposal for each, stop for an answer, reap 
 
 1. `git fetch origin <DEFAULT>`.
 
-2. **Gather candidates from three observable sources**, unioned by lane number `<n>`: a worktree directory under `<WORKTREES>` (its slug is the number), a local branch (the segment after the first `/`), and `.scratch/**/<n>-*.md` in any folder. An argument keeps that number alone. **A lane whose worktree is already gone is the ordinary case** — its Worktree cell reads absent, a state to report rather than a condition that failed.
+2. **Gather candidates from three observable sources**, unioned by lane number `<n>` — the leading digits of a worktree slug or of a branch's tail, since a sub-lane suffixes its area onto the number (`feat/208-backend` → slug `208-backend`, lane `208`): worktree directories under `<WORKTREES>` whose slug is `<n>` or starts `<n>-`, local branches whose segment after the first `/` does the same, and `.scratch/**/<n>-*.md` in any folder. An argument keeps that number alone. **A lane whose worktree is already gone is the ordinary case** — its Worktree cell reads absent, a state to report rather than a condition that failed.
 
-3. **Recommend per lane.** `remove` needs both halves: `gh pr view <branch> --json number,state,mergedAt` reports merged, **and** `git -C <wt> status --porcelain` is empty. An absent worktree has nothing to be dirty, so the merged half decides that lane alone. Everything else is `keep`, with **Why** naming the half that failed — the pull request is not merged, or the worktree holds work.
+3. **Recommend per branch.** A lane's sub-lanes have a worktree, branch and pull request each, so each contributes its own row. `remove` needs both halves: `gh pr view <branch> --json number,state,mergedAt` reports merged, **and** `git -C <wt> status --porcelain` is empty. An absent worktree has nothing to be dirty, so the merged half decides that row alone. Everything else is `keep`, with **Why** naming the half that failed — the pull request is not merged, or the worktree holds work.
 
 4. **Print one table**, in both modes, with these columns:
 
    `Lane | PR | Worktree | Branch | Scratch | Recommend | Why`
 
-   It is a proposal: nothing has happened when it prints, and nothing below runs until step 5 has an answer.
+   It is a proposal: nothing has happened when it prints, and nothing below runs until step 5 has an answer. Lane and Scratch repeat down a lane's rows — the number and its scratch files belong to the lane — and every other cell is that row's branch's own.
 
-5. **Ask, then wait.** Ask in plain text for the lanes to reap — numbers, `all`, or `none` — since the table has a row per lane and AskUserQuestion's four options cannot hold an arbitrary number of them. **The answer is what authorises a deletion**; the argument only decided what to look at. Picks are lane numbers the table shows; `none`, silence and an answer you cannot read all end the run on the proposal.
+5. **Ask, then wait.** Ask in plain text for what to reap — lane numbers, one row's branch where a lane's rows differ, `all`, or `none` — since the table has a row per branch and AskUserQuestion's four options cannot hold an arbitrary number of them. **The answer is what authorises a deletion**; the argument only decided what to look at. A picked lane number takes every row it shows; `none`, silence and an answer you cannot read all end the run on the proposal.
 
-6. **Reap each picked lane in one order — worktree, then branch, then scratch files** — because a branch checked out in a worktree is held by that checkout for as long as it stands.
+6. **Reap each picked row in one order — worktree, then branch, then scratch files** — because a branch checked out in a worktree is held by that checkout for as long as it stands.
 
-   - **Worktree** — `git worktree remove <WORKTREES>/<n>`, once the path is confirmed to be under `<WORKTREES>` and not MAIN. A refusal is the guard working: report that worktree's `git -C <wt> status --porcelain` verbatim, keep it, and carry on to the next lane.
+   - **Worktree** — `git worktree remove <path>`, the path as `git worktree list` reports it rather than one rebuilt from the lane number, and only once it is confirmed to be under `<WORKTREES>` and not MAIN. A refusal is the guard working: report that worktree's `git -C <wt> status --porcelain` verbatim, keep it, and carry on to the next row.
    - **Branch** — `git branch -d <branch>`, escalating to `git branch -D` where step 3's merged check passed, since squash and rebase replay the work under new shas and ancestry can no longer prove the merge.
-   - **Scratch** — every `.scratch/**/<n>-*.md` keyed to that number, whichever folder holds it. Scratch is working material, so a plan, a comment table or a note all go the same way.
+   - **Scratch** — every `.scratch/**/<n>-*.md` keyed to that number, whichever folder holds it, once no row of that lane is left standing: the files are the lane's, and a sub-lane still in flight reads its plan from them. Scratch is working material, so a plan, a comment table or a note all go the same way.
 
-7. **Confirm in one line per reaped lane**: what went, in the order it went. Step 4's table already carries every kept lane's reason, which makes the confirmation a line rather than a second table.
+7. **Confirm in one line per reaped row**: what went, in the order it went. Step 4's table already carries every kept row's reason, which makes the confirmation a line rather than a second table.
 
 ## Hard rules
 
