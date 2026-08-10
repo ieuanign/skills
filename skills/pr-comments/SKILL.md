@@ -301,7 +301,7 @@ This run's comments post at the foot of the pull request, so a commenter is noti
 
 ## Step 5 — the fix rows become the plan
 
-`phase-execute.js` hands the writer a `planPath` and the writer reads it before anything else — a path that does not exist comes straight back as BLOCKED. So the table's fix rows are written as one file, at `<MAIN>/.scratch/pr-comments/<n>-comments.md`, creating the directory. **Not under a `plans/` subdirectory**: `/dev-loop-cleanup` reaps `.scratch/*/plans/<n>-*.md` by number, and an issue sharing a number with this pull request would take a live table with it.
+`phase-execute.js` hands the writer a `planPath` and the writer reads it before anything else — a path that does not exist comes straight back as BLOCKED. So the table's fix rows are written as one file, at `<MAIN>/.scratch/pr-comments/<n>-comments.md`, creating the directory. `/dev-loop-cleanup` reaps `.scratch/**/<n>-*.md` from any folder, so an issue sharing a number with this pull request lists this table among its candidates — no subdirectory puts it out of reach, and what keeps a live table is that skill's gate rather than where the file sits: it deletes nothing without an answer.
 
 Plan-shaped, and carrying the comments' own content:
 
@@ -490,4 +490,5 @@ A refusal is the guard working: `git worktree remove` declines on tracked modifi
 - **One push; one comment under `gated` or two under `unattended`; one reply in each review thread the table covers; plus an unattended run's messages — nothing else leaves this session.** The push goes to the branch the pull request already has, and before Step 4 an unattended run writes only where it stops: precondition 6's refusal, or Step 2's ending.
 - **Append-only, and narrower than `/dev-loop`'s, because the artifacts belong to someone else.** No review thread resolved — replying to one is append-only and resolving it is not — no draft or ready state converted, no label added or removed, no issue body, pull request body or anyone's comment edited. No ending, no failure and no absent human relaxes this.
 - **Never force-push, in any form** — no `--force`, no `--force-with-lease`. The push is a fast-forward by construction, so forcing is never the repair.
-- **Push before you remove**, never remove the main worktree, and remove only with `git worktree remove` without `--force`, against a path under `<WORKTREES>`.
+- **Worktree removal never passes --force.** Step 11's refusal on a dirty worktree IS the guard. `/dev-loop` and `/dev-loop-cleanup` state this same guardrail, deliberately — every skill that removes a worktree carries its own copy, because none of the three loads the others.
+- **Push before you remove**, never remove the main worktree, and remove only with `git worktree remove`, against a path under `<WORKTREES>`.
