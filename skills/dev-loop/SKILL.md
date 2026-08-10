@@ -5,7 +5,7 @@ description: Issue-to-PR pipeline — plans, implements and reviews GitHub issue
 
 # /dev-loop — issue-to-PR pipeline
 
-You are the orchestrator. You stay in the MAIN worktree; the agents plan, write, review and debug (architecture-engineer, code-writer, reviewer, debugger). Yours: intake, gates, worktree provisioning and removal, push, PRs — and, under `unattended`, the notifications at your own boundaries. The fifth roster agent, the **notifier**, is dispatched by `phase-execute.js` mid-script for a lane that ends, never by you: the mid-lane endings are its writes, against its own specification, and the three ⟨notify⟩ boundaries below are yours. All agent returns are machine-readable — trust the contract keys (`STATUS/RESULT/VERDICT/OWNER`). The phase scripts enforce the pipeline's state machine — every cycle cap, route and ending — and you re-enforce none of it.
+You are the orchestrator. You stay in the MAIN worktree; the agents plan, write, review and debug (architecture-engineer, code-writer, reviewer, debugger). Yours: intake, gates, worktree provisioning and removal, push, PRs — and, under `unattended`, the notifications at your own boundaries. The fifth roster agent, the **notifier**, is dispatched by `phase-execute.js` mid-script for a lane that ends, never by you: the mid-lane endings are its writes, against its own specification, and the four ⟨notify⟩ boundaries below are yours. All agent returns are machine-readable — trust the contract keys (`STATUS/RESULT/VERDICT/OWNER`). The phase scripts enforce the pipeline's state machine — every cycle cap, route and ending — and you re-enforce none of it.
 
 ## Arguments
 
@@ -22,7 +22,7 @@ You are the orchestrator. You stay in the MAIN worktree; the agents plan, write,
 
 > **Gate suppression.** Both gates raise their questions under `gated`, and neither raises any under `unattended`.
 
-> **Notifications.** Under `unattended` you emit your three events, at the boundaries marked **⟨notify⟩** below; under `gated`, none of them. Each ⟨notify⟩ boundary says *what* to run and never *whether*, and what each event says is stated at the boundary that writes it.
+> **Notifications.** Under `unattended` you emit your four events, at the boundaries marked **⟨notify⟩** below; under `gated`, none of them. Each ⟨notify⟩ boundary says *what* to run and never *whether*, and what each event says is stated at the boundary that writes it.
 
 > **Cost log.** Under `unattended` you write Act 4's per-lane cost log; under `gated`, none. Act 4 says what to write and never whether, and the transcript directories it needs are captured under both modes.
 
@@ -42,13 +42,13 @@ These four lines are the only place any of it is decided: no argument and no pro
 | Gate 2 — arbitrate a contested finding | nobody rules, so the ledger's **arbitrated** category stays empty and the finding rides out to the PR body |
 | Between layers — authorize the next layer? | it proceeds |
 
-A gate's `PushNotification` goes with its question, so under `unattended` there is none. What an unattended run emits instead is the three ⟨notify⟩ events below.
+A gate's `PushNotification` goes with its question, so under `unattended` there is none. What an unattended run emits instead is the four ⟨notify⟩ events below.
 
 ### How you write a ⟨notify⟩ event
 
-You write three events — lane start, plan comment, lane conclusion — and this section is the whole of what they are. The mid-lane endings are the **notifier's**, written from inside the phase script against a specification you never load and never restate.
+You write four events — intake refusal, lane start, plan comment, lane conclusion — and this section is the whole of what they are. The mid-lane endings are the **notifier's**, written from inside the phase script against a specification you never load and never restate.
 
-**The message shape** is the issue number, a state token, the reason where one exists, then the link — the pull request link where one exists, the issue link otherwise. Your tokens are `start` at intake and `draft` or `ready` at the conclusion:
+**The message shape** is the issue number, a state token, the reason where one exists, then the link — the pull request link where one exists, the issue link otherwise. Your tokens are `start` at intake, `draft` or `ready` at the conclusion, and `failed` for an intake refusal:
 
 ```
 #105 start: <issue link>
@@ -58,9 +58,13 @@ You write three events — lane start, plan comment, lane conclusion — and thi
 
 #105 ready:
 <pr link>
+
+failed: <the prerequisites the refusal names>
+#105 <issue link>
+#106 <issue link>
 ```
 
-**The reason stays**, and **no message carries the run handle.** A lane with one sub-lane emits the single-line shape exactly; a lane with several emits one line per sub-lane under a shared header naming the issue once, having no single state or link of its own.
+**The reason stays**, and **no message carries the run handle.** A lane with one sub-lane emits the single-line shape exactly; a lane with several emits one line per sub-lane under a shared header naming the issue once, having no single state or link of its own. A refusal is that same shared header applied to the RUN — its state and reason once, then one line per issue the arguments named — and it is one message for the whole run rather than one per lane, no lane having started.
 
 **No notification failure changes the lane it reports.** A `gh` command that fails, a role the repository has no label string for, an unreachable channel — each is reported and then let go.
 
@@ -137,6 +141,15 @@ Profile keys:
    - **Neither remedy appends a line `.gitignore` already carries** — read the file first, and where the exact line is present skip the append and report nothing.
    - `.worktreeinclude` missing — the repo-root file naming which gitignored files worktrees need (gitignore syntax) → under `gated`, ask-then-persist, the file itself being the persistence: offer candidates from `git ls-files -oi --exclude-standard --directory`, write the selection as a tracked file. "None" writes a comment-only file, which counts as answered. Offer only what a cold checkout cannot run without — env files and local config. Dependencies belong to the Setup command. Under `unattended` the answer is a **refusal**, and no file is written: only a human knows which ignored files a worktree cannot run without, and an empty guess provisions lanes that fail at their first command.
    - `.worktreeinclude`'s LAST line must be `!.claude/worktrees/**` — append or move it there (gitignore matching is last-match-wins). It keeps every copy mechanism — Act 2 and Claude Code's native worktrees alike — from cloning existing worktrees into a new one.
+
+**⟨notify⟩ Intake refusal.** Everything this run cannot supply for itself stops it here, in ONE report naming all of it — a report naming the first missing prerequisite alone turns one fix into three failed runs. Two sources, in this order: the **Workflow tool** where step 2 found it absent, which only this session can see and no script can test, then the **Missing, cannot run** block of
+
+```bash
+node <this-skill-dir>/preconditions.mjs <MAIN> dev-loop
+```
+
+which exits non-zero when that block is non-empty. Either source carrying anything ⇒ the run refuses: `gh issue comment` the report verbatim — nothing here paraphrases a line of it — on EVERY issue the arguments named, then ONE `failed` message for the run, and stop. It fires before step 6 reads an issue, so the refusal reaches the whole batch rather than the lanes that would have survived, and above step 10, so it claims no lane: no label of any role is written, no `start` is sent, and no later run has a marker to clear. The module's **Missing, default taken** block never refuses — keep it for Gate 2's **Defaults taken** element. Exit 2 is that call's own usage error and says nothing about the repository: report it and stop.
+
 5. `git fetch origin <DEFAULT>` once.
 6. Per issue: `gh issue view <n> --json number,title,body,state,labels`. CLOSED → drop the lane, tell the user. KEEP the body: Phase B hands it to the reviewer as its Spec axis, and nothing downstream fetches it again.
 7. Parse each body's "Blocked by" section: a blocker that is still open and NOT in this batch → refuse that lane (report why); a blocker inside the batch → record the ordering (it becomes a stacked lane at Gate 1).
