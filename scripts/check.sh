@@ -275,6 +275,32 @@ else
   failed=1
 fi
 
+# --- dispatch argument keys --------------------------------------------------
+# The skill hands the phase script its arguments as JSON and the script reads
+# each by name, so a key renamed on one side arrives undefined on the other.
+dispatch_script="skills/pr-comments/phase-fix.js"
+dispatch_skill="skills/pr-comments/SKILL.md"
+# `|| true` on both: pipefail turns a grep that matched nothing into a set -e exit
+# here, which would kill the run before the guard below can name the empty side.
+keys_read="$(grep -oE 'input\.[A-Za-z][A-Za-z0-9]*' "$REPO/$dispatch_script" | cut -d. -f2 | sort -u || true)"
+keys_passed="$(awk '/scriptPath/{seen=1} seen && /^```json$/{block=1; next} block && /^```/{exit} block' "$REPO/$dispatch_skill" \
+  | grep -oE '^[[:space:]]*"[A-Za-z][A-Za-z0-9]*"[[:space:]]*:' | grep -oE '[A-Za-z][A-Za-z0-9]*' | sort -u || true)"
+if [ -z "$keys_read" ] || [ -z "$keys_passed" ]; then
+  echo "FAIL  dispatch argument keys: nothing to compare — expected 'input.<key>' reads in the script and a json block after the skill's scriptPath line" >&2
+  echo "      $dispatch_script reads:  $(echo "${keys_read:-none}" | tr '\n' ' ')" >&2
+  echo "      $dispatch_skill passes: $(echo "${keys_passed:-none}" | tr '\n' ' ')" >&2
+  failed=1
+else
+  keys_absent="$(comm -23 <(printf '%s\n' "$keys_read") <(printf '%s\n' "$keys_passed") | tr '\n' ' ')"
+  if [ -n "${keys_absent// /}" ]; then
+    echo "FAIL  dispatch argument keys read by $dispatch_script, absent from the dispatch block in $dispatch_skill:$keys_absent" >&2
+    echo "      block passes: $(echo "$keys_passed" | tr '\n' ' ')" >&2
+    failed=1
+  else
+    echo "ok    dispatch argument keys ($(echo "$keys_read" | wc -w) keys)"
+  fi
+fi
+
 # --- profile split -----------------------------------------------------------
 # Each of the three worktree keys resolves against one file with no fallback, so
 # a heading left in both pins a repo to the copy nothing reads.
