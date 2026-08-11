@@ -4,13 +4,14 @@
 
 `/pr-comments` takes one pull request's unresolved comments and produces one pushed fix. It
 reads them, classifies each **fix** or **skip**, puts the table in front of you, answers every review
-thread it read in that thread, and drives the approved fix rows through `/dev-loop`'s execute phase —
-writer, review loop and suite gate, unchanged — in a worktree attached to the pull request's own head
-branch.
+thread it read in that thread, and drives the approved fix rows through its own **fix phase** — writer,
+review loop and suite gate — in a worktree attached to the pull request's own head branch.
 
 It is an **orchestrator** and it stays in the main worktree. It writes no code and dispatches no
 planner: the classification is its own plain reading of each comment body, and everything after the
-gate is the pipeline [`/dev-loop`](./dev-loop.md) already has. What it adds is the table.
+gate is `phase-fix.js`, bundled with the skill — a trimmed derivation of
+[`/dev-loop`](./dev-loop.md)'s execute phase rather than a call into it, so the two change
+independently. What it adds is the table.
 
 Reach for `/dev-loop` when the input is an issue. Reach for this when the input is a review someone
 already left on a pull request that exists.
@@ -45,14 +46,11 @@ than quietly reinterpreted as this repository's pull request of the same number.
 
 ## Prerequisites
 
-**The Workflow tool.** The execute phase is dispatched through it, so a session without it stops the
+**The Workflow tool.** The fix phase is dispatched through it, so a session without it stops the
 run at the first precondition — which names the setting, `"enableWorkflows": true` in
 `~/.claude/settings.json`, and says a **restart is required**. It asks nothing and writes nothing: a
 supervised `/dev-loop` run owns that question and asks it once per machine, and a second asker is a
 second question.
-
-**The sibling `dev-loop` skill folder.** `phase-execute.js` travels with it and is what runs the fix.
-The two install together, and nothing here reimplements it.
 
 **`gh`, authenticated**, and a pull request that is **open**, **not from a fork**, and whose head
 branch is **not** your default branch. Those three are preconditions rather than surprises later: a
@@ -68,6 +66,11 @@ file lacks is asked once and written in by a **supervised** run, which is the on
 default persisted is a value nobody chose, written down as though somebody had. This skill adds no
 key, no second profile and no argument of its own.
 
+**Under `auto` alone, the sibling `dev-loop` skill folder** — for two files and no others:
+`preconditions.mjs`, the shared check behind the paragraph below, and `notify.sh`, the channel every
+message goes to. Both belong to the unattended branch, so a supervised run never resolves that folder
+at all, and a run that finds either missing says the two skills install together.
+
 **Under `auto`, three prerequisites have no default honest enough to take.** **Setup command**,
 **Full-suite command**, and `.worktreeinclude` — the repo-root file naming which gitignored files a
 worktree needs, which no run here ever asks for, and whose absence costs a supervised run only those
@@ -79,9 +82,9 @@ that run and written into no profile.
 
 In order:
 
-1. **Preconditions** — the five above under both modes, plus, under `auto` alone, the check for what
-   that run has nobody to ask for. A run refused on the first five has written nothing anywhere; the
-   sixth is the one refusal that writes.
+1. **Preconditions** — the four above under both modes, plus, under `auto` alone, the sibling folder
+   and the check for what that run has nobody to ask for. A run refused on the first four has written
+   nothing anywhere; the fifth is the one refusal that writes.
 2. **The read.** One bundled normaliser prints every unresolved comment as a single JSON document,
    review threads, review bodies and issue comments in one shape. It excludes resolved threads,
    minimised comments and unsubmitted or bodyless reviews, and a non-zero exit is a **failed read**
@@ -94,13 +97,14 @@ In order:
 5. **The threads, answered.** Every review thread the table covers gets one reply in that thread —
    fix, skip and unclassified alike. Threads with no fix row are answered here; a thread holding a fix
    waits for step 10, so its reply can carry the commit that answered it.
-6. **The plan.** The approved table's fix rows become the file the execute phase runs on, each entry
+6. **The plan.** The approved table's fix rows become the file the fix phase runs on, each entry
    naming the comments it satisfies and carrying their bodies verbatim.
 7. **The worktree**, attached to the pull request's own head branch at the remote's tip — nothing here
    creates a branch — plus the gitignored files your `.worktreeinclude` names, plus your Setup command.
-8. **The execute phase**, dispatched as `/dev-loop` dispatches it: one lane, one sub-lane, one commit
-   per ordinal in ordinal order. Its loops, bounds and endings are the pipeline's and are documented in
-   [internals](./dev-loop-internals.md).
+8. **The fix phase** — `phase-fix.js`, dispatched with one flat set of arguments: one worktree, one
+   branch, one commit per ordinal in ordinal order, each with two debug-and-fix attempts behind it,
+   then the review loop, then the suite gate. It ends **HALT** where something deliberately stopped and
+   **FAILED** where something broke.
 9. **The push** — one `git push`, a fast-forward, to that same branch, and only where a commit was
    actually made.
 10. **The fix threads, answered**, each carrying the short sha and subject of the commit that answered
@@ -110,7 +114,7 @@ In order:
 12. **The worktree, removed last** — and only where the push succeeded.
 
 **Nothing touches the pull request before the gate** — everything up to it is a read, and under `auto`
-the table posted in the gate's place is the run's first write, unless the sixth precondition refused
+the table posted in the gate's place is the run's first write, unless the fifth precondition refused
 first, in which case its report is the only write there is. A supervised run you stop at the gate
 leaves no trace on it at all.
 
@@ -143,7 +147,7 @@ version of that rule, because here every artifact in sight belongs to somebody e
 
 ## The comment table is the plan
 
-The table's fix rows are written out as the plan file the execute phase runs on. There is no separate
+The table's fix rows are written out as the plan file the fix phase runs on. There is no separate
 planning stage and no architect is dispatched — which is also why commit grouping is decided **before**
 the gate rather than after it: approving those rows is what approves the commits.
 
@@ -159,7 +163,7 @@ something nobody asked for.
 Two consequences worth knowing:
 
 - **There is no acceptance-criteria section anywhere in the output.** No issue means no spec axis, so
-  the reviewer's criterion verdicts come back empty by the existing contract and a section that
+  the reviewer is never asked for criterion verdicts and the record carries none — a section that
   rendered nothing would claim something had been judged.
 - **The run's plan file is working material under `.scratch/`, not an artifact.** Its content is what
   the conclusion comment carries, and **that comment is the durable copy** — the file is gitignored and
@@ -201,6 +205,9 @@ names the default the work ran on. The three with no honest default refuse the r
 has read a comment: one report naming every missing one, posted on the pull request in place of both
 the table and the conclusion, and sent as a single `failed` message.
 
+**A missing sibling folder refuses the same way and sends nothing at all** — the channel is one of the
+two files that refusal is about, so the report on the pull request is the whole of it.
+
 **The threads are answered under `auto` exactly as they are under a supervised run.** The two modes
 differ only at the listing step, where you see what will be fixed and skipped and why; that difference
 never reaches the threads, which is what puts a `disagreed with` reply in front of the reviewer it
@@ -209,14 +216,15 @@ disagrees with even when nobody is left to overrule it.
 An unattended run also sends **one `start` message at intake and exactly one closing message**, through
 the same notifier `/dev-loop` uses — silent when your channel is unconfigured, and no notification
 failure ever changes the run it reports. The pairing is **one-directional**: every `start` is closed,
-and the refusal above is a close with no `start` before it, which reads as the run that never began.
+and a refusal is a close with no `start` before it — or, where the sibling folder was what was
+missing, no message at all — which reads as the run that never began.
 The closing token answers one question: did something deliberately stop, or did something break?
 
 | Token | When |
 |---|---|
 | `ready` | clean, the commits pushed — with the fixed, skipped and unclassified counts |
-| `halt` | nothing to do, git refused to attach the worktree, or the lane stopped deliberately |
-| `failed` | a prerequisite refused the run, the read failed, the lane broke, or nothing was pushed when something should have been |
+| `halt` | nothing to do, git refused to attach the worktree, or the fix phase stopped deliberately |
+| `failed` | a prerequisite refused the run, the read failed, the fix phase broke or crashed, or nothing was pushed when something should have been |
 
 `draft` never applies, because this run opens no pull request and converts nobody's state, and no
 further token is invented. A closed set is what makes a dead run readable by inspection — a `start`
@@ -231,7 +239,7 @@ to make, and dispatching the phase anyway would point the review loop at an empt
 
 ### A run that ended
 
-The lane halted or failed, the push was rejected, or the phase made no commit at all. The branch is
+The fix phase halted or failed, the push was rejected, or it made no commit at all. The branch is
 untouched and **the worktree is kept**: the work is in it, and it is the only copy there is. The
 conclusion comment names it by path, names the plan file kept beside it, and — where the environment
 gave one — the run handle, which is what locates this run's transcript once the session is gone.
@@ -333,11 +341,16 @@ and counting one would report a failure as delivery.
 
 **How many fix cycles does the review loop get?**
 
-Whatever the Fix cycles key in `docs/agents/worktree.md` says, under the pipeline's own ceiling — or
-`2`, where an unattended run found the key absent and took the default rather than asking. This skill
-changes nothing under `/dev-loop`: the loops, their bounds and every ending belong to
-`phase-execute.js` and are documented in [internals](./dev-loop-internals.md), which is the only place
-their numbers are written down.
+Whatever the Fix cycles key in `docs/agents/worktree.md` says — or `2`, where an unattended run found
+the key absent and took the default rather than asking. That number is a **no-progress threshold**
+rather than a cap: the counter starts at 1 on the first round that requests changes and resets whenever
+a round brings a finding nobody has seen before, so a loop still turning up new things keeps going.
+
+Over it sits a **hard ceiling of 5 fix cycles**, which applies however much progress is being made,
+because a finding list compared wrongly would look new every round and reset the counter forever. That
+number is written here and held as a constant in `phase-fix.js`, and `npm run check` compares the two —
+a number written twice is a number that can disagree with itself. The suite gate is bounded the same
+way: it stops after 8 red rounds, or after two that brought no failure it had not already seen.
 
 **Can I point it at several pull requests?**
 
@@ -369,7 +382,8 @@ one branch, one push, one comment thread to report into.
   unchanged, and no body anyone wrote has been edited.
 - A run that ended left its worktree standing and named it, by path, in that comment.
 - Under `auto`, one `start` message is paired with exactly one closing message carrying `ready`, `halt`
-  or `failed` — and a reason. A refused run sends that closing message alone.
+  or `failed` — and a reason. A refused run sends that closing message alone, or nothing at all where
+  the sibling folder was what was missing.
 
 ## Where a rule lives
 
