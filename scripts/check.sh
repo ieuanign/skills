@@ -250,9 +250,9 @@ else
 fi
 
 # --- review-loop ceiling ------------------------------------------------------
-# The review loop's hard ceiling is stated twice on purpose: as prose in
-# docs/dev-loop-internals.md, which is what a human reads, and as a constant in
-# the phase script, which is what actually stops the loop. That is the same triplication hazard the cost
+# Each lane that runs a review loop states its hard ceiling twice on purpose: as
+# prose, which is what a human reads, and as a constant in the phase script,
+# which is what actually stops the loop. That is the same drift hazard the cost
 # stage vocabulary above exists for, so it gets the same treatment rather than a
 # seam of its own — the harness cannot catch it, because it would only ever
 # assert whichever number the script happens to hold.
@@ -260,20 +260,31 @@ fi
 # The prose phrase carries no markup INSIDE it, which is what makes it greppable
 # while still reading as a sentence. Every occurrence is collected, not just the
 # first: two prose mentions that drifted from each other is the same failure.
-ceiling_const="$(grep -m1 -oE '^const REVIEW_CEILING = [0-9]+' "$REPO/skills/dev-loop/phase-execute.js" | grep -oE '[0-9]+')"
-ceiling_prose="$(grep -oE 'hard ceiling of [0-9]+ fix cycles' "$REPO/docs/dev-loop-internals.md" | grep -oE '[0-9]+' | sort -u)"
-if [ -z "$ceiling_const" ] || [ -z "$ceiling_prose" ]; then
-  echo "FAIL  review-loop ceiling: const=${ceiling_const:-not found} prose=${ceiling_prose:-not found}" >&2
-  echo "      expected 'const REVIEW_CEILING = <n>' in phase-execute.js and 'hard ceiling of <n> fix cycles' in docs/dev-loop-internals.md" >&2
-  failed=1
-elif [ "$ceiling_const" = "$ceiling_prose" ]; then
-  echo "ok    review-loop ceiling ($ceiling_const fix cycles)"
-else
-  echo "FAIL  review-loop ceiling drifted" >&2
-  echo "      phase-execute.js: $ceiling_const" >&2
-  echo "      internals doc:    $(echo "$ceiling_prose" | tr '\n' ' ')" >&2
-  failed=1
-fi
+#
+# One `<phase script> <prose page>` pair per lane; a lane's prose lives with the
+# lane, so a second script does not report against the first one's page.
+while read -r ceiling_script ceiling_doc; do
+  # `|| true` on both: pipefail turns a grep that matched nothing into a set -e
+  # exit here, which would kill the run before the guard can name the empty side.
+  ceiling_const="$(grep -m1 -oE '^const REVIEW_CEILING = [0-9]+' "$REPO/$ceiling_script" | grep -oE '[0-9]+' || true)"
+  ceiling_prose="$(grep -oE 'hard ceiling of [0-9]+ fix cycles' "$REPO/$ceiling_doc" | grep -oE '[0-9]+' | sort -u || true)"
+  if [ -z "$ceiling_const" ] || [ -z "$ceiling_prose" ]; then
+    echo "FAIL  review-loop ceiling: nothing to compare" >&2
+    echo "      $ceiling_script: ${ceiling_const:-no 'const REVIEW_CEILING = <n>'}" >&2
+    echo "      $ceiling_doc: ${ceiling_prose:-no 'hard ceiling of <n> fix cycles'}" >&2
+    failed=1
+  elif [ "$ceiling_const" = "$ceiling_prose" ]; then
+    echo "ok    review-loop ceiling $ceiling_script ($ceiling_const fix cycles)"
+  else
+    echo "FAIL  review-loop ceiling drifted" >&2
+    echo "      $ceiling_script: $ceiling_const" >&2
+    echo "      $ceiling_doc: $(echo "$ceiling_prose" | tr '\n' ' ')" >&2
+    failed=1
+  fi
+done <<'CEILING_PAIRS'
+skills/dev-loop/phase-execute.js docs/dev-loop-internals.md
+skills/pr-comments/phase-fix.js docs/pr-comments.md
+CEILING_PAIRS
 
 # --- dispatch argument keys --------------------------------------------------
 # The skill hands the phase script its arguments as JSON and the script reads
