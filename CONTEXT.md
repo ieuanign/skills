@@ -117,7 +117,7 @@ _Avoid_: session resume id, run id.
 
 ## Agent roster
 
-The five subagents this plugin ships from `agents/` at its root: `architecture-engineer`, `code-writer`, `reviewer`, `debugger`, and `notifier`. They install with the plugin and are dispatched by name; nothing is copied into the consuming repo. The first four are dispatched by the orchestrator or a phase script for the work they do; `notifier` alone is dispatched only from inside a running phase script, and only under an unattended run, because that is the one moment the orchestrator has no shell.
+The five subagents this plugin ships from `agents/` at its root: `architecture-engineer`, `code-writer`, `reviewer`, `debugger`, and `notifier`. They install with the plugin and are dispatched by name; nothing is copied into the consuming repo. The first four are dispatched by the orchestrator or a phase script for the work they do; `notifier` alone is dispatched only from inside a running phase script, and only under an unattended `/dev-loop` run, because that is the one moment the orchestrator has no shell.
 
 ## Discovery cost
 
@@ -213,9 +213,9 @@ decision.
 ## Pull request-comment lane
 
 The run one open pull request's comments get, end to end: read, classified into a **comment table**,
-approved, answered in the review threads that raised them, then driven through `/dev-loop`'s execute
-phase — writer, review loop, suite gate — and pushed to the head branch that pull request already has.
-One run works one pull request.
+approved, answered in the review threads that raised them, then driven through its own execute phase —
+the fix phase: writer, review loop, suite gate — and pushed to the head branch that pull request
+already has. One run works one pull request.
 
 Three things a `/dev-loop` lane has, it lacks. No architect is dispatched and no plan is authored,
 because the comment table is the plan the execute phase runs on. No acceptance criteria, and therefore
