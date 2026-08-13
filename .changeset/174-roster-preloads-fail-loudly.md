@@ -5,9 +5,9 @@
 A roster agent whose preloaded skill does not resolve now stops the run, rather than quietly weakening
 it.
 
-`code-writer` preloads `mattpocock-skills:tdd` and `debugger` preloads
-`mattpocock-skills:diagnosing-bugs`, each through its `skills:` frontmatter and each from the plugin's
-declared dependency. An entry that does not resolve is dropped silently: that agent launches without
+A roster agent may preload a skill of the plugin's declared dependency through its `skills:`
+frontmatter — `code-writer` takes `mattpocock-skills:tdd`, for one. An entry that does not resolve is
+dropped silently: that agent launches without
 the method it was written around and returns less, which is indistinguishable from clean code. It
 resolves for the maintainer, whose dependency is installed and enabled, and dies for the consumer whose
 install lacks it, has disabled it, or carries a version that renamed the skill.
@@ -21,9 +21,9 @@ as the plugin-manifest stage beside it already does. That stage catches none of 
 validate --strict` passes on a wholly invented plugin and skill.
 
 **`/dev-loop` refuses at intake.** Act 0's session-capability step gains a second check beside the
-Workflow tool one: the orchestrator looks for each preloaded entry among its own available skills,
-because only the session knows what actually resolved for the agents it is about to dispatch, where a
-manifest, a path or a subprocess knows only what is on disk. Under `gated` the run stops there naming
+Workflow tool one: the orchestrator reads the entries off the roster's own `skills:` lines, then looks
+for each among its own available skills, because only the session knows what actually resolved for the
+agents it is about to dispatch, where a manifest, a path or a subprocess knows only what is on disk. Under `gated` the run stops there naming
 the agent and the entry; under `unattended` those same names join the ⟨notify⟩ Intake refusal, whose
 source list goes from two to three. Nothing is asked under either mode and no profile key is added —
 this is not an answer a human can supply to the run.
