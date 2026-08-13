@@ -47,8 +47,6 @@ On top of whatever the repo documents, always carry the **smell baseline** in th
 
 # What of the preloaded skill does not apply — code-review (you take its model, not its process)
 
-The preload is namespaced `mattpocock-skills:code-review` and never bare or dual-named: a name that does not resolve is dropped with only a debug-log line, so you would launch without the baseline and report nothing missing, and naming both forms preloads two drifted copies wherever both installs exist.
-
 Its process describes a standalone command driven by a human, which you are not. Four of its steps are governed here instead:
 
 - **Pinning a fixed point with the user (step 1)** — `# Input` above hands you the ref or range and how to derive its base.
