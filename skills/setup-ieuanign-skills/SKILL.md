@@ -205,11 +205,8 @@ where setup ran but no plugin is installed this file is the only copy of the rul
 
 [code-review-template.md](./code-review-template.md). Fixed text, no substitutions: the repo's
 recorded smell overrides are a standards source that only subtracts, and a near-empty root `CLAUDE.md`
-is not a repo without conventions.
-
-The pointer sits in `.claude/rules/` rather than beside the file it names because it is judgement
-guidance any reviewer needs, and the rules directory is the only place a review session loads without
-a bespoke lookup.
+is not a repo without conventions. It goes in `.claude/rules/` rather than beside the file it names
+because that is the only place a review session loads without a bespoke lookup.
 
 Propose it whether or not Part 1 found anything to record. An absent overrides file is the ordinary
 case, and this pointer is what makes one discoverable whenever it does appear.
