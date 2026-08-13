@@ -62,9 +62,9 @@ supervised run is what offers you the choice.
 installs the agent roster. `npx skills add` picks up the skills alone, and a lane with no roster has
 nothing to dispatch.
 
-**The roster's preloaded skills, resolving.** Two of those agents preload a skill of the declared
-dependency through their frontmatter — `code-writer` takes `mattpocock-skills:tdd`, `debugger` takes
-`mattpocock-skills:diagnosing-bugs`. An entry that does not resolve is dropped silently, so the agent
+**The roster's preloaded skills, resolving.** Several of those agents preload a skill of the declared
+dependency through their frontmatter, such as `code-writer`'s `mattpocock-skills:tdd`; the roster's own
+`skills:` lines are the list. An entry that does not resolve is dropped silently, so the agent
 launches without the method it was written around and returns less, which is indistinguishable from
 clean code. Intake looks for each entry among the session's own skills and refuses the run when one is
 absent, naming the agent and the entry — under both run modes, and asking nothing. Installing the
