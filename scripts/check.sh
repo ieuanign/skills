@@ -28,10 +28,8 @@ fi
 # An agent's `skills:` frontmatter preloads a skill of the declared dependency by
 # `<plugin>:<skill>`. An entry that does not resolve is dropped SILENTLY: the
 # agent launches without the method and returns less, which is indistinguishable
-# from clean code. It resolves for the maintainer, whose dependency is installed
-# and enabled, and dies for the consumer whose install lacks it, disables it, or
-# whose version renamed the skill. The manifest stage above sees none of that —
-# `claude plugin validate --strict` passes on a wholly invented `<plugin>:<skill>`.
+# from clean code. The manifest stage above sees none of that — `claude plugin
+# validate --strict` passes on a wholly invented `<plugin>:<skill>`.
 #
 # `claude plugin details` reports a missing or disabled plugin on stdout, with an
 # exit status that has differed between CLI versions, so the `Skills (` inventory
