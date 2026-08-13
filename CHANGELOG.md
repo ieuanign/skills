@@ -1,5 +1,68 @@
 # ieuanign-skills
 
+## 0.17.0
+
+### Minor Changes
+
+- [`e1a4258`](https://github.com/ieuanign/skills/commit/e1a42581814723a00e791d5e86b94dcc9c90de52) Thanks [@ieuanign](https://github.com/ieuanign)! - A roster agent whose preloaded skill does not resolve now stops the run, rather than quietly weakening
+  it.
+
+  A roster agent may preload a skill of the plugin's declared dependency through its `skills:`
+  frontmatter — `code-writer` takes `mattpocock-skills:tdd`, for one. An entry that does not resolve is
+  dropped silently: that agent launches without
+  the method it was written around and returns less, which is indistinguishable from clean code. It
+  resolves for the maintainer, whose dependency is installed and enabled, and dies for the consumer whose
+  install lacks it, has disabled it, or carries a version that renamed the skill.
+
+  **`npm run check` gains a `roster skill preloads` stage.** Every `<plugin>:<skill>` in an `agents/*.md`
+  frontmatter is resolved against `claude plugin details <plugin>`, and every shape that does not resolve
+  is a FAIL naming the agent and the entry — a `skills:` line the stage cannot read, an entry that is not
+  `<plugin>:<skill>`, a plugin that lists no skills, a roster that declares none at all. Never a skip: a
+  silent skip is the failure the stage exists to catch. It stands down only where `claude` is off PATH,
+  as the plugin-manifest stage beside it already does. That stage catches none of this — `claude plugin
+validate --strict` passes on a wholly invented plugin and skill.
+
+  **`/dev-loop` refuses at intake.** Act 0's session-capability step gains a second check beside the
+  Workflow tool one: the orchestrator reads the entries off the roster's own `skills:` lines, then looks
+  for each among its own available skills, because only the session knows what actually resolved for the
+  agents it is about to dispatch, where a manifest, a path or a subprocess knows only what is on disk. Under `gated` the run stops there naming
+  the agent and the entry; under `unattended` those same names join the ⟨notify⟩ Intake refusal, whose
+  source list goes from two to three. Nothing is asked under either mode and no profile key is added —
+  this is not an answer a human can supply to the run.
+
+  `docs/dev-loop.md` records it beside the prerequisites it sits with. No agent definition was edited.
+
+- [`8c80740`](https://github.com/ieuanign/skills/commit/8c807400f012e9d89c274c8081893abd805ca0ab) Thanks [@ieuanign](https://github.com/ieuanign)! - `/setup-ieuanign-skills` Part 3 offers a sixth `.claude/rules/` convention: where a review finds the
+  repository's standards.
+
+  Two facts a review depends on were stated only inside a review skill — that
+  `docs/agents/smell-overrides.md` is a standards source which only ever _subtracts_ from the code-smell
+  baseline, and that a near-empty root `CLAUDE.md` is not a repository without conventions. A review
+  that does not load that skill has neither, and reports a standard the repo deliberately overrode or
+  concludes the repo documents nothing. `.claude/rules/*.md` arrives at launch in every session and
+  every sub-agent, so the rule reaches a review however it was started; a convention that holds with or
+  without the plugin is `.claude/rules/` territory by this skill's own uninstall test.
+
+  Fixed text, no substitutions, and deliberately no `paths` frontmatter — scoping it to file types is
+  exactly what would keep it out of the review that needs it. It points and never copies: no baseline,
+  no override entry, and the standing note that an absent overrides file is the ordinary state, never
+  asked for and never reported missing.
+
+- [#224](https://github.com/ieuanign/skills/pull/224) [`b933375`](https://github.com/ieuanign/skills/commit/b933375a40b7b9e14137eff452a8245e928c44da) Thanks [@ieuanign](https://github.com/ieuanign)! - `/code-review-mp` is retired. `/mattpocock-skills:code-review` is the command to reach for by hand,
+  and the `reviewer` agent preloads that same skill — one review model, in two shells.
+
+  The fork carried its own copy of the twelve-smell Fowler baseline and so did `agents/reviewer.md`,
+  with nothing comparing either pair; the fork had meanwhile drifted three versions behind the skill it
+  was forked from. The agent now takes the baseline and its two binding rules from the preload, and
+  states which four of that skill's process steps a `/dev-loop` run governs instead — the fixed-point
+  pin, the spec source, the parallel sub-agents, and the `## Standards` / `## Spec` aggregation format.
+  Its seven priority-ordered rubric dimensions, its Spec axis and its return format are untouched, so
+  the pipeline parses the same contract it always did.
+
+  Nothing to migrate but the name: `/mattpocock-skills:code-review` arrives with the plugin dependency,
+  so it is already installed wherever `/code-review-mp` was. `/setup-ieuanign-skills` and its
+  smell-overrides template, `README.md`, `CONTEXT.md` and `docs/pr-comments.md` all name it now.
+
 ## 0.16.2
 
 ### Patch Changes
