@@ -9,15 +9,11 @@ export const meta = {
   ],
 }
 
-// Derived from skills/dev-loop/phase-execute.js, and deliberately a copy rather than a shared
-// dependency: that script runs many lanes over many issues, this one runs one pull request's fix
-// rows on the branch the pull request already has. What must not drift from it — the two debug+fix
-// attempts with the give-up clause on the final one, the review loop's no-progress threshold under
-// its 5-fix-cycle ceiling, the suite gate's 8-round and 2-rounds-without-a-new-failure bounds, the
-// HALT and FAILED labels, and the one sentence every stage that returned nothing carries.
-//
-// It emits no lane-and-stage marker. The cost report buckets transcripts by that marker's issue
-// number, and one written here would file this run's under the /dev-loop lane sharing the number.
+// A deliberate copy of skills/dev-loop/phase-execute.js, not a shared dependency: that runs many
+// lanes over many issues, this runs one pull request's fix rows. Its bounds must not drift from it.
+
+// No lane-and-stage marker: the cost report buckets transcripts by that marker's issue number, and
+// one written here would file this run's under the /dev-loop lane sharing the number.
 
 // args: {
 //   pr: number,                    // the pull request being fixed; reaches every label and prompt
@@ -31,8 +27,7 @@ export const meta = {
 //   agentNamespace: string         // the roster's registry namespace; absent ⇒ bare names
 // }
 
-// Returns the record directly — there is one branch, one worktree and one pull request, so there is
-// nothing to nest it in:
+// Returns the record directly — one branch, one worktree, one pull request, so nothing wraps it:
 // { branch, ending: {category, reason}|null, commits, plannedCommits, madeCommits, deviations,
 //   disputed, reviewNotes, fixedFindings, wontFix, openFindings, reviewTrajectory, suite, attempts }
 //
