@@ -1,33 +1,19 @@
 #!/usr/bin/env node
 //
-// Two execution state machines, each driven end to end with NO agent dispatched.
+// Two execution state machines — phase-execute.js and phase-fix.js — each driven end to end with NO
+// agent dispatched. Their one outside dependency is the `agent()` global, which makes it the highest
+// seam available: a scripted fake drives every loop, bound and ending for the price of a `node`
+// process. Separate implementations, so each gets its own scenarios — a shared set would assert only
+// whatever they still had in common.
 //
-// `skills/dev-loop/phase-execute.js` and `skills/pr-comments/phase-fix.js` are each the whole of
-// their state machine — every loop, every bound, every ending — and their one outside dependency is
-// the `agent()` global the Workflow runner supplies. That is the seam, and it is the highest one
-// available: above every loop, above every bound, above every ending. Compiling a script with the
-// shared shim and handing it a SCRIPTED FAKE `agent()` runs the machine deterministically for the
-// price of a `node` process. They are deliberately separate implementations, so each is driven
-// separately — a shared scenario set would only assert whatever they still had in common.
+// Asserted per scenario and nothing else: the ordered labels the fake `agent()` was asked for, and
+// what the script returned. Never an internal, a private helper, or prompt wording no contract
+// requires — a scenario breaking on a refactor that changed no behaviour is a bad scenario. These
+// scenarios are the behaviour the scripts are held to, so a failing one is the script's bug until
+// somebody changes the scenario on purpose.
 //
-// Two observables per scenario, and no others:
-//
-//   1. the ordered labels the fake `agent()` was asked for — which stages ran, in what order;
-//   2. what the script returned — ending label, ending reason, findings ledger, and for
-//      phase-execute.js the terminal pull-request state its lanes carry.
-//
-// Nothing here asserts on an internal variable, a private helper, or prompt wording beyond an
-// input a contract requires to be present. A test that breaks when a loop is refactored but its
-// behaviour is unchanged is a bad test, and this file is meant to survive refactors of the files it
-// tests. Each script is the specification **as against the prose**: with one implementation left, a
-// document that disagrees with the script is the document's bug, and `docs/dev-loop-internals.md`
-// explains why. That does not extend to this harness — these scenarios are the behaviour the
-// scripts are held to, so a failing scenario is a script's bug until somebody changes the scenario
-// on purpose.
-//
-// Run: `node scripts/state-machine.mjs` (also a stage of `npm run check`). Every scenario runs
-// even when an earlier one fails, per the check script's convention; the exit code is non-zero if
-// any failed.
+// Run: `node scripts/state-machine.mjs`, also a stage of `npm run check`. Every scenario runs even
+// when an earlier one fails; the exit code is non-zero if any did.
 
 import assert from 'node:assert/strict'
 import { compilePhaseScript } from './lib/phase-script.mjs'
@@ -39,14 +25,13 @@ const phaseFix = compilePhaseScript(FIX)
 
 // --- the fake runner ---------------------------------------------------------
 
-// `script` maps a call label to what that call returns. A function value is called, so a scenario
-// can throw from a stage. `null` is a stage that returned nothing — the deliberate dead agent.
-// A label with NO entry is a harness bug, not a dead agent: it is collected and reported as one,
-// because both phase scripts catch every throw and would otherwise turn a typo in this file into a
-// plausible-looking FAILED ending.
-//
-// Curried over the compiled script so the two scenario sets drive their own machine through one
-// runner — a second copy is a second set of runner semantics nothing compares.
+// `script` maps a call label to what it returns; a function value is called, so a scenario can throw
+// from a stage, and `null` is the deliberate dead agent.
+
+// A label with NO entry is a harness bug, not a dead agent: both phase scripts catch every throw, so
+// an unreported typo here would read as a plausible FAILED ending. Collected and reported as one.
+
+// Curried over the compiled script so both scenario sets drive their own machine through one runner.
 const driver = phase => async (args, script) => {
   const calls = []
   const logs = []
