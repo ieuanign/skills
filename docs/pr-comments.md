@@ -52,6 +52,20 @@ run at the first precondition — which names the setting, `"enableWorkflows": t
 supervised `/dev-loop` run owns that question and asks it once per machine, and a second asker is a
 second question.
 
+**The skills its agents preload.** The three roster agents the fix phase dispatches — `code-writer`,
+`reviewer` and `debugger` — each preload a skill of the declared dependency through their frontmatter,
+and an entry that does not resolve is dropped silently: the agent launches without the method it was
+written around, which here means a thinned review that reads like clean code, with no gate between
+that verdict and the push. So the second precondition reads those three agents' `skills:` lines off the
+roster and looks for each entry among the session's own skills, refusing under both modes and naming
+the agent, the entry, and the remedy the entry's own namespace decides — nothing of that namespace
+visible means the plugin shipping it is absent or disabled, and a **restart is required**; other skills
+of it visible means the entry is stale against the installed version, a defect to report rather than
+anything to install. It asks nothing, writes nothing, and refuses on finding nothing too: no roster
+file read, or no `skills:` line among the three, tells you as little as a check that never ran. The
+roster agents this run never dispatches are not checked — a preload dropped from one of those cannot
+reach the fixes it pushes.
+
 **`gh`, authenticated**, and a pull request that is **open**, **not from a fork**, and whose head
 branch is **not** your default branch. Those three are preconditions rather than surprises later: a
 merged or closed pull request may already have had its branch deleted, a fork's head branch lives on
@@ -82,9 +96,9 @@ that run and written into no profile.
 
 In order:
 
-1. **Preconditions** — the four above under both modes, plus, under `auto` alone, the sibling folder
-   and the check for what that run has nobody to ask for. A run refused on the first four has written
-   nothing anywhere; the fifth is the one refusal that writes.
+1. **Preconditions** — the five above under both modes, plus, under `auto` alone, the sibling folder
+   and the check for what that run has nobody to ask for. A run refused on the first five has written
+   nothing anywhere; the sixth is the one refusal that writes.
 2. **The read.** One bundled normaliser prints every unresolved comment as a single JSON document,
    review threads, review bodies and issue comments in one shape. It excludes resolved threads,
    minimised comments and unsubmitted or bodyless reviews, and a non-zero exit is a **failed read**
@@ -114,7 +128,7 @@ In order:
 12. **The worktree, removed last** — and only where the push succeeded.
 
 **Nothing touches the pull request before the gate** — everything up to it is a read, and under `auto`
-the table posted in the gate's place is the run's first write, unless the fifth precondition refused
+the table posted in the gate's place is the run's first write, unless the sixth precondition refused
 first, in which case its report is the only write there is. A supervised run you stop at the gate
 leaves no trace on it at all.
 
