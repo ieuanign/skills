@@ -486,6 +486,21 @@ host juggling several background tasks, each carrying its own concurrency cap in
 
 ### Stack linking
 
+Why the linking **fires at the very end of the batch**, once every sub-lane has pushed and opened its
+pull request, rather than per layer: a stack is a property of the finished batch. Linking a layer at a
+time records a chain that stops short of the work still to come, and a half-linked stack is worse than
+none — a reviewer has nothing telling them the chain they were shown is incomplete.
+
+Why **one call per chain and not one per batch**: a batch is not necessarily one stack. Handing every
+pull request in a batch to a single call would assert that an independent lane is what the top layer
+builds on, so the base relation is walked and each maximal chain is linked on its own. A chain of
+fewer than two pull requests is not a stack and is skipped.
+
+Why **a gap in a chain is shown rather than closed up**: the walk stops at a sub-lane that opened no
+pull request, the runs either side are linked as separate chains, and the gap is reported naming that
+sub-lane. Joining across the hole would tell a reviewer the upper pull request is stacked on the lower
+one — a claim the pipeline never made, and one a reviewer has no way to disbelieve.
+
 Why the pull requests are identified **by number** and never by branch name: given branch names the
 tool pushes them and opens pull requests of its own, with its own titles and bodies — which would
 fight the profile's title format, overwrite the body template, and cost the run the `Closes #<n>`, the
