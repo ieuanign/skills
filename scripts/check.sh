@@ -334,31 +334,33 @@ else
 fi
 
 # --- worktree removal guardrail ----------------------------------------------
-# Every skill that removes a worktree states the never-force guard itself, none
+# Every file that removes a worktree states the never-force guard itself, none
 # of them loading the others; the sentence carries no markup so it greps.
 guard_phrase='Worktree removal never passes --force.'
 guard_carriers=0
 guard_missing=""
-while IFS= read -r skill; do
-  rel="${skill#"$REPO/"}"
+# Every bundled .md, not just SKILL.md: a skill may split its steps across
+# supporting files, and a removal travels with the step that performs it.
+while IFS= read -r doc; do
+  rel="${doc#"$REPO/"}"
   # A carrier names what it removes. A mention followed only by a flag is prose
-  # about the rule — a skill documenting it, not one performing a removal.
-  grep -qE 'worktree remove +[^-` ]' "$skill" || continue
-  if grep -qF "$guard_phrase" "$skill"; then
+  # about the rule — a file documenting it, not one performing a removal.
+  grep -qE 'worktree remove +[^-` ]' "$doc" || continue
+  if grep -qF "$guard_phrase" "$doc"; then
     guard_carriers=$((guard_carriers + 1))
   else
     guard_missing="$guard_missing $rel"
   fi
-done < <(find "$REPO/skills" -name 'SKILL.md' -not -path '*/node_modules/*' | sort)
+done < <(find "$REPO/skills" -name '*.md' -not -path '*/node_modules/*' | sort)
 if [ -n "$guard_missing" ]; then
   echo "FAIL  worktree removal guardrail missing from:$guard_missing" >&2
   echo "      each must state it verbatim, any markup outside the sentence: $guard_phrase" >&2
   failed=1
 elif [ "$guard_carriers" -eq 0 ]; then
-  echo "FAIL  worktree removal guardrail: no skill mentions 'worktree remove'" >&2
+  echo "FAIL  worktree removal guardrail: no file mentions 'worktree remove'" >&2
   failed=1
 else
-  echo "ok    worktree removal guardrail ($guard_carriers skills)"
+  echo "ok    worktree removal guardrail ($guard_carriers files)"
 fi
 
 # --- agent types are resolved, never literal ---------------------------------
