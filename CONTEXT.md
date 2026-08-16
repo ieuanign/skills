@@ -225,3 +225,20 @@ already exists.
 Append-only against artifacts a human owns, and narrower than `/dev-loop`'s rule of the same name for
 that reason: no review thread resolved — the ones it replied in included — no draft or ready state
 converted, no label touched, no body anyone wrote edited.
+
+## Spine
+
+What a skill's `SKILL.md` is under **staged reads** — the architecture where a skill's contract is
+read act by act at the moment each act runs, instead of loaded whole up front. The spine is the
+always-loaded remainder once every act's detail has moved out: the hard rules, the skeleton of acts
+and gates at a line each, and the standing rule to read an act's **act file** before performing it.
+It carries exactly what must hold *between* acts — nothing an act could read for itself when its
+turn comes.
+
+## Act file
+
+One act's contract in a file of its own, bundled with the skill and read fresh at the moment its act
+begins. Lean on purpose: contract at act granularity, no why-prose — explanation stays in the human
+docs, under the same needs-it test as ever. The fresh read is what makes freshness structural: a run
+that compacted mid-way heals at the next act boundary, because the boundary reads the file rather
+than remembering it.
