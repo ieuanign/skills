@@ -1,6 +1,6 @@
 # /dev-loop notifications — the normative specification both writers implement
 
-This file is the single source of truth for what an unattended run writes to the outside world as it goes: its workflow labels, its issue comments, and its messages. Two writers emit them — the **host**, at its own boundaries, and the **notifier** subagent, from inside a running phase script — and each implements this file rather than restating it. It is normative for its subject alone: the endings and their labels, the findings ledger and the append-only invariant are `SKILL.md`'s, and the role contracts are the roster agents' own, so this file names all of them without redefining any. If an implementation and this file disagree, this file governs.
+This file is the single source of truth for what an unattended run writes to the outside world as it goes: its workflow labels, its issue comments, and its messages. Two writers emit them — the **host**, at its own boundaries, and the **notifier** subagent, from inside a running phase script — and each implements this file rather than restating it. It is normative for its subject alone: the endings and their labels are `acts/act-3.md`'s, the findings ledger is `acts/gate-2.md`'s, the append-only invariant is `SKILL.md`'s, and the role contracts are the roster agents' own, so this file names all of them without redefining any. If an implementation and this file disagree, this file governs.
 
 **Nothing here fires in gated mode** (the supervised run, where a human concludes the lane).
 
@@ -68,7 +68,7 @@ Every message is composed freshly by whoever writes it, so without a stated shap
 | ending | notifier, mid-lane | `halt`, `failed` |
 | completion | host, after the phase script | `draft`, `ready` |
 
-The two ending tokens are `SKILL.md`'s two ending labels in lower case, so there is no second vocabulary to keep in step with it. `failed` is the one token with two writers, and that is the axis holding rather than leaking: a break is a break whether a phase script hit it or the run never got past intake, and inventing a sixth token would split one question — *is this worth retrying?* — across two vocabularies.
+The two ending tokens are `acts/act-3.md`'s two ending labels in lower case, so there is no second vocabulary to keep in step with it. `failed` is the one token with two writers, and that is the axis holding rather than leaking: a break is a break whether a phase script hit it or the run never got past intake, and inventing a sixth token would split one question — *is this worth retrying?* — across two vocabularies.
 
 **The shape is the issue number, the state token, the reason where one exists, then the link** — the pull request link where a pull request exists, the issue link otherwise:
 
