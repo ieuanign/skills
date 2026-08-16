@@ -230,8 +230,8 @@ nothing to either file, taking a key's documented default for that run only wher
 refusing where it does not. So a repository with no profile is never one you have to configure first —
 it is one whose first gated run does the configuring.
 
-The rule **refuses** three things. `SKILL.md` states those refusals, because they bind a run; this page
-carries only the reasoning behind them, which is what the skill deliberately does not load:
+The rule **refuses** three things, and this page states them. They bind how the pipeline is configured
+rather than what a run performs, so the skill carries neither them nor the reasoning behind them:
 
 - **No per-repository effort tiers** — run spend that varies by repository cannot be compared across
   them, and the per-stage tiers are the whole argument for tiering at all.
