@@ -36,7 +36,7 @@ fi
 # line is the signal and the status is not. Every shape that does not resolve is
 # a FAIL, never a skip — a silent skip is the failure this stage exists to catch.
 #
-# Its twin is the Act 0 intake sub-step of skills/dev-loop/SKILL.md, which checks
+# Its twin is the intake sub-step of skills/dev-loop/acts/act-0.md, which checks
 # these same entries against the live session; the two move together.
 if command -v claude >/dev/null 2>&1; then
   preload_inventory=""
