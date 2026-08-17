@@ -555,7 +555,9 @@ criteria asked for the artifact, so the pipeline could require a file at a path 
 delete, then report the lane clean. So the conclusion names what it destroys before destroying it,
 from the plan's File touchpoints, in the run's report **and** in the pull request body. Both, because
 they reach different people: an unattended run has nobody reading the first, and the worktree the
-report describes is gone moments later.
+report describes is gone moments later. The list comes from the plan's touchpoints and never from
+`git status --ignored=matching`, whose every line in a provisioned worktree would be the dependencies
+and copied-in configuration provisioning put there on purpose.
 
 The durable-artifact rule follows from that report rather than from any mechanism:
 
@@ -675,11 +677,18 @@ same conflict at merge time, one layer later.
 offered because the cost is bounded and lands where a merge conflict always lands, and it is not the
 default for the same reason it is not free.
 
+**A declaration moves only the line between the first two outcomes.** A `pr-separation.md` reading
+that seems to cover a real dependency covers additive-versus-same-region only: it changes which
+outcome an overlap sorts into, never who does the sorting, and never whether B-consumes-A drops a
+layer — that follows from the dependency itself, whatever the repository declares.
+
 **The defer remedy is absent from an unattended run**, and this is the reason rather than an oversight:
 "defer B out of this batch" is a human's *not this batch* — a scheduling judgement about what they
 want to review this afternoon, made from context the pipeline does not hold. Unattended there is
 nobody whose afternoon it is, and deferring a lane the developer explicitly asked for would silently
-return less work than was requested.
+return less work than was requested. The discovery comment is posted before the remedy is chosen for
+the same reason it is unconditional: a deferred lane still leaves with its blocker documented on its
+issue.
 
 **Two accepted costs, recorded rather than solved.** Both are real, both are bounded, and neither is
 worth an engineering answer:

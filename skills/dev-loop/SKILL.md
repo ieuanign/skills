@@ -48,12 +48,6 @@ Last, once per run:
 
 > **Preconditions.** The one-time ask-then-persist preconditions are not gates, so gate suppression does not reach them — this line decides them instead. Under `gated` every one asks its question exactly as it always has. Under `unattended` not one of them asks: each resolves either to a **documented default**, used for this run, reported, and written into no profile — a value persisted unattended spends the repository's one question, and the human who would have chosen it is never asked — or, where no default is honest, to a **refusal** naming every missing prerequisite at once. Each precondition site says which of the two its answer is, and never whether it fires — every site in the act files, and every one in any other skill running this pipeline's preconditions.
 
-These four lines are the only place any of it is decided: no argument and no profile key overrides them.
-
-**Suppression removes the questions, not the work.** Every step of both gates still runs; each question resolves to its unattended answer instead — stated in a table beside the gate's own steps, in that gate's file.
-
-A gate's `PushNotification` goes with its question, so under `unattended` there is none. What an unattended run emits instead is the four ⟨notify⟩ events below.
-
 ### How you write a ⟨notify⟩ event
 
 You write four events — intake refusal, lane start, plan comment, lane conclusion — and this section is the whole of what they are. The mid-lane endings are the **notifier's**, written from inside the phase script against a specification you never load and never restate.
@@ -83,8 +77,6 @@ The commands:
 - **A label is `gh issue edit <n> --add-label/--remove-label`.** Resolve its three roles to strings ONCE at Act 0, through the repo's own `docs/agents/triage-labels.md`, per that file's roles-never-strings rule. No label string is ever written into this skill.
 - **A comment is `gh issue comment <n> --body-file -`**, with the body piped in from a **quoted** heredoc (`<<'BODY'`), whatever the body carries.
 - **A message is `<this-skill-dir>/notify.sh <<'MSG' … MSG`**, which reads its payload on standard input the same way. It implements the specification's channel contract, so an unconfigured channel is already handled inside it: it needs no check, no question and no profile key.
-
-Touchpoint intersection, sub-lane splitting, the profile's Constraints, the push and the PR itself are gate *work*, and happen identically under both modes. The one-time ask-then-persist preconditions are not gates either, and gate suppression is not what governs them: the **Preconditions** rule above is, and no step that performs one restates it. What a sub-lane's *ending* means for its PR's state — ready, draft, or none — is the phase script's **terminal-state table**, which it has already applied: every sub-lane result carries a `terminal` of `{pr, reasons}`, so under `unattended` you open what it names rather than deciding it here.
 
 ## Derived facts (compute once at Act 0 — never hardcode, never persist)
 

@@ -5,8 +5,8 @@
 | Question | Its unattended answer |
 |---|---|
 | Which lanes are approved? | every lane whose plan is `READY` proceeds |
-| A `BLOCKED` plan's open questions | nobody can answer them, so that lane does not proceed and is reported carrying them |
-| Stack a dependent lane, or defer it? | **stack B on A** — the option this gate already marks recommended. Defer is a human's "not this batch" and has no unattended meaning; taking it would return less work than was asked for |
+| A `BLOCKED` plan's open questions | that lane does not proceed and is reported carrying them |
+| Stack a dependent lane, or defer it? | **stack B on A** — the option this gate already marks recommended |
 
 Present every lane: summary, plan path (invite the user to edit the file before approving), open questions. Then:
 
@@ -21,9 +21,9 @@ Present every lane: summary, plan path (invite the user to edit the file before 
 
   **Additive co-touch stays parallel and accepts the rebase.**
 
-  **The last two outcomes are physically identical** — same layer drop, same base — **and differ only in what they claim:**
+  **The last two outcomes differ only in what they claim:**
 
-  - **real dependency** — post the discovery back to the dependent GitHub issue with `gh issue comment <B> --body-file -`, per the spine's comment mechanism, the body reading `Discovered blocker: depends on #<A> — overlapping files: ...`. **Unconditionally, and before the remedy is chosen**, so a deferred lane still leaves with its blocker documented. Then AskUserQuestion per case, with **"stack B on A's branch" as the first/recommended option** and "defer B out of this batch" as the alternative.
+  - **real dependency** — post the discovery back to the dependent GitHub issue with `gh issue comment <B> --body-file -`, per the spine's comment mechanism, the body reading `Discovered blocker: depends on #<A> — overlapping files: ...`. **Unconditionally, and before the remedy is chosen.** Then AskUserQuestion per case, with **"stack B on A's branch" as the first/recommended option** and "defer B out of this batch" as the alternative.
   - **same-region co-touch** — post nothing and ask nothing, and say plainly in this gate's presentation that it was *sequenced to avoid a textual conflict, not because one lane needs the other*.
 
   **The line between the first two outcomes is the repository's to move, and only that line.** It declares which in the **Overlapping changes** section of its `.claude/rules/pr-separation.md` — project rules load at launch, so read it off your own context rather than fetching the file, and no profile key mirrors it:
@@ -34,7 +34,7 @@ Present every lane: summary, plan path (invite the user to edit the file before 
   | `strict` | any co-touch at all drops a layer, without classifying the region |
   | `parallel` | no co-touch drops a layer; the conflict is left for whoever merges |
 
-  **A real dependency is never declarable and never moves.** B consuming what A creates puts B in the next layer whatever the repository says. A declaration that reads as covering it covers the first two outcomes only: it changes which outcome an overlap sorts into, never who does the sorting.
+  **A real dependency is never declarable and never moves.** B consuming what A creates puts B in the next layer whatever the repository says.
 
   Under `unattended` the classification is unchanged. Only outcome 3's question is suppressed, resolving to its recommended answer per the table above; the comment is a machine action and is posted the same either way.
 - **Profile Constraints**: apply them now — lanes a constraint forbids from running concurrently go into separate layers (or one is deferred), and say so.
