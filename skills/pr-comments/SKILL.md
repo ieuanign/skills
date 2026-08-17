@@ -155,7 +155,7 @@ Three things, in this order — git before the replies, so a reply can name its 
 
 1. **Ask git what reached the branch**: `git -C <worktree> log --oneline <base>..<headRefName>`, read in the worktree, after the push and before the disposal below removes it. A run with no worktree has nothing to ask.
 2. **Answer the threads that were deferred**, per the reply shape above. A pushed commit's reply carries its short sha and subject from that log; a path that pushed nothing says what stopped it instead, and never cites a sha the remote does not hold.
-3. **Post one comment**, per **How this run writes**, on every path that got past the gate — under `gated` the run's only one, under `unattended` a second beside the table and never an edit to it. It carries what reached the branch (that log, line for line, marked **not pushed** with why where nothing was), one line per comment a commit fixed, one line per reply left and per row that had no thread to reply in, the table as it stands rendered identically, the suite's result, what the review pass changed and what it declined, and — where a run stopped early — the stage that stopped it and its message verbatim. A section with nothing to put in it is left out. It ends by naming the worktree by path wherever one was kept, this session being the last thing that knows where the work is.
+3. **Post one comment**, per **How this run writes**, on every path that got past the gate — under `gated` the run's only one, under `unattended` a second beside the table and never an edit to it. It carries what reached the branch (that log, line for line, marked **not pushed** with why where nothing was), one line per comment a commit fixed, one line per reply left and per row that had no thread to reply in, the table as it stands rendered identically, the suite's result, what the review pass changed and what it declined, and — where a run stopped early — the stage that stopped it and its message verbatim. A section with nothing to put in it is left out. It ends by naming the worktree by path wherever one was kept — `/dev-loop-cleanup` is its reaper — this session being the last thing that knows where the work is.
 
 **Its footer marker names what it answered**: `<!-- replied from /pr-comments: <id> <id> -->`, listing the `id` of every row that had no thread to reply in, so a later run's read excludes them as answered. Every other write takes the bare form.
 
@@ -172,6 +172,8 @@ Three things, in this order — git before the replies, so a reply can name its 
 | removal refused | fast-forwarded | kept, reported |
 
 Removal is `git -C <MAIN> worktree remove <WORKTREES>/pr-<n>`, **never `--force`**, and only once the push has succeeded — after it the remote branch is the only copy of the fix, so a push that failed or never ran keeps its worktree. **Confirm the path is not the first entry of `git worktree list` first.** A refusal is the guard working: `git worktree remove` declines on tracked modifications and on untracked non-ignored files, so report `git -C <worktree> status --porcelain` verbatim and keep the worktree.
+
+**A worktree any row above keeps is `/dev-loop-cleanup`'s to reap** — a pointer, never an invocation: that skill is human-gated, and an unattended run cannot stand at its picker.
 
 **The branch is left alone either way, local ref and remote.** The remote one is what the pull request *is*; the local one may have been the human's before this run attached to it.
 
