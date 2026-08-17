@@ -7,8 +7,8 @@
 | Question | Its unattended answer |
 |---|---|
 | Is the push/PR approved? | the sub-lane pushes and opens the PR its `terminal` names — ready, draft, or none |
-| Open a draft PR for a sub-lane that ended? | yes, `--draft` — an ended sub-lane is never ready, and work that exists stays reviewable |
-| Arbitrate a contested finding | nobody rules, so the ledger's **arbitrated** category stays empty and the finding rides out to the PR body |
+| Open a draft PR for a sub-lane that ended? | yes, `--draft` |
+| Arbitrate a contested finding | the ledger's **arbitrated** category stays empty and the finding rides out to the PR body |
 
 **The findings ledger** is per lane, and is what this gate and the pull request body both surface. Its categories:
 
@@ -62,22 +62,22 @@ For sub-lanes that ended on contested findings, present both sides of each conte
 
    Removal is `git worktree remove <WORKTREES>/<slug>`. **Worktree removal never passes --force.** Two rules make that safe:
 
-   - **Push succeeds first, remove second.** After removal the remote branch is the only copy, so a push that failed or never ran keeps its worktree.
-   - **A dirty worktree keeps itself.** `git worktree remove` without `--force` already refuses on tracked modifications or on untracked non-ignored files, and **that refusal IS the guard** — the pipeline never passes `--force`, so it can never talk its way past one. Report `git -C <wt> status --porcelain` verbatim and keep that worktree. Ignored files, such as the configuration and dependency directories provisioning copies in, do not trip it.
+   - **Push succeeds first, remove second.** A push that failed or never ran keeps its worktree.
+   - **A dirty worktree keeps itself.** `git worktree remove` without `--force` refuses on tracked modifications or on untracked non-ignored files — **that refusal IS the guard**. Report `git -C <wt> status --porcelain` verbatim and keep that worktree. Ignored files, such as the configuration and dependency directories provisioning copies in, do not trip it.
 
-   **The main worktree is never a removal candidate** — not under any state above and not under either run mode. Before any removal, confirm the path is NOT the first entry of `git worktree list`. The local branch, the plan file and any worktree the table above kept all stay: `/dev-loop-cleanup` proposes each of them once the pull request merges, and reaps only what a human picks.
+   **The main worktree is never a removal candidate.** Before any removal, confirm the path is NOT the first entry of `git worktree list`. The local branch, the plan file and any worktree the table above kept all stay: `/dev-loop-cleanup` proposes each of them once the pull request merges, and reaps only what a human picks.
 
-   **Name what the removal destroys, then remove.** The refusal above guards tracked modifications and untracked non-ignored files; **ignored** files `git worktree remove` deletes without a word, so a sub-lane's gitignored working material goes with its worktree, which is the intent. Before removing, read the plan's **File touchpoints** and report every one that `git -C <wt> check-ignore -q <path>` calls ignored and that exists in the worktree, as paths going with the removal. That same list is step 2's **Local-only artifacts** section. Then remove: nothing is copied out and nothing is kept — a path that must outlive its sub-lane has to be committed. Report nothing when the plan named no such path, which is the ordinary case. The list comes from the plan's touchpoints, never from `--ignored=matching`, whose every line would be the dependencies and copied-in config provisioning put there on purpose.
+   **Name what the removal destroys, then remove.** **Ignored** files go with the worktree — the intent, not an oversight. Before removing, read the plan's **File touchpoints** and report every one that `git -C <wt> check-ignore -q <path>` calls ignored and that exists in the worktree, as paths going with the removal. That same list is step 2's **Local-only artifacts** section. Then remove: nothing is copied out and nothing is kept. Report nothing when the plan named no such path, which is the ordinary case. The list comes from the plan's touchpoints, never from `--ignored=matching`.
 
 4. **⟨notify⟩ Lane conclusion.** Once every sub-lane of a lane has been through steps 1–3, close that lane. Per lane, not per sub-lane — the label is per issue — and at the lane's LAST layer, so a lane whose sub-lanes span layers closes once rather than once a layer; carry its `notified` forward into the next layer's args.
 
-   **Remove the in-progress label, without exception**: finished, ended or thrown, the lane is no longer in progress. What replaces it — if anything — is decided by one question: **did the run reach a reasoned conclusion, or did a stage break?** A conclusion needing a human takes **awaiting-human**; a break takes **failed**; a ready pull request takes neither. Where both read true **failed wins**. Roles, never strings: resolve them through the repo's own `docs/agents/triage-labels.md`, and **a role that documentation names no string for is skipped silently** — no error, and never a string you invented. Which case this lane is in, the phase-script result already says:
+   **Remove the in-progress label, without exception**: finished, ended or thrown, the lane is no longer in progress. What replaces it — if anything — is decided by one question: **did the run reach a reasoned conclusion, or did a stage break?** A conclusion needing a human takes **awaiting-human**; a break takes **failed**; a ready pull request takes neither. Where both read true **failed wins**. Roles, never strings: resolve them through the repo's own `docs/agents/triage-labels.md`, and **a role that documentation names no string for is skipped silently**. Which case this lane is in, the phase-script result already says:
 
    | The result says | Which case you are in |
    |---|---|
-   | `notified: true` | the notifier already applied this lane's label at its ending. **Write nothing else** — a second verdict over the first is how two writers come to disagree in public. It is true only when a label actually landed, so `false` on an ended lane means the write did not happen and the case below applies. |
-   | `crashed: true` | the lane's closure threw. Its attributed ending names the issue and carries the error, so the rule's break arm has something to point at. **You also owe this lane its ending comment** — a throw unwound past the point the notifier fires from, so no other writer can post one, and every ended lane gets exactly one ending comment. Post the attributed ending and the **RUN HANDLE**. |
-   | neither, and any sub-lane's `terminal.pr` was `draft` | a draft with no ending behind it — nothing ended, so no notifier ever ran, and this one is yours. Apply **awaiting-human**. |
+   | `notified: true` | the notifier already applied this lane's label at its ending. **Write nothing else.** It is true only when a label actually landed, so `false` on an ended lane means the write did not happen and the case below applies. |
+   | `crashed: true` | the lane's closure threw. Its attributed ending names the issue and carries the error. **You also owe this lane its ending comment** — no notifier ran for a throw. Post the attributed ending and the **RUN HANDLE**. |
+   | neither, and any sub-lane's `terminal.pr` was `draft` | a draft with no ending behind it, so no notifier ever ran and this one is yours. Apply **awaiting-human**. |
    | neither, and every PR opened ready | the no-label case. Apply nothing. |
 
    Then **send exactly one closing message**, in the shape the spine's ⟨notify⟩ section states — `draft` or `ready`, its reason, and the pull request link. Unconditional, including for a lane with no PR at all: paired with Act 0's started message it is the run's dead-session signal.
