@@ -213,14 +213,14 @@ decision.
 ## Pull request-comment lane
 
 The run one open pull request's comments get, end to end: read, classified into a **comment table**,
-approved, answered in the review threads that raised them, then driven through its own execute phase —
-the fix phase: writer, review loop, suite gate — and pushed to the head branch that pull request
-already has. One run works one pull request.
+approved, answered in the review threads that raised them, then written as commits in the
+orchestrator's own context — one review pass over them and no more — and pushed to the head branch that
+pull request already has. One run works one pull request.
 
-Three things a `/dev-loop` lane has, it lacks. No architect is dispatched and no plan is authored,
-because the comment table is the plan the execute phase runs on. No acceptance criteria, and therefore
-no spec axis and no criterion verdicts. No pull request is created, because the run pushes to one that
-already exists.
+Four things a `/dev-loop` lane has, it lacks. No agent is dispatched and no phase script runs, because
+the fixes are the orchestrator's own work. No plan is authored, because the comment table is the brief
+they are written against. No acceptance criteria, and therefore no spec axis and no criterion verdicts.
+No pull request is created, because the run pushes to one that already exists.
 
 Append-only against artifacts a human owns, and narrower than `/dev-loop`'s rule of the same name for
 that reason: no review thread resolved — the ones it replied in included — no draft or ready state
