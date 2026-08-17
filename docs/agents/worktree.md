@@ -1,6 +1,6 @@
 # worktree repo profile
 
-Repository facts any skill provisioning a worktree reads — `/dev-loop` and `/pr-comments` alike; answers persisted here are never re-asked.
+Repository facts any skill provisioning a worktree reads — `/dev-loop` today, and any other that comes to need them; answers persisted here are never re-asked.
 
 ## Setup command
 
