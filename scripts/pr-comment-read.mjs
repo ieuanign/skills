@@ -98,6 +98,40 @@ scenario('a minimised comment is excluded at every origin', () => {
   assert.deepEqual(ids(entries), ['c-shown', 'r-shown', 'i-shown'])
 })
 
+const MARKER = '<!-- replied from /pr-comments -->'
+
+scenario('a comment carrying the reply marker is excluded at every origin', () => {
+  const answered = `already dealt with\n\n${MARKER}\n🤖 Generated with [Claude Code](https://claude.com/claude-code)`
+  const entries = normalise({
+    threads: [thread('t-answered', [comment('c-answered', { body: answered })]), thread('t-open', [comment('c-open')])],
+    reviews: [review('r-answered', { body: answered }), review('r-open')],
+    issueComments: [issueComment('i-answered', { body: answered }), issueComment('i-open')],
+  })
+  assert.deepEqual(ids(entries), ['c-open', 'r-open', 'i-open'])
+})
+
+scenario('a thread holding a marker-carrying reply is excluded whole', () => {
+  const entries = normalise({
+    threads: [
+      thread('t-answered', [comment('c-asked'), comment('c-argued'), comment('c-reply', { body: `done\n\n${MARKER}` })]),
+      thread('t-open', [comment('c-open')]),
+    ],
+  })
+  assert.deepEqual(ids(entries), ['c-open'])
+})
+
+scenario('a comment an earlier conclusion named by id is excluded, though that conclusion is itself dropped', () => {
+  const entries = normalise({
+    reviews: [review('r-answered'), review('r-open')],
+    issueComments: [
+      issueComment('i-answered'),
+      issueComment('i-open'),
+      issueComment('i-conclusion', { body: 'what I did\n\n<!-- replied from /pr-comments: r-answered i-answered -->' }),
+    ],
+  })
+  assert.deepEqual(ids(entries), ['r-open', 'i-open'])
+})
+
 // --- what each entry carries -------------------------------------------------
 
 scenario('an outdated comment keeps line null and its stale anchor separate', () => {
