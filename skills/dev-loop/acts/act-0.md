@@ -46,7 +46,7 @@ Profile keys:
 node <this-skill-dir>/preconditions.mjs <MAIN> dev-loop
 ```
 
-whose blocks, semantics and exit codes are the module's own — run it and read what it prints rather than re-deriving any of it. Any source carrying anything ⇒ the run refuses: `gh issue comment` the report verbatim — nothing here paraphrases a line of it — on EVERY issue the arguments named, then ONE `failed` message for the run, and stop. It fires before step 6 reads an issue and above step 10, so the refusal reaches the whole batch and claims no lane: no label of any role is written, no `start` is sent, and no later run has a marker to clear. The module's **Missing, default taken** block never refuses — keep it for Gate 2's **Defaults taken** element.
+whose blocks, semantics and exit codes are the module's own — run it and read what it prints rather than re-deriving any of it. Any source carrying anything ⇒ the run refuses: `gh issue comment` the report verbatim — nothing here paraphrases a line of it — on EVERY issue the arguments named, then ONE `failed` message for the run, and stop. It fires before step 6 reads an issue and above step 10, so the refusal reaches the whole batch and claims no lane: no label of any role is written, no `start` is sent, and no later run has a marker to clear. The module's **Missing, default taken** block never refuses — keep it for Gate 2's **Defaults taken** element. Exit 2 is that call's own usage error and says nothing about the repository: report it and stop.
 
 5. `git fetch origin <DEFAULT>` once.
 6. Per issue: `gh issue view <n> --json number,title,body,state,labels`. CLOSED → drop the lane, tell the user. KEEP the body: Phase B hands it to the reviewer as its Spec axis, and nothing downstream fetches it again.

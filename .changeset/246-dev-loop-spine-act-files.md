@@ -13,7 +13,7 @@ performed from a half-remembered contract looks exactly like one performed from 
 **The spine keeps only what binds *between* acts** — the frontmatter, the identity paragraph,
 `## Arguments`, a skeleton naming each act and gate at a line apiece, `### Run mode`'s four decision
 lines, `### How you write a ⟨notify⟩ event`, `## Derived facts` and `## Hard rules` — and comes to
-13,516 chars. **Each act's whole contract moves into its own file** under `skills/dev-loop/acts/`:
+12,376 chars. **Each act's whole contract moves into its own file** under `skills/dev-loop/acts/`:
 `act-0.md`, `act-1.md`, `gate-1.md`, `act-2.md`, `act-3.md`, `gate-2.md`, `act-4.md`. The standing
 rule in the skeleton is what makes the split work — read the act's file before performing it, at
 EVERY boundary where it fires, so an act that runs per layer is read per layer and the freshly read
