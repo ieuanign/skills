@@ -1,15 +1,13 @@
 #!/usr/bin/env node
 //
-// Two execution state machines — phase-execute.js and phase-fix.js — each driven end to end with NO
-// agent dispatched. Their one outside dependency is the `agent()` global, which makes it the highest
-// seam available: a scripted fake drives every loop, bound and ending for the price of a `node`
-// process. Separate implementations, so each gets its own scenarios — a shared set would assert only
-// whatever they still had in common.
+// The execution state machine — phase-execute.js — driven end to end with NO agent dispatched. Its
+// one outside dependency is the `agent()` global, which makes it the highest seam available: a
+// scripted fake drives every loop, bound and ending for the price of a `node` process.
 //
 // Asserted per scenario and nothing else: the ordered labels the fake `agent()` was asked for, and
 // what the script returned. Never an internal, a private helper, or prompt wording no contract
 // requires — a scenario breaking on a refactor that changed no behaviour is a bad scenario. These
-// scenarios are the behaviour the scripts are held to, so a failing one is the script's bug until
+// scenarios are the behaviour the script is held to, so a failing one is the script's bug until
 // somebody changes the scenario on purpose.
 //
 // Run: `node scripts/state-machine.mjs`, also a stage of `npm run check`. Every scenario runs even
@@ -19,20 +17,17 @@ import assert from 'node:assert/strict'
 import { compilePhaseScript } from './lib/phase-script.mjs'
 
 const EXECUTE = new URL('../skills/dev-loop/phase-execute.js', import.meta.url)
-const FIX = new URL('../skills/pr-comments/phase-fix.js', import.meta.url)
 const phaseExecute = compilePhaseScript(EXECUTE)
-const phaseFix = compilePhaseScript(FIX)
 
 // --- the fake runner ---------------------------------------------------------
 
 // `script` maps a call label to what it returns; a function value is called, so a scenario can throw
 // from a stage, and `null` is the deliberate dead agent.
 
-// A label with NO entry is a harness bug, not a dead agent: both phase scripts catch every throw, so
+// A label with NO entry is a harness bug, not a dead agent: the phase script catches every throw, so
 // an unreported typo here would read as a plausible FAILED ending. Collected and reported as one.
 
-// Curried over the compiled script so both scenario sets drive their own machine through one runner.
-const driver = phase => async (args, script) => {
+const runPhase = async (args, script) => {
   const calls = []
   const logs = []
   const unscripted = []
@@ -52,20 +47,17 @@ const driver = phase => async (args, script) => {
   const parallel = thunks =>
     Promise.all(thunks.map(t => Promise.resolve().then(t).catch(() => null)))
   const pipeline = () => {
-    throw new Error('pipeline() is not used by either phase script')
+    throw new Error('pipeline() is not used by the phase script')
   }
   const log = message => logs.push(String(message))
   const budget = { total: null, spent: () => 0, remaining: () => Infinity }
 
-  const result = await phase(args, agent, parallel, pipeline, log, budget)
+  const result = await phaseExecute(args, agent, parallel, pipeline, log, budget)
   if (unscripted.length) {
     throw new Error(`the scenario dispatched labels it scripted no return for: ${unscripted.join(', ')}`)
   }
   return { result, calls, logs, labels: calls.map(c => c.label) }
 }
-
-const runPhase = driver(phaseExecute)
-const runFix = driver(phaseFix)
 
 // --- input builders ----------------------------------------------------------
 
@@ -96,20 +88,6 @@ const argsFor = (lanes, over = {}) => ({
   ...over,
 })
 
-// The fix phase's args are flat — no lane, no sub-lane, one pull request. Written out in full
-// because the shape IS the contract the skill's dispatch block has to match.
-const fixArgs = (over = {}) => ({
-  pr: 7,
-  planPath: '/main/.scratch/pr-comments/7-comments.md',
-  worktree: '/main/.claude/worktrees/pr-7',
-  branch: 'fix/pr-7-comments',
-  base: 'base9f0',
-  commits: ['fix(api): #7 - the guard the reviewer asked for'],
-  suiteCommand: 'npm run check',
-  agentNamespace: 'ieuanign-skills',
-  ...over,
-})
-
 // --- return builders ---------------------------------------------------------
 
 const committed = (over = {}) => ({ result: 'COMMITTED', commits: ['abc1234 feat(x): #1 - the commit'], ...over })
@@ -135,11 +113,10 @@ const EMPTY_RETURN = /returned nothing — it was skipped, or it died after the 
 
 // --- the scenario registry ---------------------------------------------------
 
-// One registry, two registrars: the name says which script failed, which is the first thing a
-// reader of a FAIL line needs and the one thing the scenario body no longer shows.
+// The name says which script failed, which is the first thing a reader of a FAIL line needs and the
+// one thing the scenario body no longer shows.
 const scenarios = []
 const scenario = (name, fn) => scenarios.push({ name: `phase-execute — ${name}`, fn })
-const fixScenario = (name, fn) => scenarios.push({ name: `phase-fix — ${name}`, fn })
 
 const only = result => {
   assert.equal(result.length, 1, 'expected exactly one lane result')
@@ -572,248 +549,6 @@ scenario("one sub-lane's draft does not draft its sibling", async () => {
   assert.equal(l.subResults[1].ending, null)
   // The lane's own label is a roll-up for reporting only.
   assert.equal(l.ending.category, 'HALT')
-})
-
-// --- /pr-comments' fix phase -------------------------------------------------
-
-fixScenario('a clean run writes, reviews, runs the suite and returns its record', async () => {
-  const { result, labels } = await runFix(fixArgs(), {
-    'write:#7:c1': committed(),
-    'review:#7': approved,
-    'suite:#7': suitePassed,
-  })
-  assert.deepEqual(labels, ['write:#7:c1', 'review:#7', 'suite:#7'])
-  assert.equal(result.ending, null)
-  assert.equal(result.branch, 'fix/pr-7-comments')
-  assert.equal(result.suite.state, 'passed')
-})
-
-fixScenario("a row's position in `commits` is the ordinal that reaches its label and its prompt", async () => {
-  const { result, calls, labels } = await runFix(
-    fixArgs({ commits: ['fix(api): #7 - the guard', 'test(api): #7 - the case that was missing'] }), {
-      'write:#7:c1': committed(),
-      'write:#7:c2': committed(),
-      'review:#7': approved,
-      'suite:#7': suitePassed,
-    })
-  assert.deepEqual(labels, ['write:#7:c1', 'write:#7:c2', 'review:#7', 'suite:#7'])
-  assert.match(promptFor(calls, 'write:#7:c2'), /commit 2 \("test\(api\): #7 - the case that was missing"\)/)
-  // The namespace is a flat arg like any other, and a dispatch is the only place it is observable.
-  assert.equal(calls.find(c => c.label === 'write:#7:c2').agentType, 'ieuanign-skills:code-writer')
-  // Returned directly: the record IS the result, with nothing wrapping it.
-  assert.ok(!Array.isArray(result))
-  assert.equal(result.subResults, undefined)
-  assert.equal(result.plannedCommits, 2)
-  assert.equal(result.madeCommits, 2)
-})
-
-fixScenario('the implement loop runs exactly two debug+fix attempts, then HALTs', async () => {
-  const { result, labels } = await runFix(fixArgs(), {
-    'write:#7:c1': writerFailed(),
-    'debug:#7:c1:t1': toWriter,
-    'debugfix:#7:c1:t1': writerFailed(),
-    'debug:#7:c1:t2': toWriter,
-    'debugfix:#7:c1:t2': writerFailed(),
-  })
-  assert.deepEqual(labels, [
-    'write:#7:c1',
-    'debug:#7:c1:t1', 'debugfix:#7:c1:t1',
-    'debug:#7:c1:t2', 'debugfix:#7:c1:t2',
-  ])
-  assert.equal(result.ending.category, 'HALT')
-  assert.match(result.ending.reason, /still FAILED after 2 debug\+fix attempts/)
-  assert.equal(result.madeCommits, 0)
-})
-
-fixScenario('the give-up clause reaches the FINAL permitted attempt and no earlier one', async () => {
-  const { calls } = await runFix(fixArgs(), {
-    'write:#7:c1': writerFailed(),
-    'debug:#7:c1:t1': toWriter,
-    'debugfix:#7:c1:t1': writerFailed(),
-    'debug:#7:c1:t2': toWriter,
-    'debugfix:#7:c1:t2': writerFailed(),
-  })
-  assert.doesNotMatch(promptFor(calls, 'debugfix:#7:c1:t1'), /FINAL permitted attempt/)
-  assert.match(promptFor(calls, 'debugfix:#7:c1:t2'), /FINAL permitted attempt/)
-  // The pull request number, not an issue number: a wip: commit filed under the wrong one is lost.
-  assert.match(promptFor(calls, 'debugfix:#7:c1:t2'), /wip\(<scope>\): #7 - commit 1 FAILED/)
-})
-
-fixScenario('a writer BLOCKED on a fix row takes the HALT label', async () => {
-  const { result } = await runFix(fixArgs(), {
-    'write:#7:c1': { result: 'BLOCKED', commits: [], notes: 'the comment asks for a rewrite' },
-  })
-  assert.equal(result.ending.category, 'HALT')
-  assert.match(result.ending.reason, /writer BLOCKED on commit 1/)
-})
-
-fixScenario('the debugger route retry re-runs the writer with nothing to fix', async () => {
-  const { result, labels } = await runFix(fixArgs(), {
-    'write:#7:c1': writerFailed(),
-    'debug:#7:c1:t1': { rootCause: 'a flaky network call', owner: 'retry' },
-    'retry:#7:c1:t1': committed(),
-    'review:#7': approved,
-    'suite:#7': suitePassed,
-  })
-  assert.deepEqual(labels, ['write:#7:c1', 'debug:#7:c1:t1', 'retry:#7:c1:t1', 'review:#7', 'suite:#7'])
-  assert.equal(result.ending, null)
-  assert.deepEqual(result.attempts.map(a => a.outcome), ['the retry returned COMMITTED'])
-})
-
-fixScenario('the debugger route code-writer fixes the defect and the run continues', async () => {
-  const { result, labels } = await runFix(fixArgs(), {
-    'write:#7:c1': writerFailed(),
-    'debug:#7:c1:t1': toWriter,
-    'debugfix:#7:c1:t1': committed(),
-    'review:#7': approved,
-    'suite:#7': suitePassed,
-  })
-  assert.deepEqual(labels, ['write:#7:c1', 'debug:#7:c1:t1', 'debugfix:#7:c1:t1', 'review:#7', 'suite:#7'])
-  assert.equal(result.ending, null)
-  assert.equal(result.suite.state, 'passed')
-})
-
-fixScenario('the debugger routes replan and user end the run immediately', async () => {
-  for (const owner of ['replan', 'user']) {
-    const { result, labels } = await runFix(fixArgs(), {
-      'write:#7:c1': writerFailed(),
-      'debug:#7:c1:t1': { rootCause: 'the comment asks for a different module', owner },
-    })
-    assert.deepEqual(labels, ['write:#7:c1', 'debug:#7:c1:t1'], `route ${owner}`)
-    assert.equal(result.ending.category, 'HALT', `route ${owner}`)
-    assert.match(result.ending.reason, new RegExp(`debugger routed to ${owner}`))
-  }
-})
-
-fixScenario('repeated findings halt at the no-progress threshold, one cycle in', async () => {
-  const { result, labels } = await runFix(fixArgs({ fixCycleThreshold: 2 }), {
-    'write:#7:c1': committed(),
-    'review:#7': changes([FINDING]),
-    'fix:#7:r1': committed(),
-    'review:#7:r1': changes([FINDING_MOVED]),
-  })
-  assert.deepEqual(labels, ['write:#7:c1', 'review:#7', 'fix:#7:r1', 'review:#7:r1'])
-  assert.equal(result.ending.category, 'HALT')
-  assert.match(result.ending.reason, /no-progress threshold of 2/)
-  assert.deepEqual(result.openFindings, [FINDING_MOVED])
-  // The gate was never reached, and not-run must never read as green.
-  assert.equal(result.suite.state, 'not-run')
-  assert.match(result.suite.output, /the run ended before the suite gate ran/)
-})
-
-fixScenario('every cycle bringing something new halts at the 5-fix-cycle ceiling, not beyond', async () => {
-  const script = { 'write:#7:c1': committed() }
-  for (let round = 0; round <= 5; round++) {
-    script[`review:#7${round ? ':r' + round : ''}`] = changes([`src/r${round}.ts:1 — defect ${round} — it breaks — fix it`])
-    if (round < 5) script[`fix:#7:r${round + 1}`] = committed()
-  }
-  const { result, labels } = await runFix(fixArgs(), script)
-  assert.equal(labels.filter(l => l.startsWith('fix:')).length, 5)
-  assert.equal(labels[labels.length - 1], 'review:#7:r5')
-  assert.equal(result.ending.category, 'HALT')
-  assert.match(result.ending.reason, /5-fix-cycle ceiling/)
-  assert.equal(result.reviewTrajectory.length, 6)
-})
-
-fixScenario('a threshold of 0 spends no fix cycle at all', async () => {
-  const { result, labels } = await runFix(fixArgs({ fixCycleThreshold: 0 }), {
-    'write:#7:c1': committed(),
-    'review:#7': changes([FINDING]),
-  })
-  assert.deepEqual(labels, ['write:#7:c1', 'review:#7'])
-  assert.equal(result.ending.category, 'HALT')
-  assert.deepEqual(result.openFindings, [FINDING])
-})
-
-fixScenario('a re-confirmed dispute still ends the run immediately', async () => {
-  const { result, labels } = await runFix(fixArgs(), {
-    'write:#7:c1': committed(),
-    'review:#7': changes([FINDING]),
-    'fix:#7:r1': committed({ disputed: 1, disputedFindings: [FINDING] }),
-    'review:#7:r1': { verdict: 'CHANGES_REQUESTED', findings: [FINDING], contestedFindings: [FINDING] },
-  })
-  assert.deepEqual(labels, ['write:#7:c1', 'review:#7', 'fix:#7:r1', 'review:#7:r1'])
-  assert.equal(result.ending.category, 'HALT')
-  assert.match(result.ending.reason, /contested findings/)
-  assert.deepEqual(result.openFindings, [FINDING])
-})
-
-fixScenario('the suite gate stops after 2 rounds that brought no previously unseen failure', async () => {
-  const { result, labels } = await runFix(fixArgs(), {
-    'write:#7:c1': committed(),
-    'review:#7': approved,
-    'suite:#7': suiteRed(['a.test.ts > one', 'a.test.ts > two']),
-    'suitedebug:#7:r1': toWriter,
-    'suitefix:#7:r1': committed(),
-    'suite:#7:r2': suiteRed(['a.test.ts > two']),
-  })
-  assert.deepEqual(labels, [
-    'write:#7:c1', 'review:#7',
-    'suite:#7', 'suitedebug:#7:r1', 'suitefix:#7:r1',
-    'suite:#7:r2',
-  ])
-  assert.equal(result.ending.category, 'HALT')
-  assert.match(result.ending.reason, /2 rounds brought no previously unseen failure/)
-  assert.equal(result.suite.state, 'failed')
-})
-
-fixScenario('the suite gate stops at its 8-round ceiling when every round brings a new failure', async () => {
-  const script = { 'write:#7:c1': committed(), 'review:#7': approved }
-  for (let round = 1; round <= 8; round++) {
-    script[`suite:#7${round > 1 ? ':r' + round : ''}`] = suiteRed([`a.test.ts > round ${round}`])
-    if (round < 8) {
-      script[`suitedebug:#7:r${round}`] = toWriter
-      script[`suitefix:#7:r${round}`] = committed()
-    }
-  }
-  const { result, labels } = await runFix(fixArgs(), script)
-  assert.equal(labels.filter(l => l.startsWith('suite:')).length, 8)
-  assert.equal(labels.filter(l => l.startsWith('suitedebug:')).length, 7)
-  assert.equal(labels[labels.length - 1], 'suite:#7:r8')
-  assert.equal(result.ending.category, 'HALT')
-  assert.match(result.ending.reason, /the 8-round ceiling/)
-})
-
-fixScenario('no configured full-suite command means not-run, and dispatches nothing to say so', async () => {
-  const { result, labels } = await runFix(fixArgs({ suiteCommand: 'none' }), {
-    'write:#7:c1': committed(),
-    'review:#7': approved,
-  })
-  assert.deepEqual(labels, ['write:#7:c1', 'review:#7'])
-  assert.equal(result.ending, null)
-  assert.equal(result.suite.state, 'not-run')
-  assert.match(result.suite.output, /no full-suite command is configured/)
-})
-
-fixScenario('every stage that returned nothing says so, and none of them claims the agent died', async () => {
-  const settled = { 'write:#7:c1': committed(), 'review:#7': approved }
-  const red = suiteRed(['a.test.ts > one'])
-  const cases = [
-    ['the writer on a fix row', { 'write:#7:c1': null }],
-    ['the debugger', { 'write:#7:c1': writerFailed(), 'debug:#7:c1:t1': null }],
-    ['the reviewer', { 'write:#7:c1': committed(), 'review:#7': null }],
-    ['a fix-cycle writer', { ...settled, 'review:#7': changes([FINDING]), 'fix:#7:r1': null }],
-    ['the suite gate', { ...settled, 'suite:#7': null }],
-    ['the suite debugger', { ...settled, 'suite:#7': red, 'suitedebug:#7:r1': null }],
-    ['a suite-fix writer', { ...settled, 'suite:#7': red, 'suitedebug:#7:r1': toWriter, 'suitefix:#7:r1': null }],
-  ]
-  for (const [stage, script] of cases) {
-    const { result } = await runFix(fixArgs(), script)
-    assert.equal(result.ending.category, 'FAILED', `${stage}: a break, never a verdict`)
-    assert.match(result.ending.reason, EMPTY_RETURN, stage)
-    assert.doesNotMatch(result.ending.reason, /\bdied\b(?! after the runner)/, `${stage}: nothing may assert a death`)
-  }
-})
-
-fixScenario('a throw becomes a FAILED ending carrying what the run had already landed', async () => {
-  const { result } = await runFix(fixArgs(), {
-    'write:#7:c1': committed(),
-    'review:#7': () => { throw new Error('the reviewer never came back') },
-  })
-  assert.equal(result.ending.category, 'FAILED')
-  assert.match(result.ending.reason, /the run threw — the reviewer never came back/)
-  // The branch holds the commit whatever the run did next, so the record has to account for it.
-  assert.equal(result.madeCommits, 1)
 })
 
 // --- the runner -------------------------------------------------------------
