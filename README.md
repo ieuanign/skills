@@ -129,10 +129,11 @@ of what a lane costs.**
 ```
 
 **Gated** by default — you approve the comment table before anything below it runs. `auto` suppresses
-that question and resolves the `docs/agents/worktree.md` ones itself: the table is posted on the pull
-request in the gate's place, and the run's conclusion beside it — or, where a prerequisite it needs
-has no honest default, one refusal comment in place of both. Either way, every review thread the
-table covers is answered in that thread.
+that question and asks nothing in its place, writing nothing into `docs/agents/worktree.md` either:
+the table is posted on the pull request where the question would have been, and the run's conclusion
+beside it. A profile missing Setup command or Full-suite command stops such a run where the worktree
+would have been provisioned, reported in that conclusion beside the posted table. Either way, every
+review thread the table covers is answered in that thread.
 
 One file and one context: the fixes are the run's own work in a worktree on that head branch, and the
 only judgement over them is a single `/mattpocock-skills:code-review` pass. No agent is dispatched and

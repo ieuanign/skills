@@ -380,7 +380,7 @@ one branch, one push, one comment thread to report into.
   unchanged, and no body anyone wrote has been edited.
 - A run that ended left its worktree standing and named it, by path, in that comment.
 - Under `auto`, one `start` message is paired with exactly one closing message carrying `ready`, `halt`
-  or `failed` — and a reason. A run refused at the read sends neither.
+  or `failed` — and a reason. A run refused by the three checks sends neither.
 
 ## Where a rule lives
 
