@@ -163,63 +163,52 @@ Coding standards themselves are not this. They bind whether or not this plugin i
 
 ## Comment table
 
-One row per unresolved comment on a pull request — every one of them, whatever intent it was given —
-carrying that comment, its author, the intent, and, where that intent is a **fix**, which commit it
-becomes. The whole of what a run proposes, and the thing a human approves.
+One row per unresolved comment on a pull request — every one of them, whatever status it was given —
+carrying that comment's conclusion linked to it, the status, and the action: how the fix will be made,
+or why the row is skipped. The whole of what a run proposes, and the thing a human approves.
 
-Not a report of the run: it **is** the plan those commits are made against, which is why comments are
-grouped into commits in the table rather than after it is approved.
+Not a report of the run: it **is** the brief the fixes are made against, which is why a fix row's
+action is written once, at classification, and is the string the work is then done against.
 
 _Avoid_: comment report, run summary — both name something written after the work, which is what this
 is not.
 
 ## Fix
 
-The intent for a comment asking for a change to the code on this pull request, in enough detail for
-someone to make it. The only one of the three intents that reaches the code: a fix row carries a commit
-ordinal and becomes a commit, where a **skip** and an **unclassified** row carry none. All three are
-answered in the thread that raised them.
+The status for a comment asking for a change to the code on this pull request, in enough detail for
+someone to make it. One of two, and the one that reaches the code: a fix row becomes a commit, where a
+**skip** becomes none. Both are answered in the thread that raised them.
 
 Not a **fix cycle** above — that counts rounds of a lane's review loop, this classifies one comment.
 
 ## Skip
 
-The intent for a comment whose change is not being made, because none was asked for or because this
-pull request is not where it goes. A skip names one of four reasons — `question`, `already addressed`,
-`out of scope for this branch`, `disagreed with` — and carries that reason's evidence. The list is
-closed: no fifth is written at run time, and free text never stands where a reason goes.
+The status for everything else: a comment whose change is not being made, because none was asked for,
+because this pull request is not where it goes, or because the run disagrees. The row says which and
+carries that reason's evidence — the commit this pull request already holds, the file and line of the
+convention it rests on. No closed list of reasons stands behind it, and a comment the run cannot decide
+is a skip whose action says it is left for a human.
 
-Three of the four cover a change that *was* asked for and is still not being made, so a comment fitting
-both intents is settled by the reason that fits. `question` is the fourth, and means **the answer to it
-required no change** — never that the comment ends in a question mark. A question whose honest answer
-names something the code should do differently is a **fix**, whatever its grammar.
+A question is settled by its answer, never by its grammar: one whose honest answer names something the
+code should do differently is a **fix**, whatever its wording.
 
 A skip is stated with its evidence rather than left out, because the rows nobody did any work on are
 the ones a human is likeliest to disagree with — and its thread is answered with that same reason and
 evidence, where a table alone would leave the person who wrote it watching a silent conversation.
 
-_Avoid_: won't-fix — that names a reviewer finding the writer declined, a different artifact in the
-same pipeline.
-
-## Unclassified
-
-The intent left for a comment no skip reason fits, or whose reason's evidence cannot be produced. It is
-not a fix, so it becomes no commit, and it is stated as unclassified rather than folded into a skip that
-would have to invent a reason. Its thread is answered saying exactly that, and left for a human.
-
-The signal that the four-reason vocabulary needs widening — a deliberate change, never a run's
-decision.
+_Avoid_: won't-fix — that names a reviewer finding a writer declined, a different artifact in
+`/dev-loop`.
 
 ## Pull request-comment lane
 
 The run one open pull request's comments get, end to end: read, classified into a **comment table**,
-approved, answered in the review threads that raised them, then driven through its own execute phase —
-the fix phase: writer, review loop, suite gate — and pushed to the head branch that pull request
-already has. One run works one pull request.
+approved, answered in the review threads that raised them, then made in a worktree on the head branch
+that pull request already has and pushed to it. One run works one pull request.
 
-Three things a `/dev-loop` lane has, it lacks. No architect is dispatched and no plan is authored,
-because the comment table is the plan the execute phase runs on. No acceptance criteria, and therefore
-no spec axis and no criterion verdicts. No pull request is created, because the run pushes to one that
+It is one session's own work: nothing is dispatched, and the review over the fixes is a single
+`/mattpocock-skills:code-review` pass in that same session. No plan is authored either, because the
+comment table is the brief the fixes are made against. No acceptance criteria, and therefore no spec
+axis and no criterion verdicts. No pull request is created, because the run pushes to one that
 already exists.
 
 Append-only against artifacts a human owns, and narrower than `/dev-loop`'s rule of the same name for

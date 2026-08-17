@@ -35,7 +35,7 @@ Then once per repo — independent, either order:
 |---|---|
 | [`/dev-loop`](./skills/dev-loop/SKILL.md) | GitHub issues → pull requests: plan → implement → review → full-suite gate, one git worktree per lane, lanes in parallel |
 | [`/dev-loop-cleanup`](./skills/dev-loop-cleanup/SKILL.md) | Lists every candidate a lane left behind — worktree, local branch, scratch files — each with a recommendation and its reason, then reaps only the ones you pick |
-| [`/pr-comments`](./skills/pr-comments/SKILL.md) | One pull request's unresolved comments, classified **fix** or **skip** for your approval; the approved fix then runs through the skill's own fix phase and is pushed to that pull request's own branch |
+| [`/pr-comments`](./skills/pr-comments/SKILL.md) | One pull request's unresolved comments, classified **fix** or **skip** for your approval; the approved fixes are then made in the session you invoked, reviewed in one pass, and pushed to that pull request's own branch |
 | [`/mattpocock-skills:code-review`](https://github.com/mattpocock/skills) | **Matt's, not shipped here** — it arrives with the dependency. Reviews a diff on two parallel axes: **Standards** (`CLAUDE.md`, `.claude/rules/`, Fowler smells, your `docs/agents/smell-overrides.md`) and **Spec** (the originating issue/PRD). The `reviewer` agent preloads it, so a `/dev-loop` review and a hand review carry one model |
 | [`/retire-adr`](./skills/retire-adr/SKILL.md) | Retires one decision record you name — **a refactor, not a delete**: sweeps every form the repo cites it by, relocates reasoning that still binds the code, then rewrites the references and deletes the record |
 | [`/setup-ieuanign-skills`](./skills/setup-ieuanign-skills/SKILL.md) | Per-repo config in three independent parts: smell overrides, the workflow labels, `.claude/rules/` conventions. Nothing written without an explicit yes |
@@ -129,16 +129,16 @@ of what a lane costs.**
 ```
 
 **Gated** by default — you approve the comment table before anything below it runs. `auto` suppresses
-that question and resolves the `docs/agents/worktree.md` ones itself: the table is posted on the pull
-request in the gate's place, and the run's conclusion beside it — or, where a prerequisite it needs
-has no honest default, one refusal comment in place of both. Either way, every review thread the
-table covers is answered in that thread.
+that question and asks nothing at all: the table is posted on the pull request in the gate's place,
+and the run's conclusion beside it — or, where the run stops before reaching that gate, one comment
+saying why in place of both. Either way, every review thread the table covers is answered in that
+thread.
 
-The fix phase is `phase-fix.js`, bundled with the skill — writer, review loop and suite gate over the
-same roster. Only an unattended run reads the sibling `dev-loop` skill folder, and only for the shared
-precondition check and the notification channel.
+The fixes are made in the session you invoked: nothing dispatches an agent, the review over them is
+one `/mattpocock-skills:code-review` pass, and no file outside the skill's own folder is loaded to
+decide what a run does.
 
-- [**How a run works**](./docs/pr-comments.md) — the table that *is* the plan, what a run
+- [**How a run works**](./docs/pr-comments.md) — the table that *is* the brief, what a run
   refuses to do and why, both run shapes, common questions, "it's working if". A run loads none of it.
 
 ## For maintainers

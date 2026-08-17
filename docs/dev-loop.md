@@ -219,7 +219,7 @@ Your repository's own answers live in two files, split by what a fact describes 
 reads it. `docs/agents/dev-loop.md` holds this pipeline's own artifacts — **Branch template**, **PR
 title format**, **PR body template**, **Constraints**. `docs/agents/worktree.md` holds what any skill
 provisioning a worktree needs, this pipeline or not — **Setup command**, **Full-suite command**, **Fix
-cycles** — which is how `/pr-comments` reads those three without reading a profile named for a
+cycles** — so a second skill provisioning one reads those three without reading a profile named for a
 pipeline it is not. Each key lives in exactly one of the two and is looked up there alone: one the
 file lacks is missing, and is asked for rather than found in the other.
 
