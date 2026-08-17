@@ -61,8 +61,9 @@ repository works them out.
 
 In order:
 
-1. **One read of the pull request.** `gh pr view` once, and the three prerequisites above are read off
-   it. A run refused there has written nothing anywhere and spent one API call.
+1. **One metadata read of the pull request.** `gh pr view` once for the three prerequisites above; the
+   one other `gh pr view` a run makes is the commits read a skip's evidence may name. A run refused
+   there has written nothing anywhere and spent one API call.
 2. **The read.** One bundled normaliser prints every unresolved comment as a single JSON document,
    review threads, review bodies and issue comments in one shape. It excludes resolved threads,
    minimised comments, unsubmitted or bodyless reviews, and **everything a previous run of this skill
