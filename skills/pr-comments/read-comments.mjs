@@ -40,15 +40,43 @@ const entry = (origin, node, extra) => ({
 // inference from thread resolution, which is why it excludes at every origin.
 const hidden = node => Boolean(node.isMinimized)
 
+// The footer marker a /pr-comments run signs every write with, in both forms: bare, and carrying the
+// ids of the reply-less comments a conclusion comment answered.
+const MARKER = /<!--\s*replied from \/pr-comments(?::([^>]*))?\s*-->/
+const EVERY_MARKER = new RegExp(MARKER, 'g')
+
+// A comment this run has already answered — carrying the marker is a previous run saying so, exactly
+// as hiding is a human saying so.
+const answered = node => MARKER.test(node.body ?? '')
+
+// Harvested before anything is excluded: the comment naming these ids carries the marker itself, so
+// filtering first would drop the list along with it.
+function idsAlreadyAnswered({ threads, reviews, issueComments }) {
+  const named = new Set()
+  const nodes = [...threads.flatMap(t => t.comments?.nodes ?? []), ...reviews, ...issueComments]
+  for (const node of nodes) {
+    for (const [, list] of String(node.body ?? '').matchAll(EVERY_MARKER)) {
+      for (const id of (list ?? '').trim().split(/\s+/)) if (id) named.add(id)
+    }
+  }
+  return named
+}
+
 /** GraphQL nodes → one flat entry list. Pure: no fetch, no clock, no environment. */
 export function normalise({ threads = [], reviews = [], issueComments = [] } = {}) {
   const entries = []
+  // A reply-less origin cannot be answered in place, so a conclusion comment names it by id instead.
+  const namedAsAnswered = idsAlreadyAnswered({ threads, reviews, issueComments })
 
   for (const thread of threads) {
     // GraphQL's own flag, never an inference: REST does not expose thread resolution, and guessing
     // returns every comment a long-lived pull request ever carried.
     if (thread.isResolved) continue
-    for (const c of thread.comments?.nodes ?? []) {
+    const comments = thread.comments?.nodes ?? []
+    // A marked reply answers the conversation it sits in, not just the comment above it, so the
+    // whole thread goes — the earlier comments are what that reply was written about.
+    if (comments.some(answered)) continue
+    for (const c of comments) {
       if (hidden(c)) continue
       entries.push(entry(ORIGINS.reviewThread, c, {
         // Verbatim, never substituted: an outdated comment has `line: null` while `originalLine`
@@ -68,11 +96,12 @@ export function normalise({ threads = [], reviews = [], issueComments = [] } = {
     // A review is a verdict, not necessarily a comment: PENDING is unsubmitted, and a review with
     // no prose is the envelope around inline comments already collected above.
     if (r.state === 'PENDING' || !r.body?.trim() || hidden(r)) continue
+    if (answered(r) || namedAsAnswered.has(r.id)) continue
     entries.push(entry(ORIGINS.reviewBody, r, { reviewState: r.state ?? null }))
   }
 
   for (const c of issueComments) {
-    if (hidden(c)) continue
+    if (hidden(c) || answered(c) || namedAsAnswered.has(c.id)) continue
     entries.push(entry(ORIGINS.issueComment, c))
   }
 
