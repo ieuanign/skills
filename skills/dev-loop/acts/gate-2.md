@@ -82,28 +82,7 @@ For sub-lanes that ended on contested findings, present both sides of each conte
 
    Then **send exactly one closing message**, in the shape the spine's ⟨notify⟩ section states — `draft` or `ready`, its reason, and the pull request link. Unconditional, including for a lane with no PR at all: paired with Act 0's started message it is the run's dead-session signal.
 
-5. **Stack linking.** Once per BATCH, at its LAST Gate 2: a batch whose sub-lanes stack finishes by telling GitHub they form a stack. Linking is **additive** — the base chaining, the bodies and the stacked note are unchanged — and six rules keep it that way:
-
-   - **Fires at the very end of the batch**, once every sub-lane of every lane has pushed and opened its pull request — never per layer.
-   - **One call per chain, not one per batch.** Walk the base relation and link each **maximal chain**; a chain of **fewer than two** pull requests is not a stack and is skipped.
-   - **A gap in a chain is shown, never closed up.** The walk stops at a sub-lane that opened no pull request; the runs either side are separate chains, each linked on its own, and the gap is reported naming that sub-lane.
-   - **Pull requests are identified by number, bottom to top.** Never by branch name.
-   - **Ready-for-review is never requested.**
-   - **No local state, in either direction.**
-
-   **A machine without the tool needs nothing.** The linking sits behind one bundled script which detects the tool's absence and exits having called nothing: no gate checks for it, no precondition asks about it, and no run fails or prompts for want of it.
-
-   **A failed link is reported and costs nothing else.** It leaves every pull request exactly as the run created it — title, body, draft state and base. No sub-lane's ending changes, no worktree decision changes, and nothing is retried.
-
-   **This step is identical under both run modes and asks nothing**, so gate suppression does not touch it.
-
-   Keep each sub-lane's PR number from step 2 as you go — the number, not the URL, and `gh pr create` prints the URL, so read it back with `gh pr view <branch> --json number -q .number` if you did not capture it. Then walk the base relation you provisioned in Act 2: a sub-lane whose base is the trunk starts a chain, and a sub-lane based on another sub-lane's branch extends it. Per chain, bottom to top:
-
-   ```
-   <this-skill-dir>/stack-link.sh <pr-number> <pr-number> [...]
-   ```
-
-   A batch with no stacking is every chain of length one, and the script makes no call for any of them — so the ordinary run calls nothing and says nothing. Report the script's one `STACK:` line per chain as it comes: `linked` records the stack, `skipped` is the machine having no extension and is not a problem to raise, and `failed` is reported with its message and then left alone. **A `failed` is never fatal and never retried.** Pass pull request numbers only; the script refuses a branch name and never sends the ready-for-review flag, either of which would let this step overwrite what steps 1–4 decided.
+5. **Stack linking.** Once per BATCH, at its LAST Gate 2, never per layer: there, read `<this-skill-dir>/acts/gate-2-linking.md` — its whole contract — and perform it; at every earlier Gate 2 this step is only step 2's PR number, kept — the number, not the URL — for that last boundary to consume.
 
 Stacked lanes: a lane in the bottom layer bases its PR on the trunk (`<DEFAULT>`); every layer above bases its PR on the branch of the layer below. Note the stack in the body ("Stacked on #<A>'s PR — rebase onto <DEFAULT> after it merges"). Removing a lower layer's worktree does not affect the layer above it — that layer branches from the base's _branch_, which survives worktree removal. Step 5 above then records the chain on GitHub itself; the note stays regardless.
 

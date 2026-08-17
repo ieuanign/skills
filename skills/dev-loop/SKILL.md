@@ -30,7 +30,7 @@ Then per LAYER — provision a layer only after its bases completed the previous
 
 4. **Act 2 — Provisioning** (`acts/act-2.md`): per sub-lane of the layer — worktree from its base, `.worktreeinclude` copies, Setup command.
 5. **Act 3 — Phase B: execute** (`acts/act-3.md`): the layer through `phase-execute.js`; each result carries what Gate 2 disposes of; between layers, the finished lanes' Gate 2 first, then authorization to proceed.
-6. **Gate 2 — push & PR** (`acts/gate-2.md`): per layer, every sub-lane it finished — push, pull request, the worktree invariant, **⟨notify⟩ lane conclusion**; stack linking once at the batch's LAST Gate 2.
+6. **Gate 2 — push & PR** (`acts/gate-2.md`): per layer, every sub-lane it finished — push, pull request, the worktree invariant, **⟨notify⟩ lane conclusion**; stack linking once at the batch's LAST Gate 2, whose contract is its own file, `acts/gate-2-linking.md`, read at that one boundary.
 
 Last, once per run:
 
