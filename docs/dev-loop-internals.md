@@ -486,6 +486,13 @@ host juggling several background tasks, each carrying its own concurrency cap in
 
 ### Stack linking
 
+Why the linking step lives in its own file, `acts/gate-2-linking.md`, rather than in `acts/gate-2.md`
+with the rest of its gate: the gate's file is re-read at EVERY layer's Gate 2 — that re-read is the
+staged design's freshness guarantee — while linking fires once per batch, at the last Gate 2 only. In
+one file, every layer of a stacked run re-pays the reading of a step that fires at exactly one of
+those boundaries; split, each layer's re-read carries only what that layer can use, and the one
+boundary that links reads the linking contract fresh, exactly as every other boundary reads its own.
+
 Why the linking **fires at the very end of the batch**, once every sub-lane has pushed and opened its
 pull request, rather than per layer: a stack is a property of the finished batch. Linking a layer at a
 time records a chain that stops short of the work still to come, and a half-linked stack is worse than

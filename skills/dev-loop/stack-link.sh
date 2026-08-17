@@ -4,7 +4,7 @@
 #
 #   stack-link.sh <pr-number> <pr-number> [<pr-number>...]     # bottom to top
 #
-# acts/gate-2.md's "Stack linking" step specifies its behaviour; this is only the
+# acts/gate-2-linking.md specifies its behaviour; this is only the
 # implementation. Run it ONCE per batch, after every sub-lane has pushed and opened its pull
 # request — never per layer, because a half-linked stack shows a reviewer a chain that stops
 # short of the work.

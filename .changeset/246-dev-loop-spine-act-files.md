@@ -2,7 +2,7 @@
 "ieuanign-skills": minor
 ---
 
-`/dev-loop`'s `SKILL.md` is a spine over seven act files, each read at the boundary where its act
+`/dev-loop`'s `SKILL.md` is a spine over staged act files, each read at the boundary where its act
 fires.
 
 The file was 61,782 chars — roughly 15.4k tokens — and every one of them loads into the orchestrator
@@ -13,8 +13,10 @@ performed from a half-remembered contract looks exactly like one performed from 
 **The spine keeps only what binds *between* acts** — the frontmatter, the identity paragraph,
 `## Arguments`, a skeleton naming each act and gate at a line apiece, `### Run mode`'s four decision
 lines, `### How you write a ⟨notify⟩ event`, `## Derived facts` and `## Hard rules` — and comes to
-12,376 chars. **Each act's whole contract moves into its own file** under `skills/dev-loop/acts/`:
-`act-0.md`, `act-1.md`, `gate-1.md`, `act-2.md`, `act-3.md`, `gate-2.md`, `act-4.md`. The standing
+12,461 chars. **Each act's whole contract moves into its own file** under `skills/dev-loop/acts/`:
+`act-0.md`, `act-1.md`, `gate-1.md`, `act-2.md`, `act-3.md`, `gate-2.md`, `act-4.md` — and Gate 2's
+once-per-batch stack-linking step into its own `gate-2-linking.md`, read only at the batch's last
+Gate 2, so the per-layer re-read of `gate-2.md` never carries a step that fires once. The standing
 rule in the skeleton is what makes the split work — read the act's file before performing it, at
 EVERY boundary where it fires, so an act that runs per layer is read per layer and the freshly read
 file, not the conversation, is the current word.
@@ -26,9 +28,9 @@ pointers at the scripts that enforce it, and why-prose dropped where its reasoni
 clauses they lacked. `## Where configuration lives` is gone from the skill entirely —
 `docs/dev-loop.md` now states the three refusals it used to defer to `SKILL.md` for — and the
 stack-linking table's **Why** column lives in internals §Stack linking, so the rules ride in
-`acts/gate-2.md` as bare bullets. The defensive repetitions are deleted, except inside `## Hard
+`acts/gate-2-linking.md` as bare bullets. The defensive repetitions are deleted, except inside `## Hard
 rules`, which stays verbatim on purpose. `## Repo profile` went into `acts/act-0.md`. Act files carry
-no frontmatter, which is what keeps them supporting files rather than seven more skills.
+no frontmatter, which is what keeps them supporting files rather than eight more skills.
 
 `scripts/check.sh`'s worktree-removal guardrail follows the prose it pins: it scans every bundled
 `.md` rather than `SKILL.md` alone, because a skill may split its steps across supporting files and
