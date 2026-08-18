@@ -303,6 +303,7 @@ Tell the user what was written and which skills read it:
 If Part 2 ran and the user declined the label creation, say plainly that the roles are mapped but the
 labels do not exist yet, so an unattended run will report each failed write and carry on regardless.
 
-If Part 4 was declined, or left a key unanswered, say plainly that `/dev-loop auto` and
-`/pr-comments auto` still refuse at intake naming each one, until a gated run of either supplies it by
-hand.
+If Part 4 was declined, or left **Setup command**, **Full-suite command** or `.worktreeinclude`
+unanswered, say plainly that `/dev-loop auto` and `/pr-comments auto` still refuse at intake naming
+each one, until a gated run of either supplies it by hand. An unanswered **Fix cycles** refuses
+nothing: an unattended run takes `2` for that run and persists it nowhere.
