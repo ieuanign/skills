@@ -26,7 +26,7 @@ Once per run, in order:
 2. **Act 1 — Phase A: plans** (`acts/act-1.md`): one architect per issue through `phase-plan.js`; KEEP each summary and transcript directory for Gate 2 and Act 4; **⟨notify⟩ plan comment**.
 3. **Gate 1 — plan approval** (`acts/gate-1.md`): present every lane — summaries, plan paths, open questions; touchpoint overlaps classified; lanes split into sub-lanes and layers; only approved lanes proceed.
 
-Then per LAYER — provision a layer only after its bases completed the previous one:
+Then per LAYER — **a layer is horizontal and a stack is vertical**, and the pipeline has both: a layer is the set of sub-lanes that run concurrently, all based on branches that already hold their commits, while a stack is a chain of branches each based on the one below, sitting on the trunk with a bottom directly on it and a top nothing is based on. **Anything based on the trunk (`origin/<DEFAULT>`) runs in layer 1; anything based on a branch that gets its commits in layer N runs in layer N+1** — this applies to stacked _lanes_ AND to dependent _sub-lanes_ within one lane, so a frontend sub-lane based on its own backend sub-lane's branch waits for the next layer. Provision a layer only after its bases completed the previous one:
 
 4. **Act 2 — Provisioning** (`acts/act-2.md`): per sub-lane of the layer — worktree from its base, `.worktreeinclude` copies, Setup command.
 5. **Act 3 — Phase B: execute** (`acts/act-3.md`): the layer through `phase-execute.js`; each result carries what Gate 2 disposes of; between layers, the finished lanes' Gate 2 first, then authorization to proceed.
