@@ -9,7 +9,7 @@ Gather every candidate, recommend a disposal for each, stop for an answer, reap 
 
 ## Arguments
 
-`/dev-loop-cleanup [<issue>]` — an issue number scopes the run to that lane; no argument lists every candidate. **The command line is the whole of the scope**: a lane discussed earlier in this session is a candidate only when step 2's sources hold it.
+`/dev-loop-cleanup [<issue>]` — an issue number scopes the run to that lane, and `pr-<n>` scopes it to that pull request's worktree instead; no argument lists every candidate. **The command line is the whole of the scope**: a lane discussed earlier in this session is a candidate only when step 2's sources hold it.
 
 ## Derived facts (compute once per run)
 
@@ -22,9 +22,9 @@ Gather every candidate, recommend a disposal for each, stop for an answer, reap 
 
 1. `git fetch origin <DEFAULT>`.
 
-2. **Gather candidates from three observable sources**, unioned by lane number `<n>` — the leading digits of a worktree slug or of a branch's tail, since a sub-lane suffixes its area onto the number (`feat/208-backend` → slug `208-backend`, lane `208`): worktree directories under `<WORKTREES>` whose slug is `<n>` or starts `<n>-`, local branches whose segment after the first `/` does the same, and `.scratch/**/<n>-*.md` in any folder. A `/pr-comments` worktree is keyed by pull request rather than lane — slug `pr-<n>` — and contributes its **worktree alone**: the branch it holds is that pull request's own head branch, never a candidate. An argument keeps that number alone. **A lane whose worktree is already gone is the ordinary case** — its Worktree cell reads absent, a state to report rather than a condition that failed.
+2. **Gather candidates from three observable sources**, unioned by lane number `<n>` — the leading digits of a worktree slug or of a branch's tail, since a sub-lane suffixes its area onto the number (`feat/208-backend` → slug `208-backend`, lane `208`): worktree directories under `<WORKTREES>` whose slug is `<n>`, starts `<n>-`, or is `pr-<n>`, local branches whose segment after the first `/` is `<n>` or starts `<n>-`, and `.scratch/**/<n>-*.md` in any folder. A `pr-<n>` slug is a `/pr-comments` worktree, keyed by pull request rather than lane — the full slug is its key, which is what separates it from lane `<n>` — and it contributes its **worktree alone**: the branch it holds is that pull request's own head branch, never a candidate. An argument keeps its own key alone, lane number or `pr-<n>`. **A lane whose worktree is already gone is the ordinary case** — its Worktree cell reads absent, a state to report rather than a condition that failed.
 
-3. **Recommend per branch.** A lane's sub-lanes have a worktree, branch and pull request each, so each contributes its own row. `remove` needs both halves: `gh pr view <branch> --json number,state,mergedAt` reports merged, **and** `git -C <wt> status --porcelain` is empty. An absent worktree has nothing to be dirty, so the merged half decides that row alone. Everything else is `keep`, with **Why** naming the half that failed — the pull request is not merged, or the worktree holds work.
+3. **Recommend per branch.** A lane's sub-lanes have a worktree, branch and pull request each, so each contributes its own row. `remove` needs both halves: `gh pr view <branch> --json number,state,mergedAt` reports merged, **and** `git -C <wt> status --porcelain` is empty. An absent worktree has nothing to be dirty, so the merged half decides that row alone. Everything else is `keep`, with **Why** naming the half that failed — the pull request is not merged, or the worktree holds work. A `pr-<n>` row runs its merged half by number — `gh pr view <n> --json number,state,mergedAt` — and its Branch cell names the head branch it holds for information, never as a candidate.
 
 4. **Print one table**, in both modes, with these columns:
 
@@ -32,7 +32,7 @@ Gather every candidate, recommend a disposal for each, stop for an answer, reap 
 
    It is a proposal: nothing has happened when it prints, and nothing below runs until step 5 has an answer. Lane and Scratch repeat down a lane's rows — the number and its scratch files belong to the lane — and every other cell is that row's branch's own.
 
-5. **Ask, then wait.** Ask in plain text for what to reap — lane numbers, one row's branch where a lane's rows differ, `all`, or `none` — since the table has a row per branch and AskUserQuestion's four options cannot hold an arbitrary number of them. **The answer is what authorises a deletion**; the argument only decided what to look at. A picked lane number takes every row it shows; `none`, silence and an answer you cannot read all end the run on the proposal.
+5. **Ask, then wait.** Ask in plain text for what to reap — lane numbers, one row's branch where a lane's rows differ, `all`, or `none` — since the table has a row per branch and AskUserQuestion's four options cannot hold an arbitrary number of them. **The answer is what authorises a deletion**; the argument only decided what to look at. A picked lane number takes every row it shows, and a `pr-<n>` row is picked by that full key; `none`, silence and an answer you cannot read all end the run on the proposal.
 
 6. **Reap each picked row in one order — worktree, then branch, then scratch files** — because a branch checked out in a worktree is held by that checkout for as long as it stands.
 
