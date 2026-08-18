@@ -62,7 +62,11 @@ Step 2's body is **the profile's PR body template** (`docs/agents/dev-loop.md`),
 | neither, and any sub-lane's `terminal.pr` was `draft` | a draft with no ending behind it, so no notifier ever ran and this one is yours. Apply **awaiting-human**. |
 | neither, and every PR opened ready | the no-label case. Apply nothing. |
 
+Why step 4 runs per lane at its LAST layer: the label is per issue, so a lane whose sub-lanes span layers closes once rather than once a layer. Its one closing message is unconditional because, paired with Act 0's started message, it is the run's dead-session signal.
+
 ## Stacked lanes, and ended sub-lanes
+
+A batch with no stacking has one layer, and therefore exactly one Gate 2.
 
 Stacked lanes: a lane in the bottom layer bases its PR on the trunk (`<DEFAULT>`); every layer above bases its PR on the branch of the layer below. Note the stack in the body ("Stacked on #<A>'s PR — rebase onto <DEFAULT> after it merges"). Removing a lower layer's worktree does not affect the layer above it — that layer branches from the base's _branch_, which survives worktree removal. `acts/gate-2.md`'s step 5 then records the chain on GitHub itself; the note stays regardless.
 
