@@ -306,6 +306,74 @@ else
   failed=1
 fi
 
+# --- blocking precondition coverage ------------------------------------------
+# A blocking precondition refuses every unattended run, so the setup skill has to
+# write each one; both sides are read as text, the module never imported or run.
+blocking_module="skills/dev-loop/preconditions.mjs"
+blocking_skill="skills/setup-ieuanign-skills/SKILL.md"
+# `|| true` on every grep feeding a guard: pipefail turns a grep that matched
+# nothing into a set -e exit before the guard can name the side that came up empty.
+blocking_include="$(grep -m1 -oE "^const WORKTREEINCLUDE = '[^']+'" "$REPO/$blocking_module" | grep -oE "'[^']+'" | tr -d "'" || true)"
+blocking_labels=""
+blocking_unreadable=""
+blocking_unparsed=""
+for blocking_caller in dev-loop pr-comments; do
+  blocking_entries="$(awk -v caller="'$blocking_caller':" -v file="$blocking_module" -v include="$blocking_include" -v q="'" '
+    $1 == caller { in_caller = 1; next }
+    in_caller && /blocking: \[/ { in_block = 1; next }
+    in_block && /^[[:space:]]*\],/ { exit }
+    in_block && NF {
+      entry = $0
+      label = ""
+      sub(/^[[:space:]]+/, "", entry)
+      if (entry ~ /^worktreeinclude\(/) {
+        label = include
+      } else if (sub(/^profileKey\([A-Za-z_][A-Za-z0-9_]*,[[:space:]]*/, "", entry)) {
+        mark = substr(entry, 1, 1)
+        if (mark == q || mark == "\"") {
+          entry = substr(entry, 2)
+          if (index(entry, mark) > 1) label = substr(entry, 1, index(entry, mark) - 1)
+        }
+      }
+      gsub(/`/, "", label)
+      if (label != "") { print "label\t" label } else { print "unreadable\t" file ":" FNR }
+    }
+  ' "$REPO/$blocking_module")"
+  blocking_found="$(printf '%s\n' "$blocking_entries" | grep '^label' | cut -f2- || true)"
+  [ -n "$blocking_found" ] || blocking_unparsed="$blocking_unparsed $blocking_caller"
+  blocking_labels="$(printf '%s\n%s' "$blocking_labels" "$blocking_found")"
+  blocking_unreadable="$blocking_unreadable $(printf '%s\n' "$blocking_entries" | grep '^unreadable' | cut -f2- | tr '\n' ' ' || true)"
+done
+blocking_labels="$(printf '%s\n' "$blocking_labels" | grep -v '^[[:space:]]*$' | sort -u || true)"
+blocking_prose="$(grep -c '[^[:space:]]' "$REPO/$blocking_skill" || true)"
+if [ -n "${blocking_unreadable// /}" ]; then
+  echo "FAIL  blocking precondition coverage: blocking entry this stage cannot read a label from:$blocking_unreadable" >&2
+  echo "      expected profileKey(<file const>, '<profile key>', …) or worktreeinclude(…)" >&2
+  failed=1
+elif [ -n "${blocking_unparsed// /}" ]; then
+  echo "FAIL  blocking precondition coverage: no blocking label parsed in $blocking_module for caller:$blocking_unparsed" >&2
+  failed=1
+elif [ -z "$blocking_labels" ] || [ "${blocking_prose:-0}" -eq 0 ]; then
+  echo "FAIL  blocking precondition coverage: nothing to compare" >&2
+  echo "      $blocking_module labels: $(echo "${blocking_labels:-none}" | tr '\n' ' ')" >&2
+  echo "      $blocking_skill: ${blocking_prose:-0} non-blank lines" >&2
+  failed=1
+else
+  blocking_covered="$(while IFS= read -r blocking_label; do
+    if grep -qF -- "$blocking_label" "$REPO/$blocking_skill"; then printf '%s\n' "$blocking_label"; fi
+  done <<< "$blocking_labels")"
+  blocking_absent="$(comm -23 <(printf '%s\n' "$blocking_labels") <(printf '%s\n' "$blocking_covered"))"
+  if [ -n "$blocking_absent" ]; then
+    echo "FAIL  blocking precondition coverage: preconditions $blocking_module refuses on, absent from $blocking_skill:" >&2
+    while IFS= read -r blocking_label; do
+      echo "      $blocking_label" >&2
+    done <<< "$blocking_absent"
+    failed=1
+  else
+    echo "ok    blocking precondition coverage ($(printf '%s\n' "$blocking_labels" | wc -l) labels)"
+  fi
+fi
+
 # --- worktree removal guardrail ----------------------------------------------
 # Every file that removes a worktree states the never-force guard itself, none
 # of them loading the others; the sentence carries no markup so it greps.
