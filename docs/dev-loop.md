@@ -229,7 +229,8 @@ needs a value it asks once, writes the answer down, and never asks again. A pers
 an answer. **The interview is the supervised run's alone**: an unattended run asks nothing and writes
 nothing to either file, taking a key's documented default for that run only where it has one and
 refusing where it does not. So a repository with no profile is never one you have to configure first —
-it is one whose first gated run does the configuring.
+it is one whose first gated run does the configuring, or whose `/setup-ieuanign-skills` wrote both
+files up front in its Parts 4 and 5.
 
 The rule **refuses** three things, and this page states them. They bind how the pipeline is configured
 rather than what a run performs, so the skill carries neither them nor the reasoning behind them:
