@@ -60,12 +60,9 @@ For sub-lanes that ended on contested findings, present both sides of each conte
    | Held at Gate 2 | nothing pushed | kept |
    | Removal refused | pushed | kept, reported |
 
-   Removal is `git worktree remove <WORKTREES>/<slug>`. **Worktree removal never passes --force.** Two rules make that safe:
+   Removal is `git worktree remove <WORKTREES>/<slug>`. **Worktree removal never passes --force.** Every rule that makes a removal safe — the refusal on a dirty worktree, push before remove, the main worktree's exclusion — is stated in the spine's **Hard rules** and not here, because this file is read afresh at each layer's Gate 2 and those rules bind between layers too.
 
-   - **Push succeeds first, remove second.** A push that failed or never ran keeps its worktree.
-   - **A dirty worktree keeps itself.** `git worktree remove` without `--force` refuses on tracked modifications or on untracked non-ignored files — **that refusal IS the guard**. Report `git -C <wt> status --porcelain` verbatim and keep that worktree. Ignored files, such as the configuration and dependency directories provisioning copies in, do not trip it.
-
-   **The main worktree is never a removal candidate.** Before any removal, confirm the path is NOT the first entry of `git worktree list`. The local branch, the plan file and any worktree the table above kept all stay: `/dev-loop-cleanup` proposes each of them once the pull request merges, and reaps only what a human picks.
+   The local branch, the plan file and any worktree the table above kept all stay: `/dev-loop-cleanup` proposes each of them once the pull request merges, and reaps only what a human picks.
 
    **Name what the removal destroys, then remove.** **Ignored** files go with the worktree — the intent, not an oversight. Before removing, read the plan's **File touchpoints** and report every one that `git -C <wt> check-ignore -q <path>` calls ignored and that exists in the worktree, as paths going with the removal. That same list is step 2's **Local-only artifacts** section. Then remove: nothing is copied out and nothing is kept. Report nothing when the plan named no such path, which is the ordinary case. The list comes from the plan's touchpoints, never from `--ignored=matching`.
 
