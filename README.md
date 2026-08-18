@@ -17,7 +17,7 @@ Then once per repo — independent, either order:
 
 ```bash
 /mattpocock-skills:setup-matt-pocock-skills   # issue tracker, triage labels, docs/agents/ layout
-/setup-ieuanign-skills                        # workflow labels + your .claude/rules/ conventions
+/setup-ieuanign-skills                        # workflow labels, .claude/rules/, worktree profile
 ```
 
 - **Updates** — `/plugin marketplace update ieuanign`, or turn on auto-update in `/plugin` (off by
@@ -38,7 +38,7 @@ Then once per repo — independent, either order:
 | [`/pr-comments`](./skills/pr-comments/SKILL.md) | One pull request's unresolved comments, classified **fix** or **skip** for your approval; the approved fixes are then made in the session you invoked, reviewed in one pass, and pushed to that pull request's own branch |
 | [`/mattpocock-skills:code-review`](https://github.com/mattpocock/skills) | **Matt's, not shipped here** — it arrives with the dependency. Reviews a diff on two parallel axes: **Standards** (`CLAUDE.md`, `.claude/rules/`, Fowler smells, your `docs/agents/smell-overrides.md`) and **Spec** (the originating issue/PRD). The `reviewer` agent preloads it, so a `/dev-loop` review and a hand review carry one model |
 | [`/retire-adr`](./skills/retire-adr/SKILL.md) | Retires one decision record you name — **a refactor, not a delete**: sweeps every form the repo cites it by, relocates reasoning that still binds the code, then rewrites the references and deletes the record |
-| [`/setup-ieuanign-skills`](./skills/setup-ieuanign-skills/SKILL.md) | Per-repo config in three independent parts: smell overrides, the workflow labels, `.claude/rules/` conventions. Nothing written without an explicit yes |
+| [`/setup-ieuanign-skills`](./skills/setup-ieuanign-skills/SKILL.md) | Per-repo config in four independent parts: smell overrides, the workflow labels, `.claude/rules/` conventions, the worktree profile an unattended run refuses without. Nothing written without an explicit yes |
 
 ## `/dev-loop`
 
