@@ -1,6 +1,6 @@
 {
   "name": "ieuanign-skills",
-  "version": "0.22.0",
+  "version": "0.22.1",
   "description": "Ieuan's add-on agent skills — a dev-loop issue-to-PR pipeline over a custom agent roster, plus coding-standards setup. Layers on mattpocock/skills.",
   "author": {
     "name": "Ieuan Ignatius",
