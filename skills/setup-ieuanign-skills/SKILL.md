@@ -1,12 +1,12 @@
 ---
 name: setup-ieuanign-skills
-description: Configure a repo for these skills — smell overrides, the workflow label vocabulary, and the .claude/rules/ conventions.
+description: Configure a repo for these skills — smell overrides, the workflow label vocabulary, the .claude/rules/ conventions, and the worktree profile an unattended run needs.
 disable-model-invocation: true
 ---
 
 # Setup Ieuan's Skills
 
-Three independent parts. Run any one alone — no part depends on another, and none depends on
+Four independent parts. Run any one alone — no part depends on another, and none depends on
 `/mattpocock-skills:setup-matt-pocock-skills` having run.
 
 1. **Smell overrides** — the exceptions the `reviewer` agent and `/mattpocock-skills:code-review`'s
@@ -15,16 +15,19 @@ Three independent parts. Run any one alone — no part depends on another, and n
 3. **The `.claude/rules/` conventions** — how pull requests are separated, how stacked branches are
    rebased, how a worktree is removed, where a review finds the repo's standards, and the comment and
    scratch habits every session in the repo obeys.
+4. **The worktree profile** — the `docs/agents/worktree.md` keys and the `.worktreeinclude` file an
+   unattended `/dev-loop` or `/pr-comments` run refuses without.
 
-**Every part explores, proposes, and writes only on an explicit yes.** All three mutate files the user
+**Every part explores, proposes, and writes only on an explicit yes.** All four mutate files the user
 owns, so this holds without restatement below: a step that says "write" means write what was accepted.
 
 ## Where each thing goes — the uninstall test
 
-One question places all three, and places anything added later: **would this still bind if the plugin
-were uninstalled?** Yes → `CLAUDE.md` and `.claude/rules/`. No, because it is meaningless without the
-plugin → `docs/agents/`. The same in every repo → the skill itself. Varies by machine → nowhere; probe
-for it. Two corollaries follow, cited below where they bite:
+One question places all four, and places anything added later: **would this still bind if the plugin
+were uninstalled?** Yes → `CLAUDE.md`, `.claude/rules/`, or the repo root where the tool that reads it
+looks for it. No, because it is meaningless without the plugin → `docs/agents/`. The same in every
+repo → the skill itself. Varies by machine → nowhere; probe for it. Two corollaries follow, cited
+below where they bite:
 
 - **No derived copies** — nothing under `docs/agents/` restates a fact the repo states elsewhere.
 - **No machine facts in git** — nothing that varies by machine enters a committed file.
@@ -211,6 +214,73 @@ because that is the only place a review session loads without a bespoke lookup.
 Propose it whether or not Part 1 found anything to record. An absent overrides file is the ordinary
 case, and this pointer is what makes one discoverable whenever it does appear.
 
+## Part 4 — the worktree profile and `.worktreeinclude`
+
+Three preconditions an unattended run cannot supply for itself sit outside everything Parts 1–3
+write: the **Setup command** and **Full-suite command** keys of `docs/agents/worktree.md`, and
+`.worktreeinclude` at the repo root. Missing any one of them, `/dev-loop auto` and `/pr-comments auto`
+refuse at intake however well the other three parts ran. This part is the shortcut for supplying
+them, and **Fix cycles** with them — that key defaults, so it blocks nothing, but skipping it writes
+two of the file's three headings and hands the third back to a gated run. **When** a run reads each key, and what
+it does with the value, belongs to `/dev-loop`'s `acts/act-0.md`, which is cited as the source and
+neither restated here nor copied into the files this writes.
+
+Placement is the uninstall test twice: the profile is meaningless without the plugin →
+`docs/agents/`; `.worktreeinclude` binds Claude Code's native worktrees with no plugin installed →
+the repo root.
+
+### 1. Check what is there
+
+- **`docs/agents/worktree.md`** — which of `## Setup command`, `## Full-suite command` and
+  `## Fix cycles` already carry a non-blank line. Each key resolves against its own heading with no
+  fallback, so report them one at a time: an answered key is left byte-for-byte alone and never
+  re-asked, and the file is never regenerated.
+- **`.worktreeinclude`** — present or absent. An existing one is reported as it stands and not
+  rewritten, its last line included: `/dev-loop`'s Act 0 guarantees that line's position on every run
+  of its own accord, so nothing is lost by leaving it.
+
+### 2. Agree the values
+
+One ask per **missing** key, each offering candidates read from the repo, each confirmed before
+anything is written. **Configuration, never discovery**: a command nobody chose is never persisted,
+because a wrong Full-suite command hands every later run a green-looking batch nothing tested.
+
+- **Setup command** — candidates from what the repo actually shows: a committed lockfile and its
+  package manager's clean-install command, a `setup` or `bootstrap` script.
+- **Full-suite command** — candidates from a `test` or `check` script in the manifest, a Makefile
+  target, or the CI config. Offer **`none`** as a real answer and say what it costs: every sub-lane's
+  suite reports **not run**.
+- **Fix cycles** — offer **`2`** as the default, a higher value, and **`0`**, which spends no fix
+  cycle at all.
+
+`none` and `0` are persisted answers like any other. A key left blank is not an answer — it is the
+same missing precondition the run refused on.
+
+### 3. `.worktreeinclude` — the candidates, and the last line
+
+`git ls-files -oi --exclude-standard --directory` lists what the repo ignores; offer only what a cold
+checkout cannot run without, which is env files and local config. Dependencies belong to the Setup
+command however cheap a copy looks. **"None" is a real answer**: it writes a comment-only file, which
+counts as answered.
+
+Whatever is chosen, the file's **last** line is `!.claude/worktrees/**`, with one line above it saying
+why — gitignore matching is last-match-wins, so only the final position reliably stops a copy
+mechanism cloning existing worktrees into a new one.
+
+### 4. Write
+
+Use [worktree-profile-template.md](./worktree-profile-template.md) as the skeleton.
+
+- **No profile** → create it from the template, every `<...>` slot carrying the agreed value. The
+  precondition check judges presence and not value, so a slot left as it is answers a key with
+  something nobody chose.
+- **A profile with sections missing** → append only those, in the template's order, and touch nothing
+  else.
+- **`.worktreeinclude`** → write it only when absent.
+
+Say once that both files must be committed — being tracked is what makes them the persistence, and
+an unattended run reads them from a fresh checkout that carries nothing else.
+
 ## Done
 
 Tell the user what was written and which skills read it:
@@ -226,6 +296,13 @@ Tell the user what was written and which skills read it:
   `worktree-removal.md` by a human at a terminal, which no skill covers, and `code-review.md` by the
   `reviewer` agent and the code-review Standards axis. Name the ones the user declined too, so nothing
   looks written that is not.
+- `docs/agents/worktree.md` and `.worktreeinclude` — `/dev-loop` and `/pr-comments`, both of which
+  provision worktrees and read all three keys. Report a key the file already answered as left alone
+  rather than as written.
 
 If Part 2 ran and the user declined the label creation, say plainly that the roles are mapped but the
 labels do not exist yet, so an unattended run will report each failed write and carry on regardless.
+
+If Part 4 was declined, or left a key unanswered, say plainly that `/dev-loop auto` and
+`/pr-comments auto` still refuse at intake naming each one, until a gated run of either supplies it by
+hand.
