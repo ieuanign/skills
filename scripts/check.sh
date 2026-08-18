@@ -404,6 +404,62 @@ else
   echo "ok    worktree removal guardrail ($guard_carriers files)"
 fi
 
+# --- per-layer read budget ---------------------------------------------------
+# The act files the spine lists under "Then per LAYER" are re-read at every layer,
+# so a paragraph added to one is paid once per layer of every stacked run.
+perlayer_budget=9000
+perlayer_spine="skills/dev-loop/SKILL.md"
+perlayer_dir="${perlayer_spine%/*}"
+perlayer_start="$(grep -n -m1 -F 'Then per LAYER' "$REPO/$perlayer_spine" | cut -d: -f1 || true)"
+perlayer_end="$(grep -n -m1 -F 'Last, once per run:' "$REPO/$perlayer_spine" | cut -d: -f1 || true)"
+perlayer_total=0
+perlayer_count=0
+perlayer_sizes=""
+perlayer_broken=0
+if [ -z "$perlayer_start" ] || [ -z "$perlayer_end" ] || [ "$perlayer_end" -le "$perlayer_start" ]; then
+  echo "FAIL  per-layer read budget: cannot find the per-LAYER act block in $perlayer_spine" >&2
+  echo "      expected a 'Then per LAYER' lead-in followed by a 'Last, once per run:' one" >&2
+  echo "      found: ${perlayer_start:-no start anchor}, ${perlayer_end:-no end anchor}" >&2
+  perlayer_broken=1
+else
+  while IFS= read -r perlayer_item; do
+    perlayer_path="$(printf '%s\n' "$perlayer_item" | sed -nE 's/^[0-9]+\.[[:space:]]+\*\*[^*]+\*\*[[:space:]]*\(`(acts\/[^`]+)`\).*/\1/p' || true)"
+    if [ -z "$perlayer_path" ]; then
+      echo "FAIL  per-layer read budget: no act file in the title parenthetical of $perlayer_spine: $perlayer_item" >&2
+      echo "      expected '<n>. **<act title>** (\`acts/<file>.md\`): …'. Only that parenthetical is" >&2
+      echo "      measured — a path named later in the item is a read-once sibling, not per-layer." >&2
+      perlayer_broken=1
+      continue
+    fi
+    if [ ! -f "$REPO/$perlayer_dir/$perlayer_path" ]; then
+      echo "FAIL  per-layer read budget: $perlayer_spine names $perlayer_path, which is not in $perlayer_dir/" >&2
+      perlayer_broken=1
+      continue
+    fi
+    perlayer_bytes="$(wc -c <"$REPO/$perlayer_dir/$perlayer_path" | tr -d ' ')"
+    perlayer_total=$((perlayer_total + perlayer_bytes))
+    perlayer_count=$((perlayer_count + 1))
+    perlayer_sizes="$perlayer_sizes$perlayer_path	$perlayer_bytes
+"
+  done < <(sed -n "$((perlayer_start + 1)),$((perlayer_end - 1))p" "$REPO/$perlayer_spine" | grep -E '^[0-9]+\. ' || true)
+fi
+if [ "$perlayer_broken" -eq 1 ]; then
+  failed=1
+elif [ "$perlayer_count" -eq 0 ] || [ "$perlayer_total" -eq 0 ]; then
+  echo "FAIL  per-layer read budget: $perlayer_count act files and $perlayer_total bytes measured — a budget over nothing passes on anything" >&2
+  failed=1
+elif [ "$perlayer_total" -le "$perlayer_budget" ]; then
+  echo "ok    per-layer read budget ($perlayer_count files, $perlayer_total of $perlayer_budget bytes)"
+else
+  echo "FAIL  per-layer read budget: $perlayer_total bytes over $perlayer_budget — every layer of every run re-reads all of it" >&2
+  while IFS="	" read -r perlayer_path perlayer_bytes; do
+    [ -n "$perlayer_path" ] || continue
+    echo "      $perlayer_dir/$perlayer_path: $perlayer_bytes bytes" >&2
+  done <<<"$perlayer_sizes"
+  echo "      total: $perlayer_total bytes, budget: $perlayer_budget" >&2
+  failed=1
+fi
+
 # --- agent types are resolved, never literal ---------------------------------
 # A phase script dispatches roster agents by name, and the SAME definition is
 # registered bare when it is linked into `.claude/agents/` and namespaced
