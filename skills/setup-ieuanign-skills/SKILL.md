@@ -1,12 +1,12 @@
 ---
 name: setup-ieuanign-skills
-description: Configure a repo for these skills — smell overrides, the workflow label vocabulary, the .claude/rules/ conventions, and the worktree profile an unattended run needs.
+description: Configure a repo for these skills — smell overrides, the workflow label vocabulary, the .claude/rules/ conventions, and the two repo profiles an unattended run reads.
 disable-model-invocation: true
 ---
 
 # Setup Ieuan's Skills
 
-Four independent parts. Run any one alone — no part depends on another, and none depends on
+Five independent parts. Run any one alone — no part depends on another, and none depends on
 `/mattpocock-skills:setup-matt-pocock-skills` having run.
 
 1. **Smell overrides** — the exceptions the `reviewer` agent and `/mattpocock-skills:code-review`'s
@@ -17,13 +17,16 @@ Four independent parts. Run any one alone — no part depends on another, and no
    scratch habits every session in the repo obeys.
 4. **The worktree profile** — the `docs/agents/worktree.md` keys and the `.worktreeinclude` file an
    unattended `/dev-loop` or `/pr-comments` run refuses without.
+5. **The pipeline profile** — the `docs/agents/dev-loop.md` keys naming the branches and pull requests
+   `/dev-loop` writes, which an unattended run otherwise defaults run after run with nothing on disk
+   to edit.
 
-**Every part explores, proposes, and writes only on an explicit yes.** All four mutate files the user
+**Every part explores, proposes, and writes only on an explicit yes.** All five mutate files the user
 owns, so this holds without restatement below: a step that says "write" means write what was accepted.
 
 ## Where each thing goes — the uninstall test
 
-One question places all four, and places anything added later: **would this still bind if the plugin
+One question places all five, and places anything added later: **would this still bind if the plugin
 were uninstalled?** Yes → `CLAUDE.md`, `.claude/rules/`, or the repo root where the tool that reads it
 looks for it. No, because it is meaningless without the plugin → `docs/agents/`. The same in every
 repo → the skill itself. Varies by machine → nowhere; probe for it. Two corollaries follow, cited
@@ -281,6 +284,61 @@ Use [worktree-profile-template.md](./worktree-profile-template.md) as the skelet
 Say once that both files must be committed — being tracked is what makes them the persistence, and
 an unattended run reads them from a fresh checkout that carries nothing else.
 
+## Part 5 — the pipeline profile
+
+Four keys in `docs/agents/dev-loop.md` describe the artifacts `/dev-loop` writes: **Branch template**,
+**PR title format**, **PR body template** and **Constraints**. None of them refuses a run — three take
+a documented default for the run that needed them, reported and persisted nowhere, and nothing asks
+for Constraints at all — so a repository that only ever runs `auto` is never asked for one and gets no
+file, defaulting run after run with nothing on disk to edit. This part is the shortcut for writing it.
+**When** a run reads each key, and what it does with the value, belongs to `/dev-loop`'s `acts/act-0.md`
+and its Gate 2, which are cited as the source and neither restated here nor copied into the file this
+writes.
+
+Placement is the uninstall test again: the profile is meaningless without the plugin → `docs/agents/`.
+
+### 1. Check what is there
+
+**`docs/agents/dev-loop.md`** — which of `## Branch template`, `## PR title format`,
+`## PR body template` and `## Constraints` already carry a non-blank line. A file already there is the
+ordinary case, not an edge one: a gated run persists the branch template into it at Act 0. Each key
+resolves against its own heading with no fallback, so report them one at a time: an answered key is
+left byte-for-byte alone and never re-asked, and the file is never regenerated.
+
+### 2. Agree the values
+
+One ask per **missing** key, each confirmed before anything is written.
+
+- **Branch template** — offer the pipeline's documented default verbatim: `feat/{issue}`, sub-lanes
+  `feat/{issue}-{area}`.
+- **PR title format** — the documented default verbatim: `<type>(<scope>): #<issue> - <title>`.
+- **PR body template** — **the optional one**, and say why before asking: `/dev-loop` asks for this
+  key at the **first Gate 2**, where the user is looking at a real pull request while they answer, so
+  answering it here is answering it blind. Say with it that whatever shape they choose, Gate 2's core
+  elements must survive it — the statement, never the list, which is Gate 2's and has grown
+  repeatedly. Declining takes **no follow-up question**: one line saying it stays the first Gate 2's
+  to ask, and the section is not written.
+- **Constraints** — free-form repository cautions, which `/dev-loop` honors when it decides lanes
+  versus layers at Gate 1 and when it provisions ("the backend tests share one database — never run
+  two backend lanes concurrently"). Nothing to default: offer the heading, and take **none** as a real
+  answer, written as a visible `None recorded.` rather than an empty section.
+
+### 3. Write
+
+Use [pipeline-profile-template.md](./pipeline-profile-template.md) as the skeleton.
+
+- **No profile** → create it from the template, every `<...>` slot carrying the agreed value. Any
+  non-blank line under a heading answers that key, so a slot left as it is answers one with something
+  nobody chose.
+- **A profile with sections missing** → append only those, in the template's order, and touch nothing
+  else.
+- **A declined PR body template** → delete the heading along with its slot. A heading with nothing
+  under it reads to a human as an answered key.
+- **A body shape carrying `##` lines of its own** → they stay inside the template's fence. An unfenced
+  one starts a new section and splits the file into sections nothing reads.
+
+Say once that the file must be committed — being tracked is what makes it the persistence.
+
 ## Done
 
 Tell the user what was written and which skills read it:
@@ -299,6 +357,10 @@ Tell the user what was written and which skills read it:
 - `docs/agents/worktree.md` and `.worktreeinclude` — `/dev-loop` and `/pr-comments`, both of which
   provision worktrees and read all three keys. Report a key the file already answered as left alone
   rather than as written.
+- `docs/agents/dev-loop.md` — `/dev-loop` alone. `/pr-comments` provisions worktrees but writes none
+  of this pipeline's artifacts, so it reads the worktree profile and never this file. Report a key the
+  file already answered as left alone, and a declined **PR body template** as the first Gate 2's to
+  ask.
 
 If Part 2 ran and the user declined the label creation, say plainly that the roles are mapped but the
 labels do not exist yet, so an unattended run will report each failed write and carry on regardless.
@@ -307,3 +369,6 @@ If Part 4 was declined, or left **Setup command**, **Full-suite command** or `.w
 unanswered, say plainly that `/dev-loop auto` and `/pr-comments auto` still refuse at intake naming
 each one, until a gated run of either supplies it by hand. An unanswered **Fix cycles** refuses
 nothing: an unattended run takes `2` for that run and persists it nowhere.
+
+Part 5 declined refuses nothing either — an unattended run takes each documented default for the run
+that needed it and reports it at Gate 2, leaving nothing behind to edit.
