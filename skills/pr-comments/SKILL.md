@@ -1,13 +1,14 @@
 ---
 name: pr-comments
-description: Reads a pull request's unresolved comments, classifies each as a fix or a skip for a human's approval, answers every review thread it read, then makes the approved fixes and pushes them to that pull request's own branch. Use for `/pr-comments <pull request>`, or `/pr-comments auto <pull request>` for an unattended run.
+description: Reads a pull request's unresolved comments, classifies each fix-or-skip, answers every thread, and pushes the approved fixes to that pull request's own branch.
+disable-model-invocation: true
 ---
 
 # /pr-comments — a pull request's comments, through to a pushed fix
 
 You do this work yourself, in this session: read, classify, ask, fix, push. **Nothing here dispatches an agent**, and the only thing it runs that is not `git`, `gh` or the repository's own tooling is `read-comments.mjs`, bundled beside this file. No other specification, profile or script is loaded — what this run does is in front of you.
 
-**Append-only against artifacts someone else owns, whichever mode it runs in.** The whole run writes one `git push` to the branch the pull request already has, comments on it — never more than one under `gated` or two under `unattended` — and replies once in each review thread its table covers. Nothing else leaves this session. Under `gated` no write happens before the gate below; under `unattended` the first comment **is** where that gate would have asked, unless the run stops before reaching it, in which case that stop's own comment is the first and only one.
+**Append-only against artifacts someone else owns, whichever mode it runs in.** The whole run writes one `git push` to the branch the pull request already has, plus the comments and thread replies the write budget under **Hard rules** bounds. Under `gated` no write happens before the gate below; under `unattended` the first comment **is** where that gate would have asked, unless the run stops before reaching it, in which case that stop's own comment is the first and only one.
 
 ## Arguments
 
@@ -41,7 +42,7 @@ Every comment this run posts and every reply it leaves is append-only, and all o
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
 
-`gh` authenticates as the human who invoked the run, so without the footer every comment and every reply reads as written by them. The marker is invisible in GitHub's renderer and is how a later run recognises what this one already answered — the read below excludes every comment carrying it. The conclusion comment writes a longer form of the same marker, named there.
+`gh` authenticates as the human who invoked the run, so without the footer every comment and every reply reads as written by them. The marker is invisible in GitHub's renderer and is how a later run recognises what this one already answered — the read below excludes every comment carrying it, against the matching pattern `read-comments.mjs` holds, so an edit to either form lands in both files or in neither. The conclusion comment writes a longer form of the same marker, named there.
 
 **A comment on the pull request:**
 
@@ -66,7 +67,7 @@ BODY
 
 ## Preconditions — one read, before anything is shown
 
-`gh pr view <n> --json number,title,url,state,isCrossRepository,headRefName,baseRefName` — one read, which every stage below uses. Three things stop the run, each making its promise (the fixes, pushed to this pull request's own branch) impossible to keep, and stopping here rather than after a table wastes only the read:
+`gh pr view <n> --json number,title,url,state,isCrossRepository,headRefName,baseRefName` — one read, which every stage below uses; the commits read a skip's evidence may name is the one other `gh pr view` this run makes. Three things stop the run, each making its promise (the fixes, pushed to this pull request's own branch) impossible to keep, and stopping here rather than after a table wastes only the read:
 
 - **any state but `OPEN`** — the branch of a merged or closed pull request may already be deleted, and pushing to one is not a fix anybody asked for;
 - **`isCrossRepository: true`** — the head branch lives on another remote, so the push cannot be made from this checkout at all;
@@ -155,7 +156,7 @@ Three things, in this order — git before the replies, so a reply can name its 
 
 1. **Ask git what reached the branch**: `git -C <worktree> log --oneline <base>..<headRefName>`, read in the worktree, after the push and before the disposal below removes it. A run with no worktree has nothing to ask.
 2. **Answer the threads that were deferred**, per the reply shape above. A pushed commit's reply carries its short sha and subject from that log; a path that pushed nothing says what stopped it instead, and never cites a sha the remote does not hold.
-3. **Post one comment**, per **How this run writes**, on every path that got past the gate — under `gated` the run's only one, under `unattended` a second beside the table and never an edit to it. It carries what reached the branch (that log, line for line, marked **not pushed** with why where nothing was), one line per comment a commit fixed, one line per reply left and per row that had no thread to reply in, the table as it stands rendered identically, the suite's result, what the review pass changed and what it declined, and — where a run stopped early — the stage that stopped it and its message verbatim. A section with nothing to put in it is left out. It ends by naming the worktree by path wherever one was kept, this session being the last thing that knows where the work is.
+3. **Post one comment**, per **How this run writes**, on every path that got past the gate — under `gated` the run's only one, under `unattended` a second beside the table and never an edit to it. It carries what reached the branch (that log, line for line, marked **not pushed** with why where nothing was), one line per comment a commit fixed, one line per reply left and per row that had no thread to reply in, the table as it stands rendered identically, the suite's result, what the review pass changed and what it declined, and — where a run stopped early — the stage that stopped it and its message verbatim. A section with nothing to put in it is left out. It ends by naming the worktree by path wherever one was kept — `/dev-loop-cleanup` is its reaper — this session being the last thing that knows where the work is.
 
 **Its footer marker names what it answered**: `<!-- replied from /pr-comments: <id> <id> -->`, listing the `id` of every row that had no thread to reply in, so a later run's read excludes them as answered. Every other write takes the bare form.
 
@@ -172,6 +173,8 @@ Three things, in this order — git before the replies, so a reply can name its 
 | removal refused | fast-forwarded | kept, reported |
 
 Removal is `git -C <MAIN> worktree remove <WORKTREES>/pr-<n>`, **never `--force`**, and only once the push has succeeded — after it the remote branch is the only copy of the fix, so a push that failed or never ran keeps its worktree. **Confirm the path is not the first entry of `git worktree list` first.** A refusal is the guard working: `git worktree remove` declines on tracked modifications and on untracked non-ignored files, so report `git -C <worktree> status --porcelain` verbatim and keep the worktree.
+
+**A worktree any row above keeps is `/dev-loop-cleanup`'s to reap** — a pointer, never an invocation: that skill is human-gated, and an unattended run cannot stand at its picker.
 
 **The branch is left alone either way, local ref and remote.** The remote one is what the pull request *is*; the local one may have been the human's before this run attached to it.
 
