@@ -1,5 +1,127 @@
 # ieuanign-skills
 
+## 0.22.0
+
+### Minor Changes
+
+- [#260](https://github.com/ieuanign/skills/pull/260) [`e189170`](https://github.com/ieuanign/skills/commit/e1891705982c94bd87e1610b2fc2bde07fc5d32a) Thanks [@ieuanign](https://github.com/ieuanign)! - `/setup-ieuanign-skills` gains a fourth part that writes the worktree profile and
+  `.worktreeinclude`.
+
+  The first three parts write smell overrides, the workflow labels and six `.claude/rules/` files, and
+  touch neither repo profile. A repository where this skill was the only setup that ran therefore
+  still had no `docs/agents/worktree.md` and no `.worktreeinclude`, and `/dev-loop auto` and
+  `/pr-comments auto` both refused at intake naming three missing preconditions — the **Setup
+  command** and **Full-suite command** keys and the file. Supplying them meant a supervised run of one
+  of those pipelines, which is a long way round for three answers.
+
+  **Part 4 supplies exactly those three, plus Fix cycles**, in the shape Part 2 already has: check
+  what is there → agree the values → write → say what still will not work. Resolution is **per key,
+  not per file** — each key answers against its own `## ` heading with no fallback, an
+  already-answered key is never re-asked and its section is left byte-for-byte alone, and only missing
+  sections are appended. An existing `.worktreeinclude` is reported as it stands and not rewritten;
+  `/dev-loop`'s Act 0 guarantees its guard line's position on every run of its own accord.
+
+  **Configuration, never discovery.** Candidates are read from the repository and offered — a
+  committed lockfile's clean-install command, a `test` or `check` script, a Makefile target, the CI
+  config — but nothing is persisted that the user did not choose, because a discovered-and-unconfirmed
+  Full-suite command hands every later run a green-looking batch nothing tested. `none` and `0` are
+  persisted answers like any other, each offered with what it costs. `.worktreeinclude`'s candidates
+  come from `git ls-files -oi --exclude-standard --directory`, narrowed to what a cold checkout cannot
+  run without — env files and local config, never dependencies — and whatever is chosen, the file's
+  **last** line is `!.claude/worktrees/**`: gitignore matching is last-match-wins, so only the final
+  position reliably stops a copy mechanism cloning existing worktrees into a new one.
+
+  **`skills/setup-ieuanign-skills/worktree-profile-template.md`** is the skeleton, shaped like the
+  skill's other templates. It carries a preamble sentence and the three `## ` headings with a
+  placeholder slot apiece, and its instructions say to substitute the agreed value into every one: the
+  precondition check judges presence and not value, so a slot left as it is would silence a
+  prerequisite with a value nobody chose. What a key means and when a run reads it stays in
+  `/dev-loop`'s `acts/act-0.md`, cited as the source by both the skill and the file it writes rather
+  than copied into either.
+
+  `## Done` names what Part 4 wrote and the two skills that read it, and closes with what a declined
+  Part 4 leaves behind — `/dev-loop auto` and `/pr-comments auto` refusing at intake on **Setup
+  command**, **Full-suite command** or `.worktreeinclude` until a gated run supplies each by hand. An
+  unanswered **Fix cycles** refuses nothing: an unattended run takes `2` for that run and persists it
+  nowhere. `skills/dev-loop/preconditions.mjs`, the act files and `skills/pr-comments/` are
+  unchanged — Part 4 is a shortcut in front of the ask-then-persist those already perform, not a
+  replacement for it. `.claude-plugin/plugin.json` needed no entry: it lists the skill folder, so the
+  new template ships as-is.
+
+- [#265](https://github.com/ieuanign/skills/pull/265) [`e9ebc9e`](https://github.com/ieuanign/skills/commit/e9ebc9e70cef0189551ac9172a4abb1ab3c47cc9) Thanks [@ieuanign](https://github.com/ieuanign)! - `/setup-ieuanign-skills` gains a fifth part that writes the pipeline profile
+  `docs/agents/dev-loop.md`.
+
+  Four keys there describe the artifacts `/dev-loop` writes — **Branch template**, **PR title format**,
+  **PR body template** and **Constraints** — and none of them refuses a run. Three take a documented
+  default for the run that needed them, reported and persisted nowhere, and nothing asks for
+  **Constraints** at all. A repository that only ever ran `auto` was therefore never asked for one and
+  never got a file: it ran on the defaults indefinitely, with nothing on disk to edit. Part 4 closed
+  the equivalent gap for the worktree profile, where the refusal at intake at least made itself heard.
+
+  **Part 5 supplies all four**, in the shape Parts 2 and 4 already have: check what is there → agree
+  the values → write. Resolution is **per key, not per file** — each key answers against its own `## `
+  heading with no fallback, an already-answered key is never re-asked and its section is left
+  byte-for-byte alone, and only missing sections are appended. That bites harder here than in Part 4:
+  a gated run persists the branch template into this file at Act 0, so finding the file already there
+  is the ordinary case rather than the edge one.
+
+  **The PR body template is presented as the optional one**, with the reason stated rather than
+  implied: `/dev-loop` asks for that key at the **first Gate 2**, where the user is looking at a real
+  pull request while they answer, so answering it up front is answering it blind. Whatever shape is
+  chosen, Gate 2's core elements have to survive it — the statement, never the list, which is Gate 2's
+  and has grown repeatedly. Declining takes no follow-up question and writes no section: a heading with
+  nothing under it reads to a human as an answered key, and the precondition check judges non-blank
+  content only, so it would report and default the key regardless. **Constraints** has nothing to
+  default, and `none` is a real answer there, written as a visible `None recorded.`
+
+  **`skills/setup-ieuanign-skills/pipeline-profile-template.md`** is the skeleton, shaped like the
+  skill's other templates: a preamble sentence and exactly those four `## ` headings with a placeholder
+  slot apiece. Its instructions say to substitute the agreed value into every one — any non-blank line
+  under a heading answers that key, so a slot left as it is answers one with a value nobody chose — and
+  that every `##` line of a body shape stays inside the fence, because an unfenced one starts a new
+  section and splits the file into sections nothing reads. The split with Part 4's template runs one
+  way in both directions: neither carries a heading belonging to the other, fenced or not.
+
+  `## Done` names `docs/agents/dev-loop.md` and the one skill that reads it. `/pr-comments` provisions
+  worktrees but writes none of this pipeline's artifacts, so it reads the worktree profile and never
+  this file. A declined Part 5 refuses nothing — an unattended run takes each documented default for
+  the run that needed it and reports it, leaving nothing behind to edit.
+  `skills/dev-loop/preconditions.mjs`, the act files and `skills/pr-comments/` are unchanged: Part 5 is
+  a shortcut in front of the ask-then-persist those already perform, not a replacement for it.
+  `.claude-plugin/plugin.json` needed no entry, because it lists the skill folder and the new template
+  ships as-is.
+
+### Patch Changes
+
+- [#261](https://github.com/ieuanign/skills/pull/261) [`f98928e`](https://github.com/ieuanign/skills/commit/f98928ecbb20c595b9de0879579f590b7c27ccb8) Thanks [@ieuanign](https://github.com/ieuanign)! - `npm run check` gains a **blocking precondition coverage** stage: every precondition
+  `skills/dev-loop/preconditions.mjs` refuses an unattended run on has to be written by
+  `/setup-ieuanign-skills`.
+
+  Nothing checked that pairing. The existing **profile split** stage answers a different question — it
+  validates _this_ repository's `docs/agents/worktree.md` — and it stayed green for the whole life of
+  the gap [#256](https://github.com/ieuanign/skills/issues/256) closed, where the setup skill wrote no worktree profile and no `.worktreeinclude` while
+  both pipelines refused at intake naming exactly those three. The two files can drift apart again the
+  moment a fourth blocking entry is added, and a refusal nobody can satisfy without a supervised run is
+  the failure that follows.
+
+  The stage reads both sides **as text**: an awk range over each caller's `blocking: [` block yields one
+  label per entry — a `profileKey(...)` call's key literal, and `WORKTREEINCLUDE`'s value for
+  `worktreeinclude(...)` — and a label is covered when it appears anywhere in
+  `skills/setup-ieuanign-skills/SKILL.md`. Uncovered labels FAIL, naming each one and the file it was
+  expected in. The module is never imported and never run, so the stage holds no second copy of its
+  blocks, its exit codes, or of what a label means; matching is substring, so Part 4's prose keeps its
+  own formatting.
+
+  **Half a parse is treated as a break, not a pass.** A caller key whose blocking range yields no label
+  fails naming that caller, a blocking entry in a shape the extractor does not know fails naming its
+  `file:line` alongside the two forms it reads, and either side coming up empty fails naming which side
+  and what it found. A stage that silently compared nothing to nothing would reopen the gap it exists to
+  hold shut. Every `grep` feeding one of those guards ends `|| true`, because under `pipefail` a
+  no-match would end the run before the guard could name anything.
+
+  `skills/dev-loop/preconditions.mjs` and `skills/setup-ieuanign-skills/SKILL.md` are unchanged, and no
+  existing stage was touched.
+
 ## 0.21.0
 
 ### Minor Changes
