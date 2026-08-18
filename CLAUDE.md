@@ -37,6 +37,14 @@ Do **not** add an `agents` field to `plugin.json` — the default discovery alre
 5. Keep `package.json` `version` and `.claude-plugin/plugin.json` `version` in sync — a version bump
    updates both. Validate the plugin with `claude plugin validate . --strict`.
 
+### Per-layer read budget
+
+`/dev-loop` re-reads the act files `skills/dev-loop/SKILL.md` lists under **Then per LAYER** once per
+layer, so a paragraph added to one is paid at every layer of every stacked run — the same paragraph in
+a read-once act file is paid once. That **per-layer read** is capped by `npm run check`'s
+`per-layer read budget` stage, which sums those files and fails over the budget. Run it before adding
+to one, to see the current total and the budget.
+
 ## Dogfooding
 
 `scripts/link-skills.sh` symlinks every skill into this repo's own `.claude/skills/`, and every roster
