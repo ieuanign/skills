@@ -1,5 +1,129 @@
 # ieuanign-skills
 
+## 0.22.1
+
+### Patch Changes
+
+- [#272](https://github.com/ieuanign/skills/pull/272) [`ef5b002`](https://github.com/ieuanign/skills/commit/ef5b0021731cba7f386eb7e83ca5664bcd247f8d) Thanks [@ieuanign](https://github.com/ieuanign)! - `/dev-loop`'s worktree-removal guardrails are stated in the spine's `## Hard rules`, not in the act
+  file that performs the removal.
+
+  They sat in `acts/gate-2.md`'s step 3 — a file read at each layer's Gate 2 and nowhere else. The
+  rules bind _between_ layers as much as during one, so between those reads they were resident only
+  because an earlier read happened to leave them there, and an orchestrator that had compacted since
+  was holding a destructive-action guard from memory. Three of the six statements already half-lived
+  in the spine — the never-`--force` sentence, resting on the act file for the mechanism it states;
+  the main-worktree prohibition, without the pre-removal confirmation; push-before-remove, without its
+  consequence — and the dirty-worktree refusal itself was in the spine nowhere.
+
+  **All six are stated there now**, folded into the bullets already present rather than appended beside
+  them: `git worktree remove` without `--force` refuses on tracked modifications or on untracked
+  non-ignored files, and **that refusal IS the guard**; a refusal is reported with
+  `git -C <wt> status --porcelain` verbatim and keeps that worktree; ignored files — provisioning's
+  copied-in configuration and dependency directories among them — do not trip it; a push that failed or
+  never ran keeps its worktree; and the main worktree is confirmed against the first entry of
+  `git worktree list` before any removal. There is still exactly one rule about force-pushing and one
+  about the main worktree, and no rule reaches into an act file for its own statement.
+
+  **Step 3 keeps the procedure**: the worktree invariant, the sub-lane state table, the removal command
+  carrying the sentence `scripts/check.sh` pins on it, the disposition of what the table kept, the
+  _Name what the removal destroys_ paragraph, and a one-line citation that carries its own why — the
+  rules are the spine's _because_ this file is read per layer. Nothing is relaxed and no statement is
+  lost. `/dev-loop-cleanup` and `/pr-comments` keep their own copies, deliberately: none of the three
+  skills loads the others.
+
+- [#273](https://github.com/ieuanign/skills/pull/273) [`a452d1d`](https://github.com/ieuanign/skills/commit/a452d1d4778910464b4b9114037e9a8ceee10d8b) Thanks [@ieuanign](https://github.com/ieuanign)! - `/dev-loop`'s Gate 2 splits: `acts/gate-2.md` keeps what a layer performs, and a new
+  `acts/gate-2-reference.md` holds the material that cannot vary between layers, read once.
+
+  `acts/gate-2.md` was 14,404 bytes and re-read at EVERY layer's Gate 2, yet most of it was vocabulary,
+  a format specification and invariant description — identical on the second read and every one after.
+  It is now 5,964 bytes; the reference file is 9,284 and is read at the run's FIRST Gate 2 only,
+  mirroring how `acts/gate-2-linking.md` is already read at exactly one boundary. `acts/gate-2.md`
+  carries the pointer and its recovery clause — re-read the reference at any later Gate 2 where you no
+  longer hold it — so a compaction between layers costs nothing.
+
+  **Moved, not changed**: the three questions with their `unattended` answers, the findings ledger's
+  eight categories, the pull request body's eleven elements verbatim with the no-profile fallback and
+  the footer, step 4's label policy and its four-row result table, and the stacked-lanes and
+  ended-sub-lanes tails. **Kept**: the per-layer firing rule, the per-sub-lane presentation, the
+  contested-findings arbitration, and steps 1–5 whole — including step 3's worktree invariant and the
+  removal command. Nothing is deleted; every instruction, condition, refusal and default is in one file
+  or the other.
+
+  **No worktree, push or main-worktree rule lives in the reference file**, and its header says why:
+  read-once material is evictable under compaction, and a destructive-action guardrail has to be
+  resident at every boundary it binds. Those stay in `acts/gate-2.md` and the spine's **Hard rules**.
+
+  `SKILL.md`'s Gate 2 bullet names the new file and its read-once rule, and `notifications.md` repoints
+  its findings-ledger citation at it.
+
+- [#274](https://github.com/ieuanign/skills/pull/274) [`0359eb4`](https://github.com/ieuanign/skills/commit/0359eb4586434bcdd4de3319c6274a70004bb383) Thanks [@ieuanign](https://github.com/ieuanign)! - `/dev-loop`'s Act 3 splits the way its Gate 2 already has: `acts/act-3.md` keeps what a layer
+  performs, a new `acts/act-3-contract.md` holds the material that cannot vary between layers, and
+  `acts/act-2.md` sheds its vocabulary to the spine.
+
+  Both act files are re-read at EVERY layer, and both opened with material identical on the second read
+  and every one after. `acts/act-3.md` was 5,507 bytes, most of it restating `phase-execute.js`'s
+  argument contract, the script's own behaviour, the shape of its results, and a lane-building rule it
+  itself called "decided ONCE per run"; `acts/act-2.md` was 1,698, opening with the layer-versus-stack
+  vocabulary and the layer-numbering rule the spine already half-stated. The pair is now **2,448 bytes**,
+  down from 7,205.
+
+  **Moved to `acts/act-3-contract.md`** — 4,596 bytes, read at the run's FIRST Act 3 and re-read at any
+  later layer where the orchestrator no longer holds it: every argument key's contract with its
+  absent-key default, the ones that fail silently included — `skillDir` omitted dispatches no notifier,
+  `agentNamespace` omitted where the roster IS namespaced fails every dispatch in the phase, a `none` or
+  omitted `suiteCommand` leaves every sub-lane's suite not run — plus the lane and sub-lane shapes, the
+  `commits` and `ownedCriteria` build rules with the once-per-run allocation and its last-in-plan-order
+  fallback, the phase script's behaviour, the two ending labels, the per-lane `crashed` and `notified`
+  flags with `notified`'s carry-forward across layers, the per-sub-lane `terminal`, and the
+  commit-breakdown check.
+
+  **Kept in `acts/act-3.md`**: the invocation with its seven-key `args` list, the pointer to the contract
+  file, the one argument fact that does vary by layer — `subLanes` holds only THIS layer's sub-lanes —
+  the per-layer transcript KEEP, and the between-layers transition whole.
+
+  **Folded into the spine**: the layer/stack distinction and the layer-numbering rule are stated once, in
+  `SKILL.md`'s per-LAYER lead-in, where the provisioning-order sentence they qualify already sat;
+  `acts/act-2.md` keeps neither and is down to its three provisioning steps. `SKILL.md`'s Act 3 bullet
+  names the contract file and its read-once rule in the same shape as the Gate 2 bullet's, and
+  `notifications.md`'s two citations of the ending labels follow them to their new file.
+
+  Nothing is deleted: every key, default, shape and rule is in one file or another. No pipeline
+  behaviour, argument or gate changes — only which file states a rule, and when it is read.
+
+- [#275](https://github.com/ieuanign/skills/pull/275) [`4193fbb`](https://github.com/ieuanign/skills/commit/4193fbb2ec8766e5a0ad4757bd9d59b4403fb089) Thanks [@ieuanign](https://github.com/ieuanign)! - `npm run check` gains a **per-layer read budget** stage: the act files `skills/dev-loop/SKILL.md`
+  lists under **Then per LAYER** are summed and fail the check over **9,000 bytes**.
+
+  `/dev-loop`'s orchestrator re-reads that set at every layer of every stacked run, and nothing held its
+  size. It was 21,953 bytes on `main`; [#268](https://github.com/ieuanign/skills/issues/268), [#269](https://github.com/ieuanign/skills/issues/269) and [#270](https://github.com/ieuanign/skills/issues/270) cut it to 8,412 by moving read-once material
+  out, and the next paragraph appended to one of the three would have put the cost straight back —
+  showing up only as a slightly larger context on a run nobody measures. The budget is not the achieved
+  figure: [#269](https://github.com/ieuanign/skills/issues/269) caps `acts/gate-2.md` at 6,000 and [#270](https://github.com/ieuanign/skills/issues/270) caps `acts/act-2.md` and `acts/act-3.md` at 2,500
+  between them, so 9,000 clears the worst base those tickets permit with headroom. A clarifying clause
+  passes; a new paragraph does not.
+
+  **The set is derived, never listed.** No act filename appears in the stage. It reads the spine's own
+  lead-ins — the numbered items between `Then per LAYER` and `Last, once per run:` — and takes the
+  `acts/…` path from each item's **title parenthetical only**. That is what excludes the read-once
+  siblings named mid-prose inside the same items, `acts/gate-2-linking.md`, `acts/gate-2-reference.md`
+  and `acts/act-3-contract.md`: measuring one of them would put once-per-run bytes into a per-layer
+  budget and make the number meaningless. An act file that later becomes per-layer is covered the moment
+  it moves into that block, with no edit to the stage. Bytes, not tokens — a tokenizer is a heavier
+  dependency than the `shellcheck` this script has already refused, and bytes track the guarded thing
+  closely enough to catch a regression.
+
+  **Half a parse is a FAIL, never a skip and never a pass**, in the shape [#257](https://github.com/ieuanign/skills/issues/257)'s stage already has:
+  missing lead-ins fail naming which anchor was found, a numbered item whose title parenthetical yields
+  no path fails naming that line and the shape that was expected, an extracted path absent from
+  `skills/dev-loop/` fails naming it, and zero files or zero bytes fails on its own — a stage that passed
+  on nothing measured is indistinguishable from the protection existing. Every `grep` feeding one of
+  those guards ends `|| true`, because under `pipefail` a no-match would end the run before the guard
+  could name anything.
+
+  `CLAUDE.md` states the rule where an act file gets edited, under § Adding or changing a skill: prose
+  added to a per-layer act file is paid at every layer, the same prose in a read-once one is paid once,
+  and the stage is what says the current total and the budget. It holds no second copy of the number, so
+  there is nothing to drift. Nothing under `skills/` changes and no existing stage was touched.
+
 ## 0.22.0
 
 ### Minor Changes
