@@ -78,7 +78,8 @@ repository is inferred from the remote and never passed.
 repository it either derives at intake or asks you once and writes down, so there is no configuration
 step to do first. An unattended run has nobody to ask, and three of those answers have no honest
 default it could take instead: **Setup command**, **Full-suite command** and `.worktreeinclude`. Until
-one supervised run has supplied all three, `auto` refuses and says which of them are missing.
+one supervised run — or `/setup-ieuanign-skills`, whose Part 4 supplies all three at once — has
+supplied them, `auto` refuses and says which of them are missing.
 
 ## What one run does
 
