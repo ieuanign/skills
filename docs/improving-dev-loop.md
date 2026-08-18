@@ -139,7 +139,7 @@ retired the old `coding-standards.md` — and **no machine facts in git**.
 /setup-ieuanign-skills
 ```
 
-Four parts, each independent, and nothing is written without an explicit yes:
+Five parts, each independent, and nothing is written without an explicit yes:
 
 1. **Smell overrides** — writes nothing on a first run. Come back to it with a rejected finding.
 2. **Workflow labels** — the three label strings an unattended `/dev-loop auto` reports through. A
@@ -149,5 +149,8 @@ Four parts, each independent, and nothing is written without an explicit yes:
 4. **The worktree profile** — the `docs/agents/worktree.md` keys and the `.worktreeinclude` file an
    unattended `/dev-loop` refuses without. A supervised run asks for the keys it needs as it goes, so
    this part is a shortcut rather than the only route.
+5. **The pipeline profile** — the `docs/agents/dev-loop.md` keys naming the branches and pull requests
+   `/dev-loop` writes. No run refuses without them, so a repository that only ever runs `auto` takes
+   the documented defaults run after run and never gets a file to edit. This part writes one up front.
 
 Re-run it any time. It reports what already exists and leaves it alone unless you ask otherwise.
