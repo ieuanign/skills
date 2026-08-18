@@ -2,7 +2,7 @@
 name: code-writer
 description: Implements exactly one commit-scope from an implementation plan and commits it locally with the plan's conventional message, or applies reviewer findings as fix commits. Invoke with a plan path plus which commit to implement, or with reviewer findings to fix. Writes production code and tests, runs scoped lint+tests before committing; never pushes, never opens PRs, never plans or reviews.
 model: opus
-effort: xhigh
+effort: medium
 color: blue
 tools: Read, Glob, Grep, Bash, Write, Edit
 skills: [mattpocock-skills:tdd]
