@@ -460,6 +460,41 @@ else
   failed=1
 fi
 
+# --- scriptPath is a working-tree path ---------------------------------------
+# The Workflow tool gates `scriptPath` against a NARROWER allowlist than `Read`:
+# a path it returned itself, the working directory, or an `/add-dir` directory.
+# `<this-skill-dir>/x.js` resolves under the checkout only while the maintainer's
+# `scripts/link-skills.sh` symlinks are in place, so it works for whoever wrote
+# it and is rejected on the supported `/plugin install` path. Nothing else here
+# can see that: the path is a placeholder in prose, resolved at runtime.
+scriptpath_seen=0
+scriptpath_bad=""
+while IFS= read -r doc; do
+  rel="${doc#"$REPO/"}"
+  scriptpath_hits="$(grep -c 'scriptPath:' "$doc" || true)"
+  scriptpath_seen=$((scriptpath_seen + scriptpath_hits))
+  # Only the value is measured — `<this-skill-dir>` as a `cp` SOURCE is how the
+  # script reaches the working tree in the first place.
+  if out="$(grep -nE 'scriptPath:[[:space:]]*<this-skill-dir>' "$doc")"; then
+    while IFS= read -r scriptpath_line; do
+      scriptpath_bad="$scriptpath_bad      $rel:$scriptpath_line
+"
+    done <<<"$out"
+  fi
+done < <(find "$REPO/skills" -name '*.md' -not -path '*/node_modules/*' | sort)
+if [ -n "$scriptpath_bad" ]; then
+  echo "FAIL  scriptPath under the skill directory — Workflow rejects it off the dogfood symlinks:" >&2
+  printf '%s' "$scriptpath_bad" >&2
+  echo "      stage the script into the working tree first (mkdir -p + cp -f into" >&2
+  echo "      <MAIN>/.scratch/dev-loop-scripts/) and point scriptPath at that copy" >&2
+  failed=1
+elif [ "$scriptpath_seen" -eq 0 ]; then
+  echo "FAIL  scriptPath is a working-tree path: no scriptPath: in any skills/**/*.md — a check over nothing passes on anything" >&2
+  failed=1
+else
+  echo "ok    scriptPath is a working-tree path ($scriptpath_seen occurrences)"
+fi
+
 # --- agent types are resolved, never literal ---------------------------------
 # A phase script dispatches roster agents by name, and the SAME definition is
 # registered bare when it is linked into `.claude/agents/` and namespaced
