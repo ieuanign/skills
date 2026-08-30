@@ -3,11 +3,11 @@
 Stage the phase script, then run the Workflow tool against the staged copy:
 
 ```bash
-mkdir -p <MAIN>/.scratch/dev-loop-scripts
-cp -f <this-skill-dir>/phase-plan.js <MAIN>/.scratch/dev-loop-scripts/
+mkdir -p <STAGED>
+cp -f <this-skill-dir>/phase-plan.js <STAGED>/
 ```
 
-Run it with `scriptPath: <MAIN>/.scratch/dev-loop-scripts/phase-plan.js` and `args: { issues: [{number, title, project, answers?}], agentNamespace }` — `agentNamespace` is the value Act 0 read off your roster, passed verbatim (the empty string when the roster lists the roles bare). One architect per issue, parallel. Each returns `{status, planPath, summary, openQuestions}`. A lane returning `status: DIED` means its architect came back with nothing usable — the status and its report's exact wording are `phase-plan.js`'s; relay its line verbatim at Gate 1 and offer a re-run.
+Run it with `scriptPath: <STAGED>/phase-plan.js` and `args: { issues: [{number, title, project, answers?}], agentNamespace }` — `agentNamespace` is the value Act 0 read off your roster, passed verbatim (the empty string when the roster lists the roles bare). One architect per issue, parallel. Each returns `{status, planPath, summary, openQuestions}`. A lane returning `status: DIED` means its architect came back with nothing usable — the status and its report's exact wording are `phase-plan.js`'s; relay its line verbatim at Gate 1 and offer a re-run.
 
 **KEEP the transcript directory this invocation reports**, alongside every later one, **including any re-run**: Act 4 feeds them all to the cost report.
 
