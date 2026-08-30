@@ -84,6 +84,8 @@ The commands:
 - **REPO** — `basename` of MAIN.
 - **DEFAULT** — the default branch: `git symbolic-ref --short refs/remotes/origin/HEAD` minus the `origin/` prefix, falling back to `main`.
 - **WORKTREES** — `<MAIN>/.claude/worktrees/`. Every lane worktree lives here; the directory slug is the branch name after its first `/` (`feat/208` → `<WORKTREES>/208`).
+- **this-skill-dir** — the directory this skill and its bundled assets live in; every asset is addressed as `<this-skill-dir>/<name>`. **Never a `scriptPath`**: the Workflow tool's `scriptPath` allowlist is narrower than `Read`'s and does not reach it.
+- **STAGED** — `<MAIN>/.scratch/dev-loop-scripts/`. Because of the exclusion above, the phase scripts are copied here immediately before each call and run from here — re-staged before every use, so nothing reads a copy it did not just write.
 - **GitHub repo** — every `gh` command runs inside a checkout of this repo (worktrees included) and gh infers the repository from the remote, so no `gh` command carries `--repo`.
 - **RUN HANDLE** — the identifier that locates this run's own transcript, read once from your environment: `$CLAUDE_CODE_SESSION_ID`. Unset or empty ⇒ **there is no handle**: carry the empty string, write no line for it anywhere, ask nothing, and change nothing else about the run. It is written in exactly two places — the ending comment on the issue, and the pull request body of an ended sub-lane — and never in a message. It is a **run handle, never a resume identifier**: `/dev-loop <n>` re-deriving from artifacts remains the resume mechanism.
 - **Fast copy** — macOS: `/bin/cp -Rc` (APFS clonefile, instant; MUST be `/bin/cp` — a GNU cp on PATH rejects `-c`); Linux: `cp -R --reflink=auto`; anywhere else: plain `cp -R`.
