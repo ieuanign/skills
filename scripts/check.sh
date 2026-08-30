@@ -495,6 +495,65 @@ else
   echo "ok    scriptPath is a working-tree path ($scriptpath_seen occurrences)"
 fi
 
+# --- act placeholders are defined in the spine -------------------------------
+# An act file is read at its boundary and dropped; the spine's Derived facts stay
+# in context for the whole run. A path fact stated only inside an act is undefined
+# for an orchestrator that compacted or re-entered at a later act, which then
+# composes a wrong path with no error. Nothing else here can see that: both are
+# prose, and the placeholder is resolved at runtime by the reader.
+#
+# A shape rule, not a name list: an ALL-CAPS token of two or more characters, plus
+# the literal `<this-skill-dir>`. It deliberately does not catch the prose stand-ins
+# a reader substitutes (`<n>`, `<slug>`, `<branch>`, `<base>`, `<wt>`) nor the
+# single-letter `<A>`/`<B>` labels — flagging those would make the stage useless,
+# and a single-letter derived fact is not plausible. The spine is not scanned: it
+# is the definition source.
+placeholder_spine="skills/dev-loop/SKILL.md"
+placeholder_defs=""
+placeholder_defcount=0
+placeholder_refs=0
+placeholder_bad=""
+placeholder_broken=0
+placeholder_start="$(grep -n -m1 '^## Derived facts' "$REPO/$placeholder_spine" | cut -d: -f1 || true)"
+if [ -z "$placeholder_start" ]; then
+  echo "FAIL  act placeholders are defined in the spine: no '## Derived facts' heading in $placeholder_spine" >&2
+  placeholder_broken=1
+else
+  while IFS= read -r placeholder_name; do
+    [ -n "$placeholder_name" ] || continue
+    placeholder_defs="$placeholder_defs$placeholder_name
+"
+    placeholder_defcount=$((placeholder_defcount + 1))
+  done < <(tail -n "+$((placeholder_start + 1))" "$REPO/$placeholder_spine" |
+    sed -n '/^## /q;p' | sed -nE 's/^- \*\*([^*]+)\*\*.*/\1/p' | tr -d '<>')
+  while IFS= read -r placeholder_hit; do
+    [ -n "$placeholder_hit" ] || continue
+    placeholder_file="${placeholder_hit%%:*}"
+    placeholder_rest="${placeholder_hit#*:}"
+    placeholder_line="${placeholder_rest%%:*}"
+    placeholder_name="$(printf '%s' "${placeholder_rest#*:}" | tr -d '<>')"
+    placeholder_refs=$((placeholder_refs + 1))
+    if ! printf '%s' "$placeholder_defs" | grep -qxF "$placeholder_name"; then
+      placeholder_bad="$placeholder_bad      ${placeholder_file#"$REPO/"}:$placeholder_line: <$placeholder_name>
+"
+    fi
+  done < <(grep -nroE '<[A-Z][A-Z0-9_]+>|<this-skill-dir>' "$REPO"/skills/dev-loop/acts/*.md | sort -u || true)
+fi
+if [ "$placeholder_broken" -eq 1 ]; then
+  failed=1
+elif [ -n "$placeholder_bad" ]; then
+  echo "FAIL  act placeholder the spine does not define — undefined for a compacted orchestrator:" >&2
+  printf '%s' "$placeholder_bad" >&2
+  echo "      define it as a '- **<name>** — …' item under '## Derived facts' in $placeholder_spine," >&2
+  echo "      or use a fact that is already there" >&2
+  failed=1
+elif [ "$placeholder_defcount" -eq 0 ] || [ "$placeholder_refs" -eq 0 ]; then
+  echo "FAIL  act placeholders are defined in the spine: $placeholder_defcount facts and $placeholder_refs references — a check over nothing passes on anything" >&2
+  failed=1
+else
+  echo "ok    act placeholders are defined in the spine ($placeholder_defcount facts, $placeholder_refs references)"
+fi
+
 # --- agent types are resolved, never literal ---------------------------------
 # A phase script dispatches roster agents by name, and the SAME definition is
 # registered bare when it is linked into `.claude/agents/` and namespaced
