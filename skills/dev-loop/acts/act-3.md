@@ -3,11 +3,11 @@
 Per layer, stage the phase script, then run the Workflow tool against the staged copy:
 
 ```bash
-mkdir -p <MAIN>/.scratch/dev-loop-scripts
-cp -f <this-skill-dir>/phase-execute.js <MAIN>/.scratch/dev-loop-scripts/
+mkdir -p <STAGED>
+cp -f <this-skill-dir>/phase-execute.js <STAGED>/
 ```
 
-Run it with `scriptPath: <MAIN>/.scratch/dev-loop-scripts/phase-execute.js` and `args: { lanes, mode, fixCycleThreshold, suiteCommand, skillDir, agentNamespace, runHandle }`, and nothing else. **Read `<this-skill-dir>/acts/act-3-contract.md`** — every key's contract, the lane shape and the result shapes — **at the run's FIRST Act 3**, and again at any later layer where you no longer hold it. A lane's subLanes array contains only THIS layer's sub-lanes — later-layer sub-lanes of the same issue go into the next layer's args.
+Run it with `scriptPath: <STAGED>/phase-execute.js` and `args: { lanes, mode, fixCycleThreshold, suiteCommand, skillDir, agentNamespace, runHandle }`, and nothing else. **Read `<this-skill-dir>/acts/act-3-contract.md`** — every key's contract, the lane shape and the result shapes — **at the run's FIRST Act 3**, and again at any later layer where you no longer hold it. A lane's subLanes array contains only THIS layer's sub-lanes — later-layer sub-lanes of the same issue go into the next layer's args.
 
 **KEEP each layer's transcript directory too**, exactly as Act 1 says — a lane whose sub-lanes span layers has its records spread across one directory per layer, and Act 4 wants all of them.
 
