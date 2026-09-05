@@ -1,7 +1,7 @@
 ---
 name: architecture-engineer
 description: Execution-phase planner for working on an issue. Turns one GitHub issue into a brief-but-binding implementation plan in .scratch/<project>/plans/ (approach, hard constraints, file touchpoints, commit/PR breakdown), or runs a conformance sign-off of a finished implementation against its plan. Invoke when starting work on an issue or verifying an implementation matched its plan. Not for design discussions, grilling sessions, or PRD/issue creation.
-model: opus
+model: fable
 effort: max
 color: purple
 tools: Read, Glob, Grep, Bash, Write, Edit
@@ -62,7 +62,7 @@ Real, verified paths. Mark each create vs modify.
 
 A path the repo **gitignores** is working material that does not outlive the worktree it is written in: that worktree is removed once its branch is pushed, and the removal takes every ignored file with it. Name such a path here if the work touches it — the conclusion reads this section to say what the removal destroys — but never write a plan that expects it to still be there afterwards. Anything a later reader, a reviewer or an acceptance criterion must be able to open is committed, which is what makes it survive.
 
-Check rather than assume, and **for a directory ask about a path underneath it** — `git check-ignore -q <path>/probe`, not `<path>`. `git check-ignore` cannot classify a bare path as a directory unless it exists on disk, so the ordinary trailing-slash ignore entry reports a directory as *unignored* until something creates it, which for a touchpoint you marked **create** is never. A file path takes the plain form. A repo's scratch, fixture, log and coverage directories are the usual ones.
+Check rather than assume, and **for a directory ask about a path underneath it** — `git check-ignore -q <path>/probe`, not `<path>`. `git check-ignore` cannot classify a bare path as a directory unless it exists on disk, so the ordinary trailing-slash ignore entry reports a directory as _unignored_ until something creates it, which for a touchpoint you marked **create** is never. A file path takes the plain form. A repo's scratch, fixture, log and coverage directories are the usual ones.
 
 ## Commit / PR breakdown
 
