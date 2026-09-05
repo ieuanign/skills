@@ -1,5 +1,11 @@
 # ieuanign-skills
 
+## 0.22.4
+
+### Patch Changes
+
+- [`4111552`](https://github.com/ieuanign/skills/commit/4111552f4ab0ea0d007108a5f293b8e8f6ff07d5) Thanks [@ieuanign](https://github.com/ieuanign)! - change model for architecture-engineer
+
 ## 0.22.3
 
 ### Patch Changes
