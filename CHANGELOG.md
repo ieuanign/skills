@@ -1,5 +1,11 @@
 # ieuanign-skills
 
+## 0.23.0
+
+### Minor Changes
+
+- [#286](https://github.com/ieuanign/skills/pull/286) [`fc681af`](https://github.com/ieuanign/skills/commit/fc681af7778d8240f9349de988efd06d313f8239) Thanks [@ieuanign](https://github.com/ieuanign)! - pr-comments: replies end with the hidden marker only (no visible "Generated with Claude Code" footer), are extremely concise, to the point and in simple terms, and the run no longer posts a conclusion comment — its report stays in the session. Rows with no thread to reply in still share one comment, posted only where there are any.
+
 ## 0.22.4
 
 ### Patch Changes
