@@ -129,10 +129,9 @@ of what a lane costs.**
 ```
 
 **Gated** by default — you approve the comment table before anything below it runs. `auto` suppresses
-that question and asks nothing at all: the table is posted on the pull request in the gate's place,
-and the run's conclusion beside it — or, where the run stops before reaching that gate, one comment
-saying why in place of both. Either way, every review thread the table covers is answered in that
-thread.
+that question and asks nothing at all: the table is posted on the pull request in the gate's place —
+or, where the run stops before reaching that gate, one comment saying why instead. Either way, every
+review thread the table covers is answered in that thread, and no conclusion comment follows.
 
 The fixes are made in the session you invoked: nothing dispatches an agent, the review over them is
 one `/mattpocock-skills:code-review` pass, and no file outside the skill's own folder is loaded to

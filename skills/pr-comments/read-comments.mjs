@@ -41,7 +41,7 @@ const entry = (origin, node, extra) => ({
 const hidden = node => Boolean(node.isMinimized)
 
 // The footer marker a /pr-comments run signs every write with, in both forms: bare, and carrying the
-// ids of the reply-less comments a conclusion comment answered.
+// ids of the reply-less comments the one comment answering them named.
 const MARKER = /<!--\s*replied from \/pr-comments(?::([^>]*))?\s*-->/
 const EVERY_MARKER = new RegExp(MARKER, 'g')
 
@@ -65,7 +65,7 @@ function idsAlreadyAnswered({ threads, reviews, issueComments }) {
 /** GraphQL nodes → one flat entry list. Pure: no fetch, no clock, no environment. */
 export function normalise({ threads = [], reviews = [], issueComments = [] } = {}) {
   const entries = []
-  // A reply-less origin cannot be answered in place, so a conclusion comment names it by id instead.
+  // A reply-less origin cannot be answered in place, so the comment answering it names it by id instead.
   const namedAsAnswered = idsAlreadyAnswered({ threads, reviews, issueComments })
 
   for (const thread of threads) {

@@ -84,10 +84,10 @@ In order:
 8. **The push** — one `git push`, a fast-forward, to that same branch, and only where git says a commit
    was actually made.
 9. **The fix threads, answered**, each carrying the short sha and subject of the commit that answered
-   it — or, where nothing was pushed, what stopped it.
-10. **The conclusion**, commented back: what reached the branch, which comments those commits answer,
-    every reply the run left, the table again, the suite's result, and what the review pass changed and
-    what it declined.
+   it — or, where nothing was pushed, what stopped it. Rows with no thread to reply in — a review
+   body, a top-level comment — share one comment, posted only where there are any.
+10. **The report**, in the session and never on the pull request: what reached the branch, the suite's
+    result, what the review pass changed and what it declined, and any worktree kept.
 11. **The worktree, removed last** — and only where the push succeeded.
 
 **Nothing touches the pull request before the gate** — everything up to it is a read, and under
@@ -97,9 +97,11 @@ stop at the gate leaves no trace on the pull request at all.
 
 ## What it refuses to do
 
-The whole run writes **one push**, **one comment** — two under `unattended`, where the table is posted
-in the gate's place — and **one reply in each review thread its table covers**. Nothing else leaves the
-session.
+The whole run writes **one push**, **one reply in each review thread its table covers**, and **one
+comment for the rows with no thread to reply in**, only where there are any — plus the table itself
+under `unattended`, where it is posted in the gate's place. There is no conclusion comment: every
+comment is answered where it was raised, and the run's own account of what it did stays in the
+session. Nothing else leaves it.
 
 It is append-only against everything a human authored, and deliberately narrower than a pipeline
 working a branch of its own, because here every artifact in sight belongs to somebody else:
@@ -109,8 +111,8 @@ working a branch of its own, because here every artifact in sight belongs to som
   run that closed its own work would be marking its own homework.
 - **No draft or ready conversion, and no label** — on the pull request or the issue behind it. This run
   opens no pull request, so it has no state of its own to set.
-- **No edit to any body somebody wrote** — the pull request's, the issue's, or anyone's comment. Its
-  conclusion is a **second comment** beside the table, never an edit to it.
+- **No edit to any body somebody wrote** — the pull request's, the issue's, or anyone's comment. Everything
+  it writes is a **new** reply or comment, never an edit to one.
 - **No comment is re-classified to reach a different intent.** Under `unattended` that would be this
   skill overruling a reviewer with nobody left to overrule it back.
 - **Never a force push, in any form.** The push is a fast-forward by construction, so forcing is never
@@ -160,9 +162,8 @@ loads, and there is no second place for it to drift from.
 **And a second pass would be the same reader re-reading its own work.** In a pipeline the reviewer is a
 separate agent with a separate context, so a second round genuinely brings a second opinion; here the
 pass and the fixes are the same session, and re-running it mostly re-derives what it already decided.
-What one pass declines to fix is **reported in the conclusion** rather than argued with, which puts it
-in front of the human whose pull request it is — the reviewer this run was answering in the first
-place.
+What one pass declines to fix is **reported back in the session** rather than argued with, which puts
+it in front of the human who ran it.
 
 The rest of the pipeline went with it. No preconditions script, no agents to check the preloads of, no
 notification channel, no profile keys, and no second copy of `/dev-loop`'s execute phase to keep in
@@ -195,7 +196,7 @@ resolve to their unattended answers:
 
 The table is **posted on the pull request** where the question would have been — a table nobody was
 watching would otherwise be a decision that vanished with the terminal. That is the run's first write,
-and the conclusion is the second; there is never a third.
+and the only other comment it can post is the one answering rows with no thread to reply in.
 
 **Nothing else resolves, because nothing else was ever asked.** There is no profile key to default and
 no value to persist, so an unattended run has no interview to suppress. A run that stops before the
@@ -216,9 +217,9 @@ make, and provisioning one anyway would point a review pass at an empty diff.
 ### A run that ended
 
 Something stopped part-way, the push was rejected, or no commit was made at all. The branch is
-untouched and **the worktree is kept**: the work is in it, and it is the only copy there is. The
-conclusion comment names it by path, reports verbatim whatever git said, and answers the threads that
-were waiting on a commit by saying what stopped it instead.
+untouched and **the worktree is kept**: the work is in it, and it is the only copy there is. The run's
+report names it by path and repeats verbatim whatever git said, and the threads that were waiting on a
+commit are answered by saying what stopped it instead.
 
 ## Common questions
 
@@ -262,20 +263,20 @@ foot of the pull request notifies its author about *the pull request*, not about
 under both modes. A thread is one conversation, so several of its comments share one reply that names
 each.
 
-Replies are one line: a fix carries its Action and the short sha and subject of the commit that
-answered it, a skip carries its reason and that reason's evidence. A disagreement is the single
-exception and carries its reasoning in full, because that is the reply that overrules a human.
+Replies are extremely concise, to the point, and in simple terms: a fix carries its Action and the
+short sha and subject of the commit that answered it, a skip carries its reason and that reason's
+evidence, and a disagreement gives its reason in plain words — the full reasoning stays beneath the
+table.
 
 Every comment and reply the run writes ends with a hidden `<!-- replied from /pr-comments -->` marker
-and a visible `🤖 Generated with Claude Code` footer. `gh` authenticates as you, so without the footer
-all of it would read as written by you. The marker is also what a **later** run reads: it excludes
-every comment carrying one, every thread holding one, and every comment a previous conclusion named by
-id — so running the skill twice on the same pull request classifies what is new rather than answering
-the same review again.
+and nothing visible after it. The marker is what a **later** run reads: it excludes every comment
+carrying one, every thread holding one, and every comment a previous run named by id — so running the
+skill twice on the same pull request classifies what is new rather than answering the same review
+again.
 
 A comment with no thread to reply in — a review body, a top-level issue comment — has no reply
-primitive on GitHub, so none is invented for it. Its Action travels in the table, and the conclusion
-comment names which those were, by id, inside its own marker.
+primitive on GitHub, so none is invented for it. Those rows share one comment on the pull request,
+posted only where there are any, whose marker names them by id.
 
 **Two comments on the same lines became two commits.**
 
@@ -302,9 +303,9 @@ lost is classified on what it says rather than on what its metadata suggests: th
 nothing about whether anyone did what it asked, so `outdated` is never the evidence for a skip — a
 commit is.
 
-**Why does the conclusion's commit list disagree with what the run said it did?**
+**Why does the sha a reply cites disagree with what the run said it did?**
 
-It cannot, because it is not that list. The commits are read from `git log` on the branch, in the
+It cannot, because it is not that account. The commits are read from `git log` on the branch, in the
 worktree, after the push and before the worktree is removed. What the run believes it committed is a
 claim; the branch is the fact, and the same rule decides the push itself — git's count of what the
 branch actually gained, never the session's own account of it.
@@ -325,17 +326,18 @@ one branch, one push, one comment thread to report into.
   its reasoning in full, beneath the table.
 - **Every review thread the table covers has exactly one reply in it** — whatever its rows were
   classified, and whether or not a single row was a fix.
-- Each reply is a line, carrying the strings the table already carries, and ends with the Claude Code
-  footer. Only a disagreement runs longer.
+- Each reply is short and plain, carrying the strings the table already carries, and ends with the
+  hidden marker and nothing visible after it.
 - Fifteen rows read as easily as three, because every row is one line and everything longer lives
   beneath the table.
-- The gate and the conclusion comment render **the same table** — never a second summary of it.
+- Under `unattended`, the table posted is **the table** — never a summary of it — and no conclusion
+  comment follows it.
 - Exactly **one push**, a fast-forward, to the pull request's own head branch — and none at all where
   the run ended.
-- The conclusion comment's commit list matches `git log` on that branch.
+- Every sha a reply cites is on that branch.
 - The review threads are still unresolved — the answered ones included — the draft/ready state is
   unchanged, and no body anyone wrote has been edited.
-- A run that ended left its worktree standing and named it, by path, in that comment.
+- A run that ended left its worktree standing and named it, by path, in its report.
 - A second run on the same pull request has nothing to say about the comments the first one answered.
 
 ## Where a rule lives
