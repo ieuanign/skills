@@ -19,7 +19,11 @@ Sub-lanes append the area: `{type}/{issue}-{area}`.
 
 Prose-first, in the house style of the repo's hand-written PRs: a lead paragraph saying what was
 wrong and what changed, then thematic `##` sections explaining the change, then the pipeline's
-required sections. Whatever the prose, these must survive:
+required sections.
+
+Make the PR description extremely concise, to the point, and using simple terms.
+
+Whatever the prose, these must survive:
 
 ```markdown
 Closes #<n>.                       <!-- first sub-lane only; later ones reference without closing -->
