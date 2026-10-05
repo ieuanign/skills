@@ -6,8 +6,9 @@ line goes in the file.
 
 # Scratch files
 
-Anything under `<.scratch/>` is **working material, never a deliverable**. It is gitignored, so it
-exists on exactly one machine, in exactly one checkout, until something deletes it.
+Throwaway files go under `<.scratch/>`, and anything there is **working material, never a
+deliverable**. It is gitignored, so it exists on exactly one machine, in exactly one checkout, until
+something deletes it.
 
 **Nothing may depend on one surviving.** Not a later task, not an acceptance criterion, not a reader
 you expect to find it. A plan that names a scratch path as an output is naming work being done, not an

@@ -6,10 +6,7 @@ goes in the file.
 
 # PR separation
 
-How work in this repository splits into pull requests. Read by anyone splitting a change by hand, and
-by `/dev-loop` at two points: the architect applies **Order** and **Size** when writing a plan's
-commit and PR breakdown, and the pipeline applies **Overlapping changes** when deciding which work
-runs in parallel.
+How work in this repository splits into pull requests.
 
 ## Order
 

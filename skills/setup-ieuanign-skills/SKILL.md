@@ -153,11 +153,20 @@ create the equivalents in whatever tracker it is; the mapping file is already wr
 Six rules, each with a template in this folder. Propose them one at a time, in the order below. A
 declined rule is a real answer: say nothing more about it.
 
-Show each rule's full text before writing it. `.claude/rules/*.md` loads at launch with the same
-priority as `.claude/CLAUDE.md` and reaches every custom subagent, so a rule written here binds
-exactly as one written in `CLAUDE.md` — which is the point, and why the user reads it first.
+Show each file's full text before writing it. A rule without `paths` frontmatter loads at launch with
+the same priority as `.claude/CLAUDE.md` and reaches every custom subagent, so a rule written here
+binds exactly as one written in `CLAUDE.md` — which is the point, and why the user reads it first.
 
 An existing file with the same name is reported and left alone unless the user asks to regenerate.
+
+**Every session pays for every line of such a rule**, so two of the six are split: the rule file holds
+the instruction alone and names `.claude/reference/<name>.md`, which holds the rule in full and loads
+only when a session reads it. Rule and reference are written together or not at all. Regenerating over
+the full text an earlier setup wrote replaces it with the split pair; left alone, it stays whole and
+gets no reference.
+
+Say once that everything this part writes is committed together: a rule whose reference is untracked
+points nowhere for everyone else.
 
 ### `pr-separation.md` — always propose
 
@@ -179,8 +188,9 @@ configuring — both find it in context.
 
 ### `stacked-prs.md` — only where the extension is present
 
-[stacked-prs-template.md](./stacked-prs-template.md). Probe with `gh stack --help`, which exits 0 when
-installed and 1 when not, needs no authentication and makes no network call.
+Split: [stacked-prs-template.md](./stacked-prs-template.md) and its reference,
+[stacked-prs-reference.md](./stacked-prs-reference.md). Probe with `gh stack --help`, which exits 0
+when installed and 1 when not, needs no authentication and makes no network call.
 
 - **Present** → propose the rule.
 - **Absent** → **print one line, persist nothing, move to the next rule**: that stacked batches chain
@@ -198,14 +208,38 @@ installed and 1 when not, needs no authentication and makes no network call.
   worth scoping, so a docs-only session does not carry it;
 - the scratch rule's directory, if the repo's is not `.scratch/`.
 
+The scratch rule sends throwaway files to that directory and says it is ignored. Where
+`git check-ignore -q <directory>/x` exits non-zero, say so and offer the `.gitignore` line with the
+rule.
+
 ### `worktree-removal.md` — always propose
 
-[worktree-removal-template.md](./worktree-removal-template.md). Fixed text, no substitutions: never
+Split: [worktree-removal-template.md](./worktree-removal-template.md) and its reference,
+[worktree-removal-reference.md](./worktree-removal-reference.md). Fixed text, no substitutions: never
 `git worktree remove --force`, because the refusal is the guard and what it guards exists in one copy.
 
 `/dev-loop`, `/pr-comments` and `/dev-loop-cleanup` already hold this for the worktrees they create,
 and it is still worth writing: none of them binds a human typing the command themselves, and in a repo
-where setup ran but no plugin is installed this file is the only copy of the rule.
+where setup ran but no plugin is installed these files are the only copy of the rule.
+
+**Then offer to deny the command itself**, a second yes of its own. `--force` is a literal flag on
+one command and cannot be undone, so Claude Code can also refuse it outright. Declining leaves the
+rule complete.
+
+Add these four to `permissions.deny` in `.claude/settings.json` — create the file or the key where
+absent, leave everything else as it stands, and add none that is already there:
+
+```json
+"Bash(git worktree remove* --f*)",
+"Bash(git worktree remove* -f*)",
+"Bash(git -C * worktree remove* --f*)",
+"Bash(git -C * worktree remove* -f*)"
+```
+
+Say with it what the denial is not. Nobody can overrule it from inside a session — whoever means it
+runs the command themselves. And it covers the forms a session usually writes, never every form: a
+shell wrapper, a path to `git`, a flag held in a variable and every other route to the same loss are
+held by the rule alone.
 
 ### `code-review.md` — always propose
 
@@ -352,8 +386,10 @@ Tell the user what was written and which skills read it:
 - each `.claude/rules/` file written — in every session in the repo from the next one onward, plugin
   or no plugin; `pr-separation.md` additionally at `/dev-loop`'s plan and Gate 1 steps,
   `worktree-removal.md` by a human at a terminal, which no skill covers, and `code-review.md` by the
-  `reviewer` agent and the code-review Standards axis. Name the ones the user declined too, so nothing
-  looks written that is not.
+  `reviewer` agent and the code-review Standards axis. With a split rule, name its
+  `.claude/reference/` file, read when a session follows the rule to it; with the denial, name the
+  `permissions.deny` entries in `.claude/settings.json`, which refuse the command in every session
+  and subagent. Name the ones the user declined too, so nothing looks written that is not.
 - `docs/agents/worktree.md` and `.worktreeinclude` — `/dev-loop` and `/pr-comments`, both of which
   provision worktrees and read all three keys. Report a key the file already answered as left alone
   rather than as written.
