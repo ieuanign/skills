@@ -255,6 +255,47 @@ Where one part of a **brief** ends up: a **requirement**, a constraint, a **topi
 an "Out of scope" line or a "Left for the spec" line. An interview is finished when every part has one
 and the person confirms the list.
 
+## Design system
+
+A project's look, set down once as plain HTML a person opens in a browser: a reference page showing
+every token and component in both themes, the **skeleton**, and the client's brand as they supplied
+it. What every **mockup** is built from, and only from.
+
+_Avoid_: style guide, theme — each names one part of it.
+
+## Skeleton
+
+The one page of a **design system** every **mockup** starts from: its tokens for a light and a dark
+theme, its frames and components, and the markup contract a mockup follows, which lives in the
+skeleton alone so that a mockup and anything reading one take it from the same file.
+
+Unrelated to the skeleton of acts a **spine** carries.
+
+## Direction
+
+One of three candidate looks for a project with no **design system** yet, drawn on a PRD's real
+screens and differing in structure as well as colour. A person picks one, and the design system is
+built from it.
+
+_Avoid_: variant, option — an option is an open choice on a **mockup**.
+
+## Mockup
+
+One local HTML page per PRD showing every screen it changes, each in all its **states**, built from
+the **skeleton** and reviewed on a pull request of its own. What a person sees before anything is
+built, and what tests read a screen's states and surface from.
+
+_Avoid_: prototype — a prototype runs inside the app; wireframe — a mockup carries real copy and the
+design system's look.
+
+## State
+
+One version of a screen on a **mockup** that changes what it shows: the default, each error the PRD
+names, and empty, loading, success, a dialog or first-run where they apply. An error state is marked
+as one, so it can be told from the rest.
+
+_Avoid_: variant — a state is what one screen shows at a given moment, never an alternative design.
+
 ## Spine
 
 What a skill's `SKILL.md` is under **staged reads** — the architecture where a skill's contract is
