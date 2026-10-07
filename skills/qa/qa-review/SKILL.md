@@ -41,8 +41,8 @@ A PRD with no `## Test cases` comment stops the skill: write nothing and return 
 
 ## A ticket's pull request
 
-1. **Requirements in scope.** The ticket is the issue the pull request closes, or else the one its title names. Collect every `REQ-N.n` in the ticket's body, then drop each that a ticket of a pull request **above** this one in the stack names too — that pull request answers for it. No ticket, or no requirement, stops the skill. Done when the list is final.
-2. **Judge** each case of those requirements against the diff:
+1. **Requirements in scope.** The ticket is the issue the pull request closes, or else the one its title names. Collect every `REQ-N.n` in the ticket's body, then drop each that a ticket of a pull request **above** this one in the stack names too — that pull request answers for it. A bug's requirement is not in its body: where the ticket carries a `## Test case` comment, its own `TC-<ticket>.n` cases are in scope too, and their `Requirement:` names the PRD. No ticket, or neither a requirement nor a case of its own, stops the skill. Done when the list is final.
+2. **Judge** each case in scope against the diff:
    - **negative** — `met` when a unit test titled with its id exercises its steps and asserts its expected result, and the code makes it hold; `not-met` when the test exists but the code or the test misses the case; `no-test` when no test carries its id.
    - **positive** — `untested`, with the end-to-end test's file:line where the diff already holds one. It never fails this pull request.
 
