@@ -215,6 +215,46 @@ Append-only against artifacts a human owns, and narrower than `/dev-loop`'s rule
 that reason: no review thread resolved — the ones it replied in included — no draft or ready state
 converted, no label touched, no body anyone wrote edited.
 
+## Brief
+
+A request for work, in the words of whoever asked: an issue, a link or text. What `/grill-prd`
+interviews and a **PRD** is written from.
+
+## PRD
+
+A non-technical product requirements document, published as an issue under its **brief**: what
+people do and see, as **requirements** with stable ids. Nothing is built from a PRD directly. Once its
+work has shipped its text stands; a later change is a new PRD naming the ids it replaces or withdraws.
+
+_Avoid_: spec — a spec is technical and comes after the PRD; what the PRD leaves for it is listed,
+not answered.
+
+## Requirement
+
+One behaviour a person can observe, stated so that it passes or fails, under an id of the form
+`REQ-<PRD number>.<n>`. The id is never renumbered or reused, because tests key on it; a reworded
+requirement keeps it only while a test against the old words would still hold.
+
+_Avoid_: user story — a story groups requirements and gives who and why, and carries no id.
+
+## Topic
+
+One part of a **brief** that is useful to a person without the others. A brief holding two or more is
+too big: one topic becomes the PRD, and the rest go to an **epic**, each worded to be filed as a brief
+of its own.
+
+## Epic
+
+The whole a too-big **brief** was narrowed from: the bigger picture, and its **topics**, each marked
+with its brief once filed. To its PRDs what a spec is to its tickets. Closed when every topic is filed
+or dropped.
+
+## Home
+
+Where one part of a **brief** ends up: a **requirement**, a constraint, a **topic** in the **epic**,
+an "Out of scope" line or a "Left for the spec" line. An interview is finished when every part has one
+and the person confirms the list.
+
 ## Spine
 
 What a skill's `SKILL.md` is under **staged reads** — the architecture where a skill's contract is
