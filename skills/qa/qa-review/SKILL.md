@@ -47,7 +47,7 @@ A PRD with no `## Test cases` comment stops the skill: write nothing and return 
    - **positive** — `untested`, with the end-to-end test's file:line where the diff already holds one. It never fails this pull request.
 
    Done when every case in scope has a line with evidence.
-3. **Run the project's check** where it runs the unit tests (its manifests name it: package.json scripts, Makefile, CI config). A negative case whose test fails is `not-met`. Done when the check ran, or the verdict says it could not and why.
+3. **Run the project's check** on the pull request's head. With a clean working tree, `gh pr checkout <n>`, run the check where it runs the unit tests (its manifests name it: package.json scripts, Makefile, CI config), then check out the ref you started on. A dirty working tree stops the skill. A negative case whose test fails is `not-met`. Done when the check ran, or the verdict says it could not and why.
 4. Post [the verdict](#the-verdict).
 
 ## The `test(e2e):` pull request
@@ -58,8 +58,8 @@ Sensitive: this builds the whole stack locally and runs end-to-end tests, which 
 2. **Runner.** The end-to-end runner and the local-stack bring-up are whatever the caller named, or what the project's manifests name. Found in neither, write nothing and return what is missing. Done when both commands are known.
 3. **Build and run.** This pull request holds the whole stack beneath it. With a clean working tree, `gh pr checkout <n>`, bring the stack up, and run the PRD's end-to-end tests (filter by the `TC-<PRD>.` title prefix). Retry each failing test once: one that passes on the retry is **flaky**, listed and never failed. A surface the machine cannot drive — no simulator, emulator or device for iOS or Android — is `not run: no device`, never a fail. Afterwards bring the stack down and check out the ref you started on. A dirty working tree stops the skill. Done when every candidate has passed, failed twice, or is `not run: no device`.
 4. **Assign each failure.** Re-read the failing test against its case. A test that does not follow its case is this pull request's fault: `not-met` here. A test that follows its case and still fails means the code is wrong: `not-met` on the ticket's pull request that answers for that requirement (the highest ticket in the stack naming it). Done when every failure sits on one pull request.
-5. **Re-mark below.** For each ticket's pull request below whose last `qa/review` verdict holds `untested` lines for this PRD, post a new verdict for it: each such line `met` where its test passed, `not-met` where step 4 put a failure there, `not run: no device` where it was not run; every other line as it stood. Done when every pull request below with an `untested` line has a new verdict and status.
-6. Post [the verdict](#the-verdict) for this pull request: one line per positive case.
+5. **Re-mark below.** For each ticket's pull request below whose last `qa/review` verdict holds `untested` lines for this PRD, or that step 4 assigned a failure to, post a new verdict for it: each `untested` line `met` where its test passed, `not-met` where step 4 put a failure there, `not run: no device` where it was not run; a failure assigned with no line for its case gets a `not-met` line; every other line as it stood. Done when every pull request below with an `untested` line or an assigned failure has a new verdict and status.
+6. Post [the verdict](#the-verdict) for this pull request: one line per positive case. A failure step 4 assigned below is `not-met — assigned to #<n>` here, and does not fail this pull request's status: the ticket's status does.
 
 ## The verdict
 
@@ -78,6 +78,6 @@ PRD: #57 · Ticket: #61 · Base: <baseRefName> · Head: <short sha>
 **Out of scope:** REQ-57.3, answered by #64 above, or None
 ```
 
-Evidence is a `file:line` from the diff, the failing step with expected against actual, or the reason a line is not met. The status is `failure` on any `not-met` or `no-test`, otherwise `success`; `untested`, flaky and `not run: no device` never fail it.
+Evidence is a `file:line` from the diff, the failing step with expected against actual, or the reason a line is not met. The status is `failure` on any `not-met` or `no-test`, otherwise `success`; `untested`, flaky, `not run: no device` and `not-met — assigned to #<n>` never fail it.
 
 **Return** each review's URL, each status set, and the counts per mark.
