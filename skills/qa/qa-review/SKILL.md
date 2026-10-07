@@ -35,7 +35,7 @@ A case is a `### TC-<issue>.<n> <title>` block in a `## Test cases` comment (a P
 1. **The pull request.** `gh pr view <n> --json number,title,body,state,baseRefName,headRefName,headRefOid,closingIssuesReferences`, then `git fetch origin <baseRefName> <headRefName>`. Done when its base, head and title are in hand.
 2. **Pick the branch.** A title starting `test(e2e): #<PRD>` takes [the `test(e2e):` pull request](#the-teste2e-pull-request); every other takes [a ticket's pull request](#a-tickets-pull-request).
 3. **The stack.** Below: follow `baseRefName` down through open pull requests (`gh pr list --head <base> --state open`) until the trunk. Above: `gh pr list --base <headRefName> --state open`, repeated up to the top. Done when every pull request of the stack is listed in order.
-4. **The cases.** Requirement `REQ-N.n` belongs to PRD #N: fetch `gh issue view N --json comments` and keep every case whose `Requirement:` is that id; then `gh search issues '"Requirement: REQ-N.n"' --state open` for a bug's `## Test case`. Done when every requirement in scope has its cases, or is reported with none.
+4. **The cases.** Requirement `REQ-N.n` belongs to PRD #N: fetch `gh issue view N --json comments` and keep every case whose `Requirement:` is that id; then `gh issue list --state open --search '"Requirement: REQ-N.n" in:comments'` for a bug's `## Test case`. Done when every requirement in scope has its cases, or is reported with none.
 
 A PRD with no `## Test cases` comment stops the skill: write nothing and return its number.
 
