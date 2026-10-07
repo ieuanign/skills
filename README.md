@@ -1,7 +1,7 @@
 # ieuanign/skills
 
-Ieuan's add-on agent skills for Claude Code: a brief interviewed into a non-technical **PRD**, an
-issue-to-PR **dev-loop** over a custom agent roster, one pull request's **comments** turned into
+Ieuan's add-on agent skills for Claude Code: a brief interviewed into a non-technical **PRD**, its
+screens **mocked up** as local HTML from the project's **design system**, an issue-to-PR **dev-loop** over a custom agent roster, one pull request's **comments** turned into
 commits, and per-repo **setup**.
 
 > **Add-on, not standalone.** Declares [Matt Pocock's skills](https://github.com/mattpocock/skills) as a
@@ -38,6 +38,8 @@ Then once per repo — independent, either order:
 | [`/dev-loop-cleanup`](./skills/dev-loop-cleanup/SKILL.md) | Lists every candidate a lane left behind — worktree, local branch, scratch files — each with a recommendation and its reason, then reaps only the ones you pick |
 | [`/grill-prd`](./skills/grill-prd/SKILL.md) | Interviews a brief in plain words about what people do and see — narrowing a too-big one to a single topic — until every part has a home, then calls `/to-prd` to publish it |
 | [`/to-prd`](./skills/to-prd/SKILL.md) | Writes, revises or checks a non-technical PRD issue with stable `REQ-<prd>.<n>` ids, and files the epic a too-big brief was narrowed from. Stops for no one, so an agent can call it alone |
+| [`/design-system`](./skills/design-system/SKILL.md) | Sets up a project's design system as local HTML under `docs/design-system/` — a reference page, the `skeleton.html` every mockup is built from, and the client's `brand/`: three directions drawn from a PRD, built from the one chosen, adopted from code, or checked |
+| [`/mockup`](./skills/mockup/SKILL.md) | Mocks up every screen a PRD changes, each in all its states, as one local HTML page built from the skeleton, and opens one pull request for it; revises it from a person's reasons or a revised PRD, or checks it |
 | [`/pr-comments`](./skills/pr-comments/SKILL.md) | One pull request's unresolved comments, classified **fix** or **skip** for your approval; the approved fixes are then made in the session you invoked, reviewed in one pass, and pushed to that pull request's own branch |
 | [`/mattpocock-skills:code-review`](https://github.com/mattpocock/skills) | **Matt's, not shipped here** — it arrives with the dependency. Reviews a diff on two parallel axes: **Standards** (`CLAUDE.md`, `.claude/rules/`, Fowler smells, your `docs/agents/smell-overrides.md`) and **Spec** (the originating issue/PRD). The `reviewer` agent preloads it, so a `/dev-loop` review and a hand review carry one model |
 | [`/retire-adr`](./skills/retire-adr/SKILL.md) | Retires one decision record you name — **a refactor, not a delete**: sweeps every form the repo cites it by, relocates reasoning that still binds the code, then rewrites the references and deletes the record |
