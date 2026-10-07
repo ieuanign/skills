@@ -49,7 +49,7 @@ The brief's issue stays as it was, and the PRD carries `prd` alone — nothing i
 
 ## Check
 
-1. **Fetch** the PRD, the brief it names and, where it names one, the epic, with `gh issue view`. Done when all three bodies (or the two, without an epic) are in hand.
+1. **Fetch** the PRD, the brief it names, the epic where it names one, and every earlier PRD whose number appears in an id under `Replaces:` or **Withdrawn**, with `gh issue view`. Done when each of those bodies is in hand.
 2. **Report** every line of the [checklist](#checklist) as pass or fail, each fail with the line or id that fails it. Done when all seven lines carry a verdict. The result is the return; the tracker is left as it was.
 
 ## Requirements and ids
