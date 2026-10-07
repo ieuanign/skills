@@ -4,7 +4,7 @@ set -euo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 
 # `changeset version` bumps package.json only — it has no knowledge of
-# .claude-plugin/plugin.json, which CLAUDE.md requires to hold the same version.
+# .claude-plugin/plugin.json, which .claude/CLAUDE.md requires to hold the same version.
 # Chained after it in the `version` script so a release never has to be hand-synced.
 # Rewrites the version string in place rather than re-serialising, to leave the
 # rest of the file byte-identical.
