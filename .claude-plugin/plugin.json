@@ -25,6 +25,7 @@
     "./skills/mockup",
     "./skills/pr-comments",
     "./skills/qa/qa-review",
+    "./skills/qa/qa-verify",
     "./skills/qa/test-cases",
     "./skills/retire-adr",
     "./skills/setup-ieuanign-skills",
