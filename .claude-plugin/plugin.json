@@ -18,6 +18,7 @@
     "orchestration"
   ],
   "skills": [
+    "./skills/design-system",
     "./skills/dev-loop",
     "./skills/dev-loop-cleanup",
     "./skills/grill-prd",
