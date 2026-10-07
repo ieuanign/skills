@@ -12,7 +12,7 @@ The issue tracker should be in your context, from the consuming repo's `docs/age
 ## Pick the branch
 
 - **Check** — you were asked to check a PRD. Go to [Check](#check).
-- **Revise** — the conversation changes a PRD that already exists. Go to [Revise](#revise).
+- **Revise** — the conversation changes an open PRD, or you were asked to revise one. Go to [Revise](#revise). A change to a closed PRD goes to Write.
 - **Write** — anything else. Go to [Write](#write).
 
 Done when one branch is chosen and the brief's issue number (where the brief is an issue) and any PRD or epic number named are known.
