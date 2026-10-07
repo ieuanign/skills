@@ -146,7 +146,7 @@ decide what a run does.
   `plugin.json` versions agree. Run before opening a PR.
 - `scripts/link-skills.sh` symlinks the skills and roster into this repo's own `.claude/`, live here
   and nowhere else; `scripts/list-skills.sh` lists every `SKILL.md`.
-- Versioned with [changesets](https://github.com/changesets/changesets); `CLAUDE.md` has the
+- Versioned with [changesets](https://github.com/changesets/changesets); `.claude/CLAUDE.md` has the
   add-a-skill checklist.
 - [`docs/dev-loop-rule-inventory.md`](./docs/dev-loop-rule-inventory.md) and
   [`docs/dev-loop-verification.md`](./docs/dev-loop-verification.md) — the 389-rule relocation ledger
