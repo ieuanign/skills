@@ -1,5 +1,25 @@
 # ieuanign-skills
 
+## 0.25.0
+
+### Minor Changes
+
+- [`df8bf38`](https://github.com/ieuanign/skills/commit/df8bf38544eea6137a01610ab0e05249e48cf31d) Thanks [@ieuanign](https://github.com/ieuanign)! - grill-prd: a new skill that interviews a brief in plain words — who it is for, what each person can do and see, what goes wrong, what it replaces, what is fixed and what is left out — through `mattpocock-skills:grilling` and `mattpocock-skills:domain-modeling` (glossary terms only), fetching code facts from a sub-agent that answers as "what a person can do today". It judges a too-big brief in its first round, offers the topic to take first, and ends by calling `to-prd` once every part of the brief has a home.
+
+  to-prd: a new skill that writes, revises or checks a non-technical PRD on the issue tracker, with stable `REQ-<prd>.<n>` ids, a `Visible` mark per requirement and a seven-line checklist, and files an epic when a too-big brief was narrowed. It stops for no one, so an agent can call it alone; it creates the `prd` and `epic` labels when they are missing.
+
+- [#297](https://github.com/ieuanign/skills/pull/297) [`2929970`](https://github.com/ieuanign/skills/commit/292997077a433ca3668085468e2112fdf0ce5576) Thanks [@ieuanign](https://github.com/ieuanign)! - design-system: a new skill that sets up a project's design system as plain HTML under `docs/design-system/` — a reference page with every token and component in both themes, the `skeleton.html` every mockup is built from, and the client's `brand/` read as it is. It draws three directions on a PRD's real screens, builds the design system from the one a person picks, adopts one already in code, or checks it against a four-line checklist. It bundles the skeleton template, whose leading comment is the one source of the markup contract a mockup follows, and commits nothing.
+
+  mockup: a new skill that mocks up every screen a PRD changes, each in all its states, as one self-contained page at `docs/design/<PRD number>-<slug>.html` built from the skeleton, and opens one pull request for it from a worktree, so the invoking checkout never moves. It revises the page from a person's reasons or a revised PRD — redoing only the sections its last Revisions line names — or checks it against a five-line checklist. Both skills are model-invoked, load nothing from the network but fonts, and their Check branches write nothing.
+
+- [`fe43687`](https://github.com/ieuanign/skills/commit/fe436877d88b59ea2c63bdd11f96205dbb793e1c) Thanks [@ieuanign](https://github.com/ieuanign)! - test-cases: a new skill that writes, revises or checks a PRD's test cases — one plain-words check per requirement, read from `to-prd`'s PRD and `mockup`'s mockup where there is one — and posts them as one `## Test cases` comment on the PRD's issue.
+
+  qa-review: a new skill that judges one pull request against those test cases, taking `code-review`'s Spec model with the cases as the spec, and posts a per-case verdict as a comment-only review and the `qa/review` commit status.
+
+  qa-verify: a new skill that runs the end-to-end tests against a deployed environment, or a local stack where there is none, raises a `bug` (or `flaky`) issue per failure, and sets the `qa/verify` commit status.
+
+  reproduce: a new skill that turns a reported bug into a minimised red repro against a local stack at the default branch, through `diagnosing-bugs`' first two phases, and posts it with one test case as a `## Test case` comment on the bug. All four live under `skills/qa/`, are model-invoked and ask nobody.
+
 ## 0.24.0
 
 ### Minor Changes
