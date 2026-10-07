@@ -296,6 +296,32 @@ as one, so it can be told from the rest.
 
 _Avoid_: variant — a state is what one screen shows at a given moment, never an alternative design.
 
+## Test case
+
+One plain-words check of one **requirement**, under an id of the form `TC-<issue number>.<n>` — the
+issue being the one that holds the case, a **PRD** or a bug — never renumbered or reused, because a
+test's title starts with it. Its **kind** is `positive` when the requirement's behaviour happens and
+`negative` when the software refuses or reports an error as it should; only a positive case is an
+end-to-end test. A positive case carries a **priority**, `high` when a person would be blocked if it
+failed, otherwise `normal`. Its **surface** is where it is seen — web, iOS, Android, email, PDF or a
+notification — as the **mockup** frames it.
+
+_Avoid_: test — a test is the code that runs a case; scenario.
+
+## Flaky
+
+A test that failed and then passed on its one retry. It counts as passing: it never fails a verdict
+or a commit status, and is raised as a `flaky` issue rather than a `bug`.
+
+## Smoke
+
+The short run of the end-to-end tests after a deploy: the tests of every PRD that deploy shipped,
+then every `high`-priority test not already selected.
+
+## Full
+
+The run of every end-to-end test. What a run is when no one asked for **smoke**.
+
 ## Spine
 
 What a skill's `SKILL.md` is under **staged reads** — the architecture where a skill's contract is
