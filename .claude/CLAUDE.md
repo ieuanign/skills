@@ -27,6 +27,9 @@ resolve. `npx skills add ieuanign/skills` still works for the skills alone — i
 The repo root is the plugin root (`"source": "./"`), so `agents/` is the default agent location.
 Do **not** add an `agents` field to `plugin.json` — the default discovery already covers it.
 
+The same reason keeps these notes in `.claude/CLAUDE.md`. A plugin never loads a `CLAUDE.md` at its
+root, and `claude plugin validate --strict` fails on one there; this path still loads for maintainers.
+
 ## Adding or changing a skill
 
 1. Create / edit `skills/<name>/SKILL.md` (+ any supporting files in the same folder). A roster agent
