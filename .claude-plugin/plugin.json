@@ -20,6 +20,7 @@
   "skills": [
     "./skills/dev-loop",
     "./skills/dev-loop-cleanup",
+    "./skills/grill-prd",
     "./skills/pr-comments",
     "./skills/retire-adr",
     "./skills/setup-ieuanign-skills",
