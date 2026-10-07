@@ -32,12 +32,12 @@ A case is a `### TC-<issue>.<n> <title>` block in a `## Test cases` comment (a P
 1. **The environment.** The deployed environment the caller named, and the commit deployed there. With an environment named but no commit, stop: the status has nowhere to go. With no environment named, run against a local stack at the ref the caller named, else the default branch; its commit is that ref's head. Done when the target and the commit `<sha>` are known.
 2. **The runner.** The end-to-end runner, how to point it at an environment, the local-stack bring-up where needed, and where the trace and screenshot land: whatever the caller named, or what the project's manifests name (package.json scripts, Makefile, CI config). Found in neither, write nothing and return what is missing. Done when every command and the artifact location are known.
 3. **Pick the run.** **Smoke** when asked for a smoke run; **Full** otherwise.
-4. **What was just deployed.** The range runs from the previous deployed commit the caller named, else the nearest first-parent ancestor carrying a `qa/verify` status (`gh api repos/{owner}/{repo}/commits/<sha>/status`), to `<sha>`. Each pull request merged in that range names its PRD: a `test(e2e): #<PRD>` title directly, a ticket's pull request through the `REQ-<PRD>.n` ids in the issue it closes. Each PRD names its brief. With no previous commit found, nothing counts as just deployed; say so in the return. Done when the deployed PRDs and their briefs are listed.
+4. **What was just deployed.** The range runs from the previous deployed commit the caller named, else the nearest first-parent ancestor carrying a `qa/verify` status (`gh api repos/{owner}/{repo}/commits/<sha>/status`), to `<sha>`. Each pull request merged in that range names its PRD: a `test(e2e): #<PRD>` title directly, a ticket's pull request through the `REQ-<PRD>.n` ids in the issue it closes, a bug's fix through the `Requirement:` line of that bug's `## Test case` comment. Each PRD names its brief. With no previous commit found, nothing counts as just deployed; say so in the return. Done when the deployed PRDs and their briefs are listed.
 
 ## Run
 
 1. **Select.**
-   - **Smoke** — first the tests of each deployed PRD (title prefix `TC-<PRD>.`), then every test tagged `@high` not yet selected.
+   - **Smoke** — first the tests of each deployed PRD (tag prefix `@REQ-<PRD>.`, which also catches its bugs' `TC-<bug>.n` tests), then every test tagged `@high` not yet selected.
    - **Full** — every end-to-end test.
 
    Done when the selection is a filter the runner accepts.
