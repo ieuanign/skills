@@ -147,6 +147,13 @@ git revert --no-edit "$bad" >/dev/null
 commit_file services/web/main.txt 'further'
 expect "derived-files: a revert plus a further change fails" 1 - "$derived" "$base" HEAD
 
+# git C-quotes a non-ASCII path by default, which no glob matches.
+new_repo
+base="$(git rev-parse HEAD)"
+git checkout -q -b pr
+commit_file 'generated/café.ts' 'export {}'
+expect "derived-files: a derived non-ASCII path passes" 0 - "$derived" "$base" HEAD
+
 new_repo
 expect "derived-files: a missing argument exits 2" 2 - "$derived" HEAD
 
@@ -211,6 +218,13 @@ stub_statuses 9 '[{"state": "failure"}, {"state": "success"}]'
 stub_statuses 8 '[{"state": "success"}]'
 expect "changed-paths: the last success is chosen over a newer failed Deployment" 0 \
   "$(printf 'api\nweb')" "$changed_paths" staging
+
+new_repo
+deployed="$(git rev-parse HEAD)"
+commit_file 'services/web/café.txt' 'changed'
+stub_deployments "[{\"id\": 7, \"sha\": \"$deployed\"}]"
+stub_statuses 7 '[{"state": "success"}]'
+expect "changed-paths: a non-ASCII path lists its service" 0 "web" "$changed_paths" staging
 
 new_repo
 expect "changed-paths: a missing environment exits 2 with usage" 2 - "$changed_paths"

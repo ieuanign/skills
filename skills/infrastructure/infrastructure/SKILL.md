@@ -63,6 +63,8 @@ Compute once, after Check passes and before reading an act. A policy rule's fact
   absent when neither gives a path that passes `test -s`.
 - **CHECK_WORKFLOW** — `.github/workflows/pull-request-check.yml`, whose one job is `check`: the name
   the branch rules require.
-- **BRANCH** — `infrastructure/<mode>`.
+- **BRANCH_PREFIX** — `infrastructure/<mode>`.
+- **BRANCH** — the first of `<BRANCH_PREFIX>`, `<BRANCH_PREFIX>-2`, `<BRANCH_PREFIX>-3`, … for which
+  `git ls-remote --exit-code --heads origin <name>` exits 2: a name no earlier pull request left behind.
 - **WORKTREE** — `<CHECKOUT>-infrastructure-<mode>`, a sibling of the checkout. It stays while its pull
   request is open.

@@ -46,12 +46,17 @@ if ! grep -q '^schema_version	' <<<"$policy"; then
 fi
 globs="$(sed -n 's/^branching\.derived_files\.value\[\]	//p' <<<"$policy")"
 
-changed="$(git diff --name-only --no-renames "$base...$head")"
+# -z and quotePath off: git otherwise C-quotes a non-ASCII path, and no glob matches the quotes.
+# A failed diff leaves the list empty, which fails closed.
+changed=()
+while IFS= read -r -d '' file; do
+  changed+=("$file")
+done < <(git -c core.quotePath=false diff --name-only -z --no-renames "$base...$head")
 
 derived_only() {
-  [ -n "$changed" ] || return 1
+  [ "${#changed[@]}" -gt 0 ] || return 1
   local file glob matched
-  while IFS= read -r file; do
+  for file in "${changed[@]}"; do
     matched=0
     while IFS= read -r glob; do
       [ -n "$glob" ] || continue
@@ -62,7 +67,7 @@ derived_only() {
       fi
     done <<<"$globs"
     [ "$matched" -eq 1 ] || return 1
-  done <<<"$changed"
+  done
 }
 
 exact_revert() {

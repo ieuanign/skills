@@ -68,15 +68,21 @@ if [ -z "$deployed" ]; then
   exit 0
 fi
 
-changed="$(git diff --name-only --no-renames "$deployed" HEAD)" ||
+# Checked up front: the process substitution below cannot report the diff's own failure.
+git rev-parse --verify --quiet "$deployed^{commit}" >/dev/null ||
   lookup_failed "cannot diff from $deployed — is the history fetched in full?"
+# -z and quotePath off: git otherwise C-quotes a non-ASCII path, and no glob matches the quotes.
+changed=()
+while IFS= read -r -d '' file; do
+  changed+=("$file")
+done < <(git -c core.quotePath=false diff --name-only -z --no-renames "$deployed" HEAD)
 
 while IFS='	' read -r service glob; do
-  while IFS= read -r file; do
+  for file in ${changed[@]+"${changed[@]}"}; do
     # Unquoted on purpose: the policy value is the pattern, and `*` here also crosses `/`.
-    if [ -n "$file" ] && [[ $file == $glob ]]; then
+    if [[ $file == $glob ]]; then
       echo "$service"
       break
     fi
-  done <<<"$changed"
+  done
 done <<<"$service_globs" | awk '!seen[$0]++'
