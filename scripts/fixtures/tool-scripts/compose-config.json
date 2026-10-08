@@ -1,0 +1,9 @@
+{
+  "name": "fixture",
+  "services": {
+    "api": { "image": "fixture/api" },
+    "worker": { "image": "fixture/worker" },
+    "db": { "image": "fixture/db", "labels": { "infrastructure.data-store": "true" } },
+    "db-restore-test": { "image": "fixture/db", "profiles": ["restore-test"] }
+  }
+}
