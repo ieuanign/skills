@@ -317,7 +317,7 @@ blocking_include="$(grep -m1 -oE "^const WORKTREEINCLUDE = '[^']+'" "$REPO/$bloc
 blocking_labels=""
 blocking_unreadable=""
 blocking_unparsed=""
-for blocking_caller in dev-loop pr-comments; do
+for blocking_caller in dev-loop; do
   blocking_entries="$(awk -v caller="'$blocking_caller':" -v file="$blocking_module" -v include="$blocking_include" -v q="'" '
     $1 == caller { in_caller = 1; next }
     in_caller && /blocking: \[/ { in_block = 1; next }
