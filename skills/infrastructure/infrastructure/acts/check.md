@@ -7,6 +7,12 @@ is a detached checkout, so `<BRANCH>` is unused.
 when its machine-readable output gives a data-holding resource the action delete or replace; that
 output's format and fields are `<IAC_TOOL>`'s own, looked up in its documentation.
 
+**Targets** — each environment under `<IAC_PATH>`, and `<IAC_PATH>/github/` (first-run's branch rules).
+A target's **credentials**, each the caller's `<key>=<path>` argument, else that line of
+`<CHECKOUT>/.infra.local.env`, read as `<GITHUB_CREDENTIAL>` is: `INFRA_CREDENTIAL_PROVIDER_<ENVIRONMENT>`;
+`INFRA_CREDENTIAL_DNS_<ENVIRONMENT>` when its code declares DNS records; `<GITHUB_CREDENTIAL>` when its
+code uses `<IAC_TOOL>`'s GitHub provider — `<IAC_PATH>/github/`'s only one.
+
 **Pass** is all three conditions met: the pipeline, the environments, the undo. Any other outcome is
 **fail**, naming each condition unmet.
 
@@ -28,10 +34,8 @@ output's format and fields are `<IAC_TOOL>`'s own, looked up in its documentatio
       `git worktree add --detach <WORKTREE> origin/<TRUNK>`; in it, `git revert --no-edit <oid>`, adding
       `-m 1` when `git rev-list --parents -n 1 <oid>` lists two parents. A conflict:
       `git -C <WORKTREE> revert --abort`, unmet. Done when the revert commits or conflicts.
-   3. Per environment whose infrastructure code under `<IAC_PATH>` the revert changes, its provider
-      credential is the caller's `INFRA_CREDENTIAL_PROVIDER_<ENVIRONMENT>=<path>` argument, else that
-      line of `<CHECKOUT>/.infra.local.env`, read as `<GITHUB_CREDENTIAL>` is; one absent is unmet,
-      naming its key. Otherwise, in `<WORKTREE>`, save `<IAC_TOOL>`'s plan and render it
+   3. Per target whose code the revert changes, one of its credentials absent is unmet, naming its
+      key. Otherwise, in `<WORKTREE>`, save `<IAC_TOOL>`'s plan and render it
       machine-readable. A plan that destroys data is unmet, naming each data-holding resource's address
       and action. Done when every resource change of every plan is classified.
 5. **Return.** `git -C <WORKTREE> clean -fdx`, taking the plans and init files `<IAC_TOOL>` left

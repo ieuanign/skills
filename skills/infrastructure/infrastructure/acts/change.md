@@ -14,6 +14,12 @@ when its machine-readable output gives a data-holding resource the action delete
 output's format is `<IAC_TOOL>`'s own: look up, in its documentation, the command that renders a saved
 plan machine-readable and the fields carrying each resource's type, address and actions.
 
+**Targets** — each environment under `<IAC_PATH>`, and `<IAC_PATH>/github/` (first-run's branch rules).
+A target's **credentials**, each the caller's `<key>=<path>` argument, else that line of
+`<CHECKOUT>/.infra.local.env`, read as `<GITHUB_CREDENTIAL>` is: `INFRA_CREDENTIAL_PROVIDER_<ENVIRONMENT>`;
+`INFRA_CREDENTIAL_DNS_<ENVIRONMENT>` when its code declares DNS records; `<GITHUB_CREDENTIAL>` when its
+code uses `<IAC_TOOL>`'s GitHub provider — `<IAC_PATH>/github/`'s only one.
+
 ## Steps
 
 1. **Resume.** `gh pr list --state open --limit 1000 --json url,headRefName --jq '.[] | select(.headRefName | startswith("<BRANCH_PREFIX>")) | .url'`.
@@ -33,13 +39,11 @@ plan machine-readable and the fields carrying each resource's type, address and 
    governs. Invoke `delivery-policy` through the Skill tool for its Check branch on that edited file. A
    failing line: return a refusal naming each one, with nothing pushed. Done when every Check line
    passes, or the change leaves the policy as it is.
-5. **Plan.** For each environment whose infrastructure code differs from `origin/<TRUNK>`, its provider
-   credential is the caller's `INFRA_CREDENTIAL_PROVIDER_<ENVIRONMENT>=<path>` argument, else that line
-   of `<CHECKOUT>/.infra.local.env`, read as `<GITHUB_CREDENTIAL>` is. One absent: return a refusal
-   naming its key. Otherwise, in `<WORKTREE>`, save `<IAC_TOOL>`'s plan for that environment and render
-   it machine-readable, both into `<PLANS>` — a `mktemp -d` outside `<WORKTREE>`, as a saved plan can
-   hold secrets in plain text. Done when every such environment has its saved plan, its text output and
-   its machine-readable output in hand.
+5. **Plan.** For each target whose code differs from `origin/<TRUNK>`, one of its credentials absent:
+   return a refusal naming its key. Otherwise, in `<WORKTREE>`, save `<IAC_TOOL>`'s plan for that target
+   and render it machine-readable, both into `<PLANS>` — a `mktemp -d` outside `<WORKTREE>`, as a saved
+   plan can hold secrets in plain text. Done when every such target has its saved plan, its text output
+   and its machine-readable output in hand.
 6. **The data-holding refusal.** Read every resource change from the machine-readable output. A plan
    that destroys data: return a refusal holding each plan's text output and, per data-holding resource,
    its address and action, for a person — no push, no pull request, no apply. Done when every resource
@@ -50,7 +54,7 @@ plan machine-readable and the fields carrying each resource's type, address and 
 8. **Push and open.** Commit the staged files in the repository's own commit convention, read from
    `git log`; `git -C <WORKTREE> clean -fdx`, so a later run of `<slug>` can reuse `<WORKTREE>`;
    `git -C <WORKTREE> push -u origin <BRANCH>`, once. Then `gh pr create --base <TRUNK> --head <BRANCH>
-   --title "<title>" --body-file -`, the body holding the origin, the request, each environment's plan
+   --title "<title>" --body-file -`, the body holding the origin, the request, each target's plan
    text output in a fenced block, and last:
 
    ```
@@ -60,5 +64,5 @@ plan machine-readable and the fields carrying each resource's type, address and 
    ```
 
    Done when the pull request's link is in hand.
-9. **Return.** `rm -rf <PLANS>`, then return the pull request's link, each environment planned, and
+9. **Return.** `rm -rf <PLANS>`, then return the pull request's link, each target planned, and
    `<WORKTREE>`. Done when all of it is returned.
