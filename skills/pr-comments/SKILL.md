@@ -1,7 +1,6 @@
 ---
 name: pr-comments
-description: Reads a pull request's unresolved comments, classifies each fix-or-skip, answers every thread, and pushes the approved fixes to that pull request's own branch.
-disable-model-invocation: true
+description: Reads a pull request's unresolved comments, classifies each fix-or-skip, answers every thread, and pushes the approved fixes to that pull request's own branch. Use when one pull request's unresolved comments are to be answered and fixed.
 ---
 
 # /pr-comments — a pull request's comments, through to a pushed fix
