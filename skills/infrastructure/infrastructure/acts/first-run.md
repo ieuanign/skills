@@ -34,7 +34,9 @@ Any other is **changed**: written anew to meet its contract.
    `gh run list --workflow pull-request-check.yml --branch <TRUNK> --event push --limit 1 --json databaseId,conclusion,url,headSha`,
    and `gh run view <databaseId>` when its conclusion is anything but `success`. Return "nothing
    differs", the run's conclusion and its link. Done when that is returned, or a deliverable is changed.
-4. **Branch.** `git worktree add -b <BRANCH> <WORKTREE> origin/<TRUNK>`. Write each changed
+4. **Branch.** `<WORKTREE>` left by an earlier run: when `git -C <WORKTREE> status --porcelain` prints
+   nothing, `git -C <WORKTREE> switch -C <BRANCH> origin/<TRUNK>`; otherwise return its path and stop.
+   No `<WORKTREE>`: `git worktree prune`, then `git worktree add -B <BRANCH> <WORKTREE> origin/<TRUNK>`. Write each changed
    deliverable into `<WORKTREE>`, stage each script with `git add --chmod=+x`, and commit in the
    repository's own commit convention, read from `git log`. Done when `git -C <WORKTREE> status --porcelain`
    prints nothing.
