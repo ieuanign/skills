@@ -57,11 +57,11 @@ Paths only, never contents. The viewer token's path is the caller's argument, el
 ## Diagnose
 
 1. **Labels.** Create `alert` where `gh label list` lacks it; `bug` likewise, before step 7 applies it. Done when each label this run applies exists.
-2. **The alert issue.** `gh issue list --state open --label alert --search 'in:title "Alert: <rule> (<environment>)"'`, keeping the one titled exactly that. None: `gh issue create --title 'Alert: <rule> (<environment>)' --label alert --body-file - <<'EOF'` with the alert's facts. An alert whose status is resolved gets a comment saying so on its open issue and the run ends there. Done when its number `<n>` is known.
+2. **The alert issue.** `gh issue list --state open --label alert --search 'in:title "Alert: <rule> (<environment>)"'`, keeping the one titled exactly that. An alert whose status is resolved gets a comment saying so on its open issue, or nothing where none is open, and the run ends there. None open: `gh issue create --title 'Alert: <rule> (<environment>)' --label alert --body-file - <<'EOF'` with the alert's facts. Done when its number `<n>` is known.
 3. **Access.** A token path unset or failing `test -s`, no Grafana address, or Grafana refusing the token ends the run: write [the diagnosis](#the-diagnosis) with no queries and the ending `not actionable: no monitoring access`, then return. Done when Grafana answers with the token.
 4. **Read.** The alert rule's own query and state from Grafana, then the PromQL and LogQL the diagnosis needs through Grafana's datasource proxy; look the API routes up in Grafana's documentation now. Keep each query verbatim with an Explore link into the Grafana the alert came from. Done when every query the finding rests on is kept with its Explore link.
 5. **Decide** the cause and the ending — the first that fits:
-   1. **remediation** — the action the cause calls for is allowed, and the alert's labels map its target to a `services` entry;
+   1. **remediation** — the action the cause calls for is allowed, the alert's labels map its target to a `services` entry, and `gh issue view <n> --comments` shows neither a `## Remediation` comment nor one beginning `Handed on:` (else `not actionable: already remediated, with a person`);
    2. **change** — the cause is in the infrastructure;
    3. **bug** — the cause is in the code;
    4. **not actionable: \<reason>** — otherwise.
