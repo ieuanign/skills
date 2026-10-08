@@ -510,6 +510,65 @@ else
   failed=1
 fi
 
+# --- infrastructure read budget ----------------------------------------------
+# The infrastructure spine stays in context for a whole run and one act joins it,
+# so the cap is the spine plus the largest act its mode list names.
+infra_budget=16000
+infra_spine="skills/infrastructure/infrastructure/SKILL.md"
+infra_dir="${infra_spine%/*}"
+infra_start="$(grep -n -m1 -x '## The modes' "$REPO/$infra_spine" | cut -d: -f1 || true)"
+infra_end=""
+if [ -n "$infra_start" ]; then
+  infra_end="$(sed -n "$((infra_start + 1)),\$p" "$REPO/$infra_spine" | grep -n -m1 '^## ' | cut -d: -f1 || true)"
+  [ -n "$infra_end" ] && infra_end=$((infra_start + infra_end))
+fi
+infra_largest=0
+infra_largest_path=""
+infra_count=0
+infra_broken=0
+if [ ! -f "$REPO/$infra_spine" ] || [ -z "$infra_start" ] || [ -z "$infra_end" ]; then
+  echo "FAIL  infrastructure read budget: cannot find the mode list in $infra_spine" >&2
+  echo "      expected a '## The modes' heading followed by another '## ' heading" >&2
+  infra_broken=1
+else
+  while IFS= read -r infra_item; do
+    infra_path="$(printf '%s\n' "$infra_item" | sed -nE 's/^[0-9]+\.[[:space:]]+\*\*[^*]+\*\*[[:space:]]*\(`(acts\/[^`]+)`\).*/\1/p' || true)"
+    if [ -z "$infra_path" ]; then
+      echo "FAIL  infrastructure read budget: no act file in the title parenthetical of $infra_spine: $infra_item" >&2
+      echo "      expected '<n>. **<mode>** (\`acts/<file>.md\`): …'" >&2
+      infra_broken=1
+      continue
+    fi
+    if [ ! -f "$REPO/$infra_dir/$infra_path" ]; then
+      echo "FAIL  infrastructure read budget: $infra_spine names $infra_path, which is not in $infra_dir/" >&2
+      infra_broken=1
+      continue
+    fi
+    infra_bytes="$(wc -c <"$REPO/$infra_dir/$infra_path" | tr -d ' ')"
+    infra_count=$((infra_count + 1))
+    if [ "$infra_bytes" -gt "$infra_largest" ]; then
+      infra_largest="$infra_bytes"
+      infra_largest_path="$infra_path"
+    fi
+  done < <(sed -n "$((infra_start + 1)),$((infra_end - 1))p" "$REPO/$infra_spine" | grep -E '^[0-9]+\. ' || true)
+fi
+if [ "$infra_broken" -eq 1 ]; then
+  failed=1
+elif [ "$infra_count" -eq 0 ] || [ "$infra_largest" -eq 0 ]; then
+  echo "FAIL  infrastructure read budget: $infra_count act files and $infra_largest bytes measured — a budget over nothing passes on anything" >&2
+  failed=1
+else
+  infra_spine_bytes="$(wc -c <"$REPO/$infra_spine" | tr -d ' ')"
+  infra_total=$((infra_spine_bytes + infra_largest))
+  if [ "$infra_total" -le "$infra_budget" ]; then
+    echo "ok    infrastructure read budget (spine + $infra_largest_path, $infra_total of $infra_budget bytes)"
+  else
+    echo "FAIL  infrastructure read budget: $infra_total bytes over $infra_budget" >&2
+    echo "      $infra_spine: $infra_spine_bytes bytes, $infra_dir/$infra_largest_path: $infra_largest bytes" >&2
+    failed=1
+  fi
+fi
+
 # --- scriptPath is a working-tree path ---------------------------------------
 # The Workflow tool gates `scriptPath` against a NARROWER allowlist than `Read`:
 # a path it returned itself, the working directory, or an `/add-dir` directory.
