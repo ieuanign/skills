@@ -1,0 +1,5 @@
+---
+"ieuanign-skills": minor
+---
+
+infrastructure: a new mode, set up one environment, that takes one environment from `docs/delivery-policy.md` to infrastructure code, hosts or a cluster, DNS and TLS, GitHub configuration, a deployment workflow, monitoring, nightly production backups proven by one restore, staging test accounts and patched hosts, in one pull request — none where nothing differs, proving the pipeline and health check instead. The runtime side lives in a `compose` and a `kubernetes` act, each read only when the policy names that runtime; the deployment opt-ins (mobile, previews, soft release, the tag, end-to-end tests) in an act read only when one is on. It refuses to restart a data store or scale outside the policy's bounds, routes every secret through `wizard`, and reports a pending reboot without performing it. Five bundled tool scripts — `rollback.sh`, `restart.sh`, `scale.sh`, `prune.sh`, `restore-test.sh` — are copied into the policy's tools path, each with a `compose` and a `kubernetes` branch, `--dry-run` and one record line; `npm run check` runs them dry against fixtures for both runtimes.
