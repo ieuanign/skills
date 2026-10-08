@@ -61,6 +61,7 @@ The plan is a proxy for what the user asked for, not the thing itself — an arc
 - **met** — the diff demonstrably satisfies it; cite the `file:line` or the test that shows it.
 - **partial** — some of it landed; name exactly what is missing.
 - **not-met** — nothing in the diff satisfies it; say what you looked for and did not find.
+- **suite** — every part the diff can show is verified and cited, and all that remains is the repository's full suite passing (`npm test` passes, CI green). Whoever runs the suite after you settles it; you still never run it. Any other part missing keeps it `partial` or `not-met`.
 
 **Which criteria are yours is decided before you run, and is never yours to decide.** A multi-PR plan states on each PR entry the criteria that PR delivers; you are handed your sub-lane's, so you never spend judgement on whether something is in your range. Read the whole body anyway — the prose around a checklist is what tells you what a checkbox actually means — but return a verdict on nothing outside your list.
 
@@ -71,7 +72,7 @@ Across the criteria you own, report in NOTES: (a) criteria that are missing or p
 **`partial` has exactly two honest readings, and nothing else earns it:**
 
 - **Some of it landed in this diff** — name exactly what is missing.
-- **It is not observable from a diff at all** — a criterion naming a manual check, a live run, or a human judgement you cannot perform. Say what would settle it.
+- **It is not observable from a diff at all** — a criterion naming a manual check or a human judgement you cannot perform. Say what would settle it.
 
 Neither is an escape hatch. A criterion you own and can find nothing of in the diff is `not-met`, however sympathetic the reason — and the work belonging to someone else is not one of the reasons, because someone else's work is not on your list.
 
@@ -104,7 +105,7 @@ When disputes were given, also a `CONTESTED: <count>` line followed by each disp
 
 When an issue body was given, a `CRITERIA: <count>` line followed by one bullet per acceptance criterion **you own**, in the issue's order:
 
-- `met|partial|not-met` — the criterion, quoted or trimmed to its first clause — the evidence (`file:line`, the test that shows it, or what you looked for and did not find)
+- `met|partial|not-met|suite` — the criterion, quoted or trimmed to its first clause — the evidence (`file:line`, the test that shows it, or what you looked for and did not find)
 
 Then `NOTES:` non-blocking observations, possibly empty. If FINDINGS is 0, VERDICT must be APPROVED — never request changes on notes, spec verdicts, or approach drift alone.
 
