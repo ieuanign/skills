@@ -105,7 +105,8 @@ while read -r id sha; do
   [ -n "$id" ] || continue
   state="$(gh api "repos/{owner}/{repo}/deployments/$id/statuses?per_page=1" | jq -r '.[0].state // empty')" ||
     refuse "cannot read the statuses of Deployment $id"
-  [ "$state" != "success" ] || successful+=("$sha")
+  # GitHub marks an earlier success `inactive` once a later Deployment succeeds (auto_inactive).
+  case "$state" in success | inactive) successful+=("$sha") ;; esac
   [ "${#successful[@]}" -lt 2 ] || break
 done <<<"$deployments"
 
