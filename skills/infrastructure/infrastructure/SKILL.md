@@ -54,6 +54,8 @@ mode's whole contract.
    checked, all reported on the pinned reports issue.
 6. **restore** (`acts/restore.md`): `restore-test.sh` run for one environment's data store, its result
    recorded on the pinned reports issue.
+7. **check** (`acts/check.md`): one merged change passes only when the pipeline passed on its merge
+   commit, every environment answers its health check and the change can be undone.
 
 An act that builds or changes `<environment>` is read with the runtime act its `runtime` names:
 `acts/compose.md` or `acts/kubernetes.md`.
