@@ -45,6 +45,8 @@ mode's whole contract.
    rules, delivered in one pull request; no environment is built.
 2. **environment** (`acts/environment.md`): one environment the caller names, `<environment>`, built
    from the policy and delivered in one pull request; `<mode>` is `environment-<environment>`.
+3. **change** (`acts/change.md`): one requested change, planned and delivered in one pull request that
+   says how to undo it; a plan that destroys data is refused.
 
 An act that builds or changes `<environment>` is read with the runtime act its `runtime` names:
 `acts/compose.md` or `acts/kubernetes.md`.

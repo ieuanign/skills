@@ -1,0 +1,56 @@
+# change — one requested change, planned, in one undoable pull request
+
+**The request** is taken as given, in one of three forms; its **origin** is what the pull request links:
+
+- a person's words — origin "requested by the caller";
+- an `infra-diagnose` request: an alert issue link and the infrastructure cause — origin that issue;
+- `Report <comment URL>, suggestion <n>` from `infra-report` — origin that comment; the change is
+  block `#### Suggestion <n>` of `gh api <comment URL's API path> --jq .body`.
+
+`<mode>` is `change-<slug>`, `<slug>` a few kebab-case words naming the change.
+
+**Data-holding** — a database, a volume, a bucket, or any managed data store. A plan **destroys data**
+when its machine-readable output gives a data-holding resource the action delete or replace. That
+output's format is `<IAC_TOOL>`'s own: look up, in its documentation, the command that renders a saved
+plan machine-readable and the fields carrying each resource's type, address and actions.
+
+## Steps
+
+1. **Resume.** `gh pr list --state open --limit 1000 --json url,headRefName --jq '.[] | select(.headRefName | startswith("<BRANCH_PREFIX>")) | .url'`.
+   Done when none is open, or its link is returned as the result with nothing else written.
+2. **The request.** A suggestion block that is absent: return a refusal naming the comment and `<n>`.
+   Done when the change to make and its origin are in hand.
+3. **Branch.** `<WORKTREE>` left by an earlier run: return its path and stop. Otherwise `git fetch origin`;
+   `git worktree prune`; `git worktree add -B <BRANCH> <WORKTREE> origin/<TRUNK>`.
+   Write the change into `<WORKTREE>`: infrastructure code under `<IAC_PATH>`, the pipeline, or both.
+   Done when every file the change needs is written.
+4. **A policy change** edits `docs/delivery-policy.md` in `<WORKTREE>` together with the pipeline it
+   governs. Invoke `delivery-policy` through the Skill tool for its Check branch on that edited file. A
+   failing line: return a refusal naming each one, with nothing pushed. Done when every Check line
+   passes, or the change leaves the policy as it is.
+5. **Plan.** For each environment whose infrastructure code differs from `origin/<TRUNK>`, its provider
+   credential is the caller's `INFRA_CREDENTIAL_PROVIDER_<ENVIRONMENT>=<path>` argument, else that line
+   of `<CHECKOUT>/.infra.local.env`, read as `<GITHUB_CREDENTIAL>` is. One absent: return a refusal
+   naming its key. Otherwise, in `<WORKTREE>`, save `<IAC_TOOL>`'s plan for that environment and render
+   it machine-readable. Done when every such environment has its saved plan, its text output and its
+   machine-readable output in hand.
+6. **The data-holding refusal.** Read every resource change from the machine-readable output. A plan
+   that destroys data: return a refusal holding each plan's text output and, per data-holding resource,
+   its address and action, for a person — no push, no pull request, no apply. Done when every resource
+   change of every plan is classified and none destroys data.
+7. **Nothing differs.** `git -C <WORKTREE> status --porcelain` prints nothing: return "nothing differs",
+   with no pull request. Done when that is returned, or a file differs.
+8. **Push and open.** Commit in the repository's own commit convention, read from `git log`;
+   `git -C <WORKTREE> push -u origin <BRANCH>`, once. Then `gh pr create --base <TRUNK> --head <BRANCH>
+   --title "<title>" --body-file -`, the body holding the origin, the request, each environment's plan
+   text output in a fenced block, and last:
+
+   ```
+   ## Undo
+
+   Revert this pull request, then apply from the trunk.
+   ```
+
+   Done when the pull request's link is in hand.
+9. **Return** the pull request's link, each environment planned, and `<WORKTREE>`. Done when all of it
+   is returned.
