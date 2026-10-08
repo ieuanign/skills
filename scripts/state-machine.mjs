@@ -551,6 +551,86 @@ scenario("one sub-lane's draft does not draft its sibling", async () => {
   assert.equal(l.ending.category, 'HALT')
 })
 
+// --- a criterion the full suite settles --------------------------------------
+
+const ISSUE_BODY = '## Acceptance criteria\n\n- [ ] the parser accepts an empty body\n- [ ] `npm test` passes\n'
+const verdicts = (...pairs) => pairs.map(([verdict, criterion]) => ({ criterion, verdict, evidence: 'src/a.ts:1' }))
+const reviewWith = (base, criterionVerdicts) => ({ ...base, criterionVerdicts })
+
+scenario('a suite criterion the gate passed is met, and the pull request is ready', async () => {
+  const { result } = await runPhase(argsFor([lane(1, { issueBody: ISSUE_BODY })]), {
+    'write:#1:c1': committed(),
+    'review:#1': reviewWith(approved, verdicts(['met', 'the parser accepts an empty body'], ['suite', '`npm test` passes'])),
+    'suite:#1': suitePassed,
+  })
+  const s = only(result).subResults[0]
+  assert.equal(s.suite.state, 'passed')
+  assert.deepEqual(s.terminal, { pr: 'ready', reasons: [] })
+})
+
+scenario('a suite criterion the gate found red drafts, naming the criterion and the red suite', async () => {
+  const { result } = await runPhase(argsFor([lane(1, { issueBody: ISSUE_BODY })]), {
+    'write:#1:c1': committed(),
+    'review:#1': reviewWith(approved, verdicts(['suite', '`npm test` passes'])),
+    'suite:#1': suiteRed(['a.test.ts > one']),
+    'suitedebug:#1:r1': toWriter,
+    'suitefix:#1:r1': committed(),
+    'suite:#1:r2': suiteRed(['a.test.ts > one']),
+  })
+  const s = only(result).subResults[0]
+  assert.equal(s.suite.state, 'failed')
+  assert.equal(s.terminal.pr, 'draft')
+  const criterion = s.terminal.reasons.find(r => /`npm test` passes/.test(r))
+  assert.ok(criterion, 'a reason names the suite criterion')
+  assert.match(criterion, /suite: `npm test` passes/)
+  assert.match(criterion, /failed/)
+})
+
+scenario('a suite criterion with no full-suite command configured drafts, saying none is configured', async () => {
+  const { result } = await runPhase(argsFor([lane(1, { issueBody: ISSUE_BODY })], { suiteCommand: 'none' }), {
+    'write:#1:c1': committed(),
+    'review:#1': reviewWith(approved, verdicts(['suite', '`npm test` passes'])),
+  })
+  const s = only(result).subResults[0]
+  assert.equal(s.suite.state, 'not-run')
+  assert.equal(s.terminal.pr, 'draft')
+  assert.equal(s.terminal.reasons.length, 1)
+  assert.match(s.terminal.reasons[0], /suite: `npm test` passes/)
+  assert.match(s.terminal.reasons[0], /no full-suite command/)
+})
+
+scenario('partial and not-met still draft when the suite gate passed', async () => {
+  for (const verdict of ['partial', 'not-met']) {
+    const { result } = await runPhase(argsFor([lane(1, { issueBody: ISSUE_BODY })]), {
+      'write:#1:c1': committed(),
+      'review:#1': reviewWith(approved, verdicts([verdict, '`npm test` passes'])),
+      'suite:#1': suitePassed,
+    })
+    const s = only(result).subResults[0]
+    assert.equal(s.suite.state, 'passed')
+    assert.equal(s.terminal.pr, 'draft', verdict)
+    assert.match(s.terminal.reasons[0], new RegExp(`${verdict}: \`npm test\` passes`))
+  }
+})
+
+scenario('a suite criterion on a sub-lane ended before the gate drafts with the ending and the criterion', async () => {
+  const flagged = verdicts(['suite', '`npm test` passes'])
+  const { result, labels } = await runPhase(argsFor([lane(1, { issueBody: ISSUE_BODY })]), {
+    'write:#1:c1': committed(),
+    'review:#1': reviewWith(changes([FINDING]), flagged),
+    'fix:#1:r1': committed(),
+    'review:#1:r1': reviewWith(changes([FINDING]), flagged),
+  })
+  assert.ok(!labels.some(l => l.startsWith('suite:')), 'the gate never ran')
+  const s = only(result).subResults[0]
+  assert.equal(s.suite.state, 'not-run')
+  assert.equal(s.terminal.pr, 'draft')
+  assert.ok(s.terminal.reasons.some(r => /^ended HALT/.test(r)), 'a reason carries the ending')
+  const criterion = s.terminal.reasons.find(r => /suite: `npm test` passes/.test(r))
+  assert.ok(criterion, 'a reason names the unsettled criterion')
+  assert.match(criterion, /ended before the suite gate ran/)
+})
+
 // --- the runner -------------------------------------------------------------
 
 let failed = 0

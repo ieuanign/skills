@@ -124,7 +124,7 @@ const REVIEW_SCHEMA = {
         type: 'object',
         properties: {
           criterion: { type: 'string', description: 'the criterion, quoted or trimmed to its first clause' },
-          verdict: { type: 'string', enum: ['met', 'partial', 'not-met'] },
+          verdict: { type: 'string', enum: ['met', 'partial', 'not-met', 'suite'] },
           evidence: { type: 'string', description: 'file:line, the test that shows it, or what you looked for and did not find' },
         },
         required: ['criterion', 'verdict', 'evidence'],
@@ -271,10 +271,14 @@ function terminalState(rec) {
   }
   // Empty when no issue body was passed, so a run with no issue is vacuously met — which is
   // exactly what the PR-comment input needs, and why it costs no code of its own.
-  const unmet = rec.criterionVerdicts.filter(v => v.verdict !== 'met')
+  // Branched on the enum alone, never on evidence prose saying only the suite is missing: the keys
+  // are the contract. Only a passed gate settles `suite` — not-run is never passed.
+  const settled = v => v.verdict === 'met' || (v.verdict === 'suite' && rec.suite.state === 'passed')
+  const unmet = rec.criterionVerdicts.filter(v => !settled(v))
+  const gate = rec.suite.state === 'failed' ? 'the suite gate failed' : `the suite gate did not run: ${rec.suite.output}`
   if (unmet.length) {
-    // partial and not-met both land here: nobody watched, so "not demonstrably done" drafts.
-    reasons.push(`${unmet.length} acceptance criterion(s) not met — ${unmet.map(v => `${v.verdict}: ${v.criterion}`).join('; ')}`)
+    // partial, not-met and an unsettled suite land here: nobody watched, so "not demonstrably done" drafts.
+    reasons.push(`${unmet.length} acceptance criterion(s) not met — ${unmet.map(v => `${v.verdict}: ${v.criterion}${v.verdict === 'suite' ? ` (${gate})` : ''}`).join('; ')}`)
   }
   if (!reasons.length) return { pr: 'ready', reasons }
   // Only an ENDED sub-lane can propose the no-PR row: a clean sub-lane reporting no commits is a
@@ -423,9 +427,8 @@ const runLane = async (lane, subResults) => {
       if (!review) return failed(rec, returnedNothing('the reviewer'))
       if (review.verdict === 'ERROR') return failed(rec, `reviewer ERROR: ${review.notes || ''}`)
       rec.reviewNotes = review.notes || ''
-      // Recorded before every ending below so an ended sub-lane still carries them; the last
-      // review's verdicts win. Nothing in this loop branches on them — the spec axis blocks no
-      // review — but terminalState() reads them, where any verdict short of `met` drafts the PR.
+      // Recorded before every ending so an ended sub-lane carries them; the last review wins. The spec
+      // axis blocks no review — terminalState() is their only reader.
       rec.criterionVerdicts = review.criterionVerdicts || []
       const contested = review.contestedFindings || []
       // Everything this review leaves open, recorded the moment it is known rather than at each
