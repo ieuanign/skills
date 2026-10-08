@@ -18,7 +18,8 @@ output's format and fields are `<IAC_TOOL>`'s own, looked up in its documentatio
    the merge commit is on `origin/<TRUNK>`.
 3. **Checkout.** `<WORKTREE>` left by an earlier run: return its path and stop. Otherwise
    `git worktree prune`; `git worktree add --detach <WORKTREE> origin/<TRUNK>`; `<head>` is
-   `git -C <WORKTREE> rev-parse HEAD`. Done when `<head>` is in hand.
+   `git -C <WORKTREE> rev-parse HEAD`. Done when `<head>` is in hand. From here, every refusal first
+   runs `git worktree remove <WORKTREE>`, so the next run of `<pr>` starts clean.
 4. **Environments.** The environments whose infrastructure code under `<IAC_PATH>` a file of
    `gh pr diff <pr> --name-only` touches. None: `git worktree remove <WORKTREE>`, then return "nothing
    to apply". Done when each touched environment is listed.
