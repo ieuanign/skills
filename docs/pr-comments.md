@@ -54,8 +54,11 @@ pull request opened from the default branch would take that push to the trunk.
 **And nothing else.** No setting to enable, no profile key to fill in, no sibling skill installed
 alongside. The run loads one file of its own — `read-comments.mjs`, beside `SKILL.md` — and nothing
 else on disk decides what it does, which is why an unattended run has nobody to interview and no
-default to invent. The worktree is made runnable and the suite is found the way any session in that
-repository works them out.
+default to invent. The one exception is the worktree: where the repository has a `.worktreeinclude`
+or a `docs/agents/worktree.md`, the run reads them — the copies the first lists, the Setup and
+Full-suite commands the second answers. They are read where they exist, never asked for, never
+written, and their absence refuses nothing: what they leave unanswered is worked out from the checkout
+the way any session in that repository would.
 
 ## What one run does
 
@@ -77,10 +80,14 @@ In order:
    rows are all skips gets its one reply here; a thread holding a fix waits for step 9, so its reply
    can carry the commit that answered it.
 6. **The worktree**, attached to the pull request's own head branch at the remote's tip — nothing here
-   creates a branch — and checked to be sitting exactly there before anything is written.
+   creates a branch — and checked to be sitting exactly there before anything is written. Then made
+   runnable: what `.worktreeinclude` lists is copied in from the main checkout, skipping anything under
+   the worktrees directory, and `docs/agents/worktree.md`'s `## Setup command` runs inside it — each
+   where it exists, `none` meaning no setup is run, the setup otherwise worked out from the checkout.
 7. **The fixes.** One commit per fix row, in the table's order, each row's Action the brief and the
-   comment's body verbatim what it is against; then the suite; then one `/mattpocock-skills:code-review`
-   pass whose findings are applied.
+   comment's body verbatim what it is against; then the suite — `docs/agents/worktree.md`'s
+   `## Full-suite command` where answered, `none` meaning it is reported **not run**, otherwise worked
+   out from the checkout; then one `/mattpocock-skills:code-review` pass whose findings are applied.
 8. **The push** — one `git push`, a fast-forward, to that same branch, and only where git says a commit
    was actually made.
 9. **The fix threads, answered**, each carrying the short sha and subject of the commit that answered
@@ -166,8 +173,9 @@ What one pass declines to fix is **reported back in the session** rather than ar
 it in front of the human who ran it.
 
 The rest of the pipeline went with it. No preconditions script, no agents to check the preloads of, no
-notification channel, no profile keys, and no second copy of `/dev-loop`'s execute phase to keep in
-step with the original. The whole of what a run does is one file, in front of you, at the size of a
+notification channel, no profile key it refuses without, and no second copy of `/dev-loop`'s execute
+phase to keep in step with the original. The worktree profile's Setup and Full-suite commands are read
+where they are answered; its `## Fix cycles` is not, because one pass is the bound. The whole of what a run does is one file, in front of you, at the size of a
 page you can read before invoking it.
 
 ## Run shapes
@@ -199,7 +207,8 @@ watching would otherwise be a decision that vanished with the terminal. That is 
 and the only other comment it can post is the one answering rows with no thread to reply in.
 
 **Nothing else resolves, because nothing else was ever asked.** There is no profile key to default and
-no value to persist, so an unattended run has no interview to suppress. A run that stops before the
+no value to persist — the worktree profile is read where it exists and never asked for — so an
+unattended run has no interview to suppress. A run that stops before the
 table spends its one comment saying why.
 
 **The threads are answered under `unattended` exactly as they are under `gated`.** The two modes differ
