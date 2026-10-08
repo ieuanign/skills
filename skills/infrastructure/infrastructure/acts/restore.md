@@ -10,10 +10,11 @@ body saying what it collects, then `gh issue pin <n>`.
 
 ## Steps
 
-1. **The inputs.** `<environment>` absent from the policy's `environments`, or `<store>` absent from
-   its infrastructure code under `<IAC_PATH>`: return a refusal naming it, with nothing run. Done when
-   both are found.
-2. **Checkout.** `git fetch origin`. `<WORKTREE>` left by an earlier run: return its path and stop.
+1. **The inputs.** `git fetch origin`. `<environment>` absent from the policy's `environments`, or
+   `<store>` neither a data store in its infrastructure code under `<IAC_PATH>` nor named by a unit
+   `git grep -q -- '<store>-restore-test' origin/<TRUNK>` finds: return a refusal naming it, with
+   nothing run. Done when both are found.
+2. **Checkout.** `<WORKTREE>` left by an earlier run: return its path and stop.
    Otherwise `git worktree prune`; `git worktree add --detach <WORKTREE> origin/<TRUNK>`. No
    `<WORKTREE>/<TOOLS>/restore-test.sh`: remove `<WORKTREE>`, then return a refusal naming that path.
    Done when the script is present.

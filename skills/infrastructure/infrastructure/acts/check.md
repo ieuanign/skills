@@ -34,6 +34,7 @@ output's format and fields are `<IAC_TOOL>`'s own, looked up in its documentatio
       naming its key. Otherwise, in `<WORKTREE>`, save `<IAC_TOOL>`'s plan and render it
       machine-readable. A plan that destroys data is unmet, naming each data-holding resource's address
       and action. Done when every resource change of every plan is classified.
-5. **Return.** `git worktree remove <WORKTREE>`, then return pass or fail, `<oid>`, and per condition
-   its evidence: the runs' conclusions and links, each environment's status, and the undo's findings.
+5. **Return.** `git -C <WORKTREE> clean -fdx`, taking the plans and init files `<IAC_TOOL>` left
+   untracked; `git worktree remove <WORKTREE>`, then return pass or fail, `<oid>`, and per condition its
+   evidence: the runs' conclusions and links, each environment's status, and the undo's findings.
    Done when `<WORKTREE>` is gone and all of it is returned. Worktree removal never passes --force.
