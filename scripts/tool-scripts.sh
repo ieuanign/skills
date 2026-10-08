@@ -137,6 +137,7 @@ expect "scale (compose): within bounds" 0 \
 expect "scale (compose): above the bounds is refused" 1 "$(refused scale staging/api)" scale.sh staging api 3
 expect "scale (compose): a service without bounds is refused" 1 "$(refused scale staging/worker)" \
   scale.sh staging worker 1
+expect "scale (compose): a data store is refused" 1 "$(refused scale staging/db)" scale.sh staging db 1
 expect "prune (compose): the host" 0 \
   "dry-run action=prune target=staging/- before=disk-used=85% after=- undo=-" prune.sh staging
 expect "restore-test (compose): a store" 0 \
@@ -162,6 +163,8 @@ expect "scale (kubernetes): below the bounds is refused" 1 "$(refused scale prod
   scale.sh production api 1
 expect "scale (kubernetes): a service without bounds is refused" 1 "$(refused scale production/worker)" \
   scale.sh production worker 2
+expect "scale (kubernetes): a data store is refused" 1 "$(refused scale production/db)" \
+  scale.sh production db 2
 expect "prune (kubernetes): the namespace" 0 \
   "dry-run action=prune target=production/- before=finished-pods=2 after=finished-pods=0 undo=-" prune.sh production
 expect "restore-test (kubernetes): a store" 0 \

@@ -19,8 +19,9 @@ The label sits on the Compose service: `labels: { infrastructure.data-store: "tr
 
 ## Deploy step
 
-Over `ssh` with the key a secret of the GitHub environment holds: the deployed commit's Compose files
-copied into the login directory, then `docker compose up --detach --build <services>` there.
+Over `ssh` with the key a secret of the GitHub environment holds: the deployed commit's tree — its
+Compose files and every build context they name — copied into the login directory, then
+`docker compose up --detach --build <services>` there, building each image on the host.
 
 ## Monitoring
 

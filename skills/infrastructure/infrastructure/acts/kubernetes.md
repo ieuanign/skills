@@ -22,9 +22,11 @@ The label sits on the workload's `metadata.labels`: the Deployment or StatefulSe
 ## Deploy step
 
 Each service's Helm chart lives in the repository, written where none exists. Per deployed service, with
-the kubeconfig a secret of the GitHub environment holds: `helm upgrade --install <service> <chart>
---kube-context <environment> --namespace <environment>`, the deployed commit's image tag set. The
-pipeline is the only deployer: the cluster runs no GitOps controller.
+the kubeconfig a secret of the GitHub environment holds: its image built from the deployed commit and
+pushed to GitHub's container registry, tagged with the commit; then `helm upgrade --install <service>
+<chart> --kube-context <environment> --namespace <environment>` with that tag set. The infrastructure
+code puts the registry's pull secret in namespace `<environment>`. The pipeline is the only deployer:
+the cluster runs no GitOps controller.
 
 ## Monitoring
 
