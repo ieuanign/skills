@@ -9,8 +9,8 @@ Everything below the line goes in the file.
 
 # worktree repo profile
 
-Repository facts any skill provisioning a worktree reads — `/dev-loop` and `/pr-comments` alike;
-answers persisted here are never re-asked. What each key means and when a run reads it is specified in
+Repository facts any skill provisioning a worktree reads — `/dev-loop` every key, `/pr-comments` the
+Setup and Full-suite commands where present; answers persisted here are never re-asked. What each key means and when a run reads it is specified in
 `/dev-loop`'s `acts/act-0.md` and is not restated here.
 
 ## Setup command
