@@ -1,0 +1,7 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    { "kind": "CronJob", "metadata": { "name": "db-restore-test" }, "spec": { "suspend": true } }
+  ]
+}

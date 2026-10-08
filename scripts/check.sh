@@ -272,6 +272,13 @@ if ! bash "$REPO/scripts/infrastructure-tools.sh"; then
   failed=1
 fi
 
+# --- tool scripts dry-run -----------------------------------------------------
+# The five tool scripts' success paths and refusals on both runtimes, offline: every runtime CLI is a stub
+# that fails the case on any call it cannot answer from a fixture. Streamed, so only the exit is read.
+if ! bash "$REPO/scripts/tool-scripts.sh"; then
+  failed=1
+fi
+
 # --- cost stage vocabulary ---------------------------------------------------
 # The lane-and-stage marker's vocabulary is written out in all three files that
 # touch it, because a phase script imports nothing. That triplication is only
