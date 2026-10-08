@@ -1,0 +1,5 @@
+---
+"ieuanign-skills": minor
+---
+
+infra-diagnose: a new skill under `skills/infrastructure/` that takes one Grafana alert — a webhook payload or text naming the rule, environment, labels, firing time and link — finds or opens its `Alert: <rule> (<environment>)` issue, reads Prometheus and Loki through Grafana's datasource proxy with a viewer token passed by path and never read, and writes a `## Diagnosis` comment naming every query with an Explore link. Each run ends in exactly one way: a remediation through a tool script the delivery policy's allowlist names for that environment (a dry run, one action, its record line quoted in a `## Remediation` comment, then a re-check that closes the issue only once the alert has cleared), a change handed to `infrastructure`, a `bug` carrying redacted log evidence, or `not actionable` with the reason. Check passes only when every diagnosis names its queries and every remediation was allowed and carries its record line, writing nothing. Model-invoked.
