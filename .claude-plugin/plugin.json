@@ -24,6 +24,7 @@
     "./skills/grill-prd",
     "./skills/infrastructure/delivery-policy",
     "./skills/infrastructure/infra-report",
+    "./skills/infrastructure/infrastructure",
     "./skills/infrastructure/setup-infra",
     "./skills/mockup",
     "./skills/pr-comments",
