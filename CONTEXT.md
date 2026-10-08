@@ -322,6 +322,69 @@ then every `high`-priority test not already selected.
 
 The run of every end-to-end test. What a run is when no one asked for **smoke**.
 
+## Delivery policy
+
+The file `docs/delivery-policy.md` in a consuming repository, saying how its code is branched, merged,
+deployed and released. Its front matter is what the scripts and skills read, validated against a
+versioned schema; its prose says the same for people. Every rule is marked `client` (observed, or the
+owner's own answer), `suggested` (a **suggestion** the owner kept) or `required` (a fixed rule the
+repository breaks, with the change it needs). The one place a tool is chosen: written by
+`/delivery-policy`, read by every other infrastructure skill.
+
+## Environment
+
+One named target the **delivery policy** lists — staging, production, and so on — with its
+**runtime**, its provider, what deploys it, its health check, its monitoring, its **remediation**
+allowlist and its scale bounds. A GitHub environment is the platform's record of one, not the term.
+
+## Runtime
+
+How an **environment** runs its services: `compose` or `kubernetes`, the **delivery policy**'s value
+that selects which act `/infrastructure` reads and which branch a **tool script** runs. Anything else
+is a PaaS, out of scope: what would be read from its hosts is reported `not available`.
+
+## Person's part
+
+The steps only a person can do, delivered as one issue holding two `wizard` scripts: the machine part,
+for the credential files on the machine that runs the agent, and the repository part, for the secret
+values and whatever GitHub cannot be made to do without an admin credential. The skill that raised it
+stops until that issue is closed.
+
+## Tool script
+
+One of the scripts `/infrastructure` bundles and copies into the **delivery policy**'s tools path:
+rollback, restart, scale, prune and restore-test, and the read-only derived-files and changed-paths.
+One action per file, with a branch per **runtime**, a dry run, one record line (action, target,
+before, after, undo), a refusal that exits non-zero, and a version header. The only way
+`/infra-diagnose` acts on a host, and runnable by a person.
+
+## Alert
+
+One alert rule firing in one **environment**, as `/infra-diagnose` receives it: the monitoring stack's
+webhook payload, or text naming the rule, the environment, its labels, the time and a link. There is
+one open `alert` issue per rule per environment, and a repeat while it is open is a comment on it.
+
+## Remediation
+
+The one of `/infra-diagnose`'s four endings that acts: one **tool script** action per **alert**, taken
+only where the **delivery policy**'s allowlist for that **environment** permits it, with the alert's
+query checked again after. Not cleared, it stops and the alert goes to a person. Its record line lands
+on the alert's issue, which closes only once the alert has cleared.
+
+_Avoid_: **fix** — the status one pull-request comment gets in `/pr-comments`; **fix cycle** — one
+round of a `/dev-loop` lane's review loop. A remediation is one allowed action on a running
+environment, judged by the alert's query clearing.
+
+## Suggestion
+
+What an infrastructure skill proposes, and changes nothing by. The **delivery policy**'s default for a
+rule nobody stated, marked `suggested` once the owner keeps it; `/infra-report`'s right-sizing
+proposal, which becomes a change only through `/infrastructure`.
+
+_Avoid_: recommendation — the lean a grilling question carries toward one answer, as in
+`/mattpocock-skills:grilling`'s recommended answer and `/grill-prd`'s rounds. Each `/delivery-policy` question carries one too, taken *from* the suggestion, so the two are
+not the same thing.
+
 ## Spine
 
 What a skill's `SKILL.md` is under **staged reads** — the architecture where a skill's contract is

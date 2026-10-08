@@ -12,12 +12,13 @@ See `README.md` for the consumer story and `CONTEXT.md` for the vocabulary.
 ## Layout
 
 ```
-skills/<skill-name>/SKILL.md        # one folder per skill, auto-discovered by `npx skills add`
-skills/<skill-name>/...             # optional supporting files travel with the skill
-skills/qa/<skill-name>/SKILL.md     # a grouping folder — each skill inside keeps its own name
-agents/<agent-name>.md              # the dev-loop roster, as plugin agents
-.claude-plugin/plugin.json          # enumerates skill paths + version (for the /plugin install path)
-.claude-plugin/marketplace.json     # marketplace metadata + the mattpocock-skills dependency
+skills/<skill-name>/SKILL.md                  # one folder per skill, auto-discovered by `npx skills add`
+skills/<skill-name>/...                       # optional supporting files travel with the skill
+skills/qa/<skill-name>/SKILL.md               # a grouping folder — each skill inside keeps its own name
+skills/infrastructure/<skill-name>/SKILL.md   # a grouping folder, likewise
+agents/<agent-name>.md                        # the dev-loop roster, as plugin agents
+.claude-plugin/plugin.json                    # enumerates skill paths + version (for the /plugin install path)
+.claude-plugin/marketplace.json               # marketplace metadata + the mattpocock-skills dependency
 ```
 
 `/plugin install ieuanign-skills@ieuanign` (reads `.claude-plugin/`) is the supported path; it is the
