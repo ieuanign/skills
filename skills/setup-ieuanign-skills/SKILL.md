@@ -16,7 +16,7 @@ Five independent parts. Run any one alone — no part depends on another, and no
    rebased, how a worktree is removed, where a review finds the repo's standards, and the comment and
    scratch habits every session in the repo obeys.
 4. **The worktree profile** — the `docs/agents/worktree.md` keys and the `.worktreeinclude` file an
-   unattended `/dev-loop` or `/pr-comments` run refuses without.
+   unattended `/dev-loop` run refuses without, and `/pr-comments` reads where present.
 5. **The pipeline profile** — the `docs/agents/dev-loop.md` keys naming the branches and pull requests
    `/dev-loop` writes, which an unattended run otherwise defaults run after run with nothing on disk
    to edit.
@@ -255,8 +255,9 @@ case, and this pointer is what makes one discoverable whenever it does appear.
 
 Three preconditions an unattended run cannot supply for itself sit outside everything Parts 1–3
 write: the **Setup command** and **Full-suite command** keys of `docs/agents/worktree.md`, and
-`.worktreeinclude` at the repo root. Missing any one of them, `/dev-loop auto` and `/pr-comments auto`
-refuse at intake however well the other three parts ran. This part is the shortcut for supplying
+`.worktreeinclude` at the repo root. Missing any one of them, `/dev-loop auto` refuses at intake
+however well the other three parts ran. `/pr-comments` reads the two commands and `.worktreeinclude`
+where present, never **Fix cycles**, and refuses nothing. This part is the shortcut for supplying
 them, and **Fix cycles** with them — that key defaults, so it blocks nothing, but skipping it writes
 two of the file's three headings and hands the third back to a gated run. **When** a run reads each key, and what
 it does with the value, belongs to `/dev-loop`'s `acts/act-0.md`, which is cited as the source and
@@ -390,8 +391,9 @@ Tell the user what was written and which skills read it:
   `.claude/reference/` file, read when a session follows the rule to it; with the denial, name the
   `permissions.deny` entries in `.claude/settings.json`, which refuse the command in every session
   and subagent. Name the ones the user declined too, so nothing looks written that is not.
-- `docs/agents/worktree.md` and `.worktreeinclude` — `/dev-loop` and `/pr-comments`, both of which
-  provision worktrees and read all three keys. Report a key the file already answered as left alone
+- `docs/agents/worktree.md` and `.worktreeinclude` — `/dev-loop`, which reads all three keys, and
+  `/pr-comments`, which reads the two commands and `.worktreeinclude` where present, never
+  **Fix cycles**, and refuses nothing. Report a key the file already answered as left alone
   rather than as written.
 - `docs/agents/dev-loop.md` — `/dev-loop` alone. `/pr-comments` provisions worktrees but writes none
   of this pipeline's artifacts, so it reads the worktree profile and never this file. Report a key the
@@ -402,8 +404,9 @@ If Part 2 ran and the user declined the label creation, say plainly that the rol
 labels do not exist yet, so an unattended run will report each failed write and carry on regardless.
 
 If Part 4 was declined, or left **Setup command**, **Full-suite command** or `.worktreeinclude`
-unanswered, say plainly that `/dev-loop auto` and `/pr-comments auto` still refuse at intake naming
-each one, until a gated run of either supplies it by hand. An unanswered **Fix cycles** refuses
+unanswered, say plainly that `/dev-loop auto` still refuses at intake naming each one, until a gated
+run supplies it by hand. `/pr-comments` refuses on none of them: it works out an unanswered command
+from the checkout, and copies nothing without `.worktreeinclude`. An unanswered **Fix cycles** refuses
 nothing: an unattended run takes `2` for that run and persists it nowhere.
 
 Part 5 declined refuses nothing either — an unattended run takes each documented default for the run
