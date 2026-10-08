@@ -265,9 +265,9 @@ the entry however it is written, and the probe path need not exist.
 
 Look at the top of the body. A draft carries a **Why this is a draft** line per trigger that fired, and
 there are exactly four: open reviewer findings after the fix-cycle bound, a red suite at the gate's
-ceiling, an acceptance criterion the sub-lane owns that is `partial` or `not-met`, or the sub-lane
-ending mid-pipeline. The sections below it carry the detail. A draft is the honest signal that the
-pipeline could not finish its own job.
+ceiling, an acceptance criterion the sub-lane owns that is `partial` or `not-met` (or `suite` with the
+suite failed or not run), or the sub-lane ending mid-pipeline. The sections below it carry the detail.
+A draft is the honest signal that the pipeline could not finish its own job.
 
 **A lane finished and its issue still shows unticked checkboxes.**
 

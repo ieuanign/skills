@@ -109,8 +109,8 @@ Agents end with machine-readable leading lines; the phase scripts enforce the eq
   only).
 - **reviewer** — `VERDICT: APPROVED|CHANGES_REQUESTED|ERROR` + `FINDINGS` (each
   `file:line — defect — failure scenario — suggested fix`) + `CONTESTED` + `CRITERIA` (one
-  `met|partial|not-met` verdict per acceptance criterion **the sub-lane owns**, in the issue's order,
-  each with its evidence) + `NOTES`. **Zero findings ⇒ APPROVED**, whatever the criterion verdicts say.
+  `met|partial|not-met|suite` verdict per acceptance criterion **the sub-lane owns**, in the issue's
+  order, each with its evidence) + `NOTES`. **Zero findings ⇒ APPROVED**, whatever the criterion verdicts say.
 - **debugger** — `ROOT-CAUSE` + `OWNER: code-writer|replan|user|retry` + `CONFIDENCE` + `REPRODUCED`;
   when `OWNER=code-writer`, a finding in the reviewer's finding shape.
 - **suite gate** — `STATE: passed|failed|not-run` + `FAILING` (the runner's own identifier per failing
@@ -303,6 +303,10 @@ The last review's verdicts are the sub-lane's. They land in the findings ledger,
 `unattended` — in the terminal-state table, which is the one place a criterion verdict decides
 anything at all. Which criteria a sub-lane owns is a fact the plan states and the host applies, never
 a judgement the reviewer makes at review time.
+
+A `suite` verdict is the reviewer handing a criterion to the suite gate: everything the diff can show
+is verified, and only the repository's full suite passing remains — which the reviewer never runs and
+the gate runs after it. The terminal-state table settles it from the gate's result.
 
 ---
 
@@ -588,12 +592,13 @@ exactly the pull request a clean one opens. This table decides it instead, and i
 | Open findings after the fix-cycle bound | yes | **draft** + the ledger |
 | Suite still red at the gate's ceiling | yes | **draft** + the ledger |
 | Any acceptance criterion the sub-lane **owns** is `partial` or `not-met` | yes | **draft** + the verdicts |
+| An owned criterion is `suite` and the suite failed or did not run | yes | **draft** + the verdicts + the suite result |
 | Ended `HALT` or `FAILED`, with commits | yes | **draft** + the ledger + the attempt log |
 | Ended with nothing landed | no — nothing is ahead of the base | **none**; the explanation is commented on the issue |
 
 **The ready predicate is one expression**: the sub-lane **concluded clean**, and its **findings are
 resolved**, and the **suite passed or did not run**, and **every acceptance criterion the sub-lane
-owns is met**. Anything else drafts.
+owns is met** — `met`, or `suite` with the suite passed. Anything else drafts.
 
 The predicate does no filtering and gained no clause when criterion ownership arrived: it sees only
 the criteria the sub-lane owns because those are the only ones its reviewer was ever asked about. A
@@ -612,6 +617,12 @@ finish judging it, so it has nothing to be confident about.
 demonstrably done" defaults to draft — exactly as the findings ledger and the suite gate already
 behave. A half-implemented criterion presenting as a ready pull request would reduce the signal to one
 line of ledger prose the merger may skim.
+
+**A `suite` criterion is settled by the gate's state, never by prose.** Only `passed` settles it; a
+`not-run` suite leaves it unsettled, so a repository with no full-suite command drafts on one every
+time. The rejected alternative read a `partial` verdict's evidence for "only the suite is missing" —
+but contract keys are the contract, never the prose around them, and a reworded evidence line would
+silently flip a draft to ready.
 
 A draft is the honest signal that the pipeline could not finish its own job, and **one rule covers all
 four exhaustion paths** — same signal, same handling, one branch in the implementation. A human
