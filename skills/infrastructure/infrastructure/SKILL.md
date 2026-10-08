@@ -49,6 +49,9 @@ mode's whole contract.
    says how to undo it; a plan that destroys data is refused.
 4. **apply** (`acts/apply.md`): one merged change applied from `<TRUNK>`'s current head; any other ref
    is refused by name.
+5. **maintain** (`acts/maintain.md`): the monthly run — pins bumped and tool scripts refreshed in one
+   pull request, each major upgrade in its own, backups pruned past retention, certificates and DNS
+   checked, all reported on the pinned reports issue.
 
 An act that builds or changes `<environment>` is read with the runtime act its `runtime` names:
 `acts/compose.md` or `acts/kubernetes.md`.
