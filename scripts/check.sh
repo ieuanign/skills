@@ -265,6 +265,13 @@ else
   failed=1
 fi
 
+# --- infrastructure tools -----------------------------------------------------
+# The syntax and executability stages prove the bundled tools parse and run; this one proves they
+# decide correctly, over fixture repositories with `gh` stubbed. Streamed, so only the exit is read.
+if ! bash "$REPO/scripts/infrastructure-tools.sh"; then
+  failed=1
+fi
+
 # --- cost stage vocabulary ---------------------------------------------------
 # The lane-and-stage marker's vocabulary is written out in all three files that
 # touch it, because a phase script imports nothing. That triplication is only
