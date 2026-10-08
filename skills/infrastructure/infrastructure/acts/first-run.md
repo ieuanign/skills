@@ -25,8 +25,8 @@ Any other is **changed**: written anew to meet its contract.
 
 ## Steps
 
-1. **Resume.** `gh pr list --head <BRANCH> --state open --json number,url`. Done when none is open, or
-   its link is returned as the result with nothing else written.
+1. **Resume.** `gh pr list --state open --limit 1000 --json url,headRefName --jq '.[] | select(.headRefName | startswith("<BRANCH_PREFIX>")) | .url'`.
+   Done when none is open, or its link is returned as the result with nothing else written.
 2. **Render.** `git fetch origin`, then decide each deliverable against `origin/<TRUNK>`, reading the
    trunk's files with `git show origin/<TRUNK>:<path>`. Done when every deliverable is kept, or changed
    with its new content in hand.
