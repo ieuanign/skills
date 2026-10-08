@@ -150,8 +150,8 @@ Two consequences worth knowing:
 ## One review pass, and no pipeline
 
 The fixes used to run through a bundled phase script — a writer, a review loop bounded by a cycle
-count, and a suite gate, dispatched as agents. That is gone. The work happens in the session you
-invoked, and the review over it is **one `/mattpocock-skills:code-review` pass, applied once, then
+count, and a suite gate, dispatched as agents. That is gone. The work happens in the calling
+session, and the review over it is **one `/mattpocock-skills:code-review` pass, applied once, then
 stop**, whatever a second pass might have said.
 
 **One pass is a bound nothing has to keep in step.** A loop needs a number, that number needs writing
@@ -181,7 +181,7 @@ downstream renders that one. Anything short of approval ends the run with nothin
 ### Unattended
 
 `/pr-comments auto 128`. `auto` leads, for the same reason it leads in `/dev-loop`: the word deciding
-whether you will ever be asked should be the second one you type. It assumes a permission mode that
+whether anyone will ever be asked should come before the pull request. It assumes a permission mode that
 approves tool calls on its own, and it asks nothing at all on that path.
 
 **Suppression removes the question, not the work.** Every comment is still classified, the table is

@@ -44,7 +44,7 @@ Then once per repo — independent, either order:
 | [`/qa-review`](./skills/qa/qa-review/SKILL.md) | Judges one pull request case by case against the test cases, posting the verdict as a comment-only review and the `qa/review` commit status; on a PRD's `test(e2e):` pull request it runs the end-to-end tests too |
 | [`/qa-verify`](./skills/qa/qa-verify/SKILL.md) | Runs the end-to-end tests — **smoke** after a deploy, or **full** — against the environment you name, or a local stack where there is none; raises a bug per failure and sets the `qa/verify` commit status |
 | [`/reproduce`](./skills/qa/reproduce/SKILL.md) | Turns a reported bug into a minimised red repro against a local stack at the default branch, and posts it with one test case on the bug. Commits nothing |
-| [`/pr-comments`](./skills/pr-comments/SKILL.md) | One pull request's unresolved comments, classified **fix** or **skip** for your approval; the approved fixes are then made in the session you invoked, reviewed in one pass, and pushed to that pull request's own branch |
+| [`/pr-comments`](./skills/pr-comments/SKILL.md) | One pull request's unresolved comments, classified **fix** or **skip** for your approval; the approved fixes are then made in the calling session, reviewed in one pass, and pushed to that pull request's own branch. A skill or an agent can call it |
 | [`/mattpocock-skills:code-review`](https://github.com/mattpocock/skills) | **Matt's, not shipped here** — it arrives with the dependency. Reviews a diff on two parallel axes: **Standards** (`CLAUDE.md`, `.claude/rules/`, Fowler smells, your `docs/agents/smell-overrides.md`) and **Spec** (the originating issue/PRD). The `reviewer` agent preloads it, so a `/dev-loop` review and a hand review carry one model |
 | [`/retire-adr`](./skills/retire-adr/SKILL.md) | Retires one decision record you name — **a refactor, not a delete**: sweeps every form the repo cites it by, relocates reasoning that still binds the code, then rewrites the references and deletes the record |
 | [`/setup-ieuanign-skills`](./skills/setup-ieuanign-skills/SKILL.md) | Per-repo config in five independent parts: smell overrides, the workflow labels, `.claude/rules/` conventions, the worktree profile an unattended run refuses without, the pipeline profile it defaults run after run instead. Nothing written without an explicit yes |
@@ -142,7 +142,7 @@ that question and asks nothing at all: the table is posted on the pull request i
 or, where the run stops before reaching that gate, one comment saying why instead. Either way, every
 review thread the table covers is answered in that thread, and no conclusion comment follows.
 
-The fixes are made in the session you invoked: nothing dispatches an agent, the review over them is
+The fixes are made in the calling session: nothing dispatches an agent, the review over them is
 one `/mattpocock-skills:code-review` pass, and no file outside the skill's own folder is loaded to
 decide what a run does.
 
