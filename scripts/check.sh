@@ -222,6 +222,49 @@ if ! node "$REPO/scripts/pr-comment-read.mjs"; then
   failed=1
 fi
 
+# --- delivery-policy schema ---------------------------------------------------
+# Each invalid fixture names, in its `<!-- expect: ... -->` line, the verdict-line prefix it must
+# produce; a fixture rejected for some other reason proves nothing about the rule it was written for.
+policy_dir="$REPO/skills/infrastructure/delivery-policy"
+policy_check="$policy_dir/check-policy.mjs"
+policy_fixtures="$REPO/scripts/fixtures/delivery-policy/invalid"
+policy_ok=1
+if [ ! -f "$policy_dir/example-policy.md" ]; then
+  echo "FAIL  delivery-policy schema: no example-policy.md to validate" >&2
+  policy_ok=0
+elif ! out="$(node "$policy_check" "$policy_dir/example-policy.md" 2>&1)"; then
+  echo "FAIL  delivery-policy schema: the example policy does not pass" >&2
+  echo "$out" | grep -v '^pass ' >&2
+  policy_ok=0
+fi
+policy_invalid=0
+while IFS= read -r fixture; do
+  policy_invalid=$((policy_invalid + 1))
+  rel="${fixture#"$REPO/"}"
+  expect="$(sed -n 's/^<!-- expect: \(.*\) -->$/\1/p' "$fixture")"
+  out="$(node "$policy_check" "$fixture" 2>/dev/null)" && rc=0 || rc=$?
+  if [ -z "$expect" ]; then
+    echo "FAIL  delivery-policy schema: $rel declares no <!-- expect: ... --> line" >&2
+    policy_ok=0
+  elif [ "$rc" -ne 1 ]; then
+    echo "FAIL  delivery-policy schema: $rel exited $rc, expected 1" >&2
+    policy_ok=0
+  elif ! printf '%s\n' "$out" | awk -v e="$expect" 'index($0, e) == 1 { found = 1 } END { exit !found }'; then
+    echo "FAIL  delivery-policy schema: $rel did not print a line starting \"$expect\"" >&2
+    echo "$out" | grep '^fail ' >&2
+    policy_ok=0
+  fi
+done < <(find "$policy_fixtures" -name '*.md' 2>/dev/null | sort)
+if [ "$policy_invalid" -eq 0 ]; then
+  echo "FAIL  delivery-policy schema: no invalid fixtures under ${policy_fixtures#"$REPO/"}" >&2
+  policy_ok=0
+fi
+if [ "$policy_ok" -eq 1 ]; then
+  echo "ok    delivery-policy schema (example passes, $policy_invalid invalid fixtures fail by name)"
+else
+  failed=1
+fi
+
 # --- cost stage vocabulary ---------------------------------------------------
 # The lane-and-stage marker's vocabulary is written out in all three files that
 # touch it, because a phase script imports nothing. That triplication is only
