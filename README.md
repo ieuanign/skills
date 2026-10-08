@@ -144,7 +144,9 @@ review thread the table covers is answered in that thread, and no conclusion com
 
 The fixes are made in the calling session: nothing dispatches an agent, the review over them is
 one `/mattpocock-skills:code-review` pass, and no file outside the skill's own folder is loaded to
-decide what a run does.
+decide what a run does — save the repository's `.worktreeinclude` and `docs/agents/worktree.md`, read
+where they exist to make the worktree runnable and find the suite, never asked for and never refused
+without.
 
 - [**How a run works**](./docs/pr-comments.md) — the table that *is* the brief, what a run
   refuses to do and why, both run shapes, common questions, "it's working if". A run loads none of it.
