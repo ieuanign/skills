@@ -5,7 +5,7 @@ description: Reads a pull request's unresolved comments, classifies each fix-or-
 
 # /pr-comments — a pull request's comments, through to a pushed fix
 
-You do this work yourself, in this session: read, classify, ask, fix, push. **Nothing here dispatches an agent**, and the only thing it runs that is not `git`, `gh` or the repository's own tooling is `read-comments.mjs`, bundled beside this file. No other specification, profile or script is loaded — what this run does is in front of you.
+You do this work yourself, in this session: read, classify, ask, fix, push. **Nothing here dispatches an agent**, and the only thing it runs that is not `git`, `gh` or the repository's own tooling is `read-comments.mjs`, bundled beside this file. No other specification or script is loaded — what this run does is in front of you. The only files outside this folder it reads are `<MAIN>/.worktreeinclude` and `<MAIN>/docs/agents/worktree.md`, each where it exists: never asked for, never written, and refusing nothing when absent.
 
 **Append-only against artifacts someone else owns, whichever mode it runs in.** The whole run writes one `git push` to the branch the pull request already has, plus the comments and thread replies the write budget under **Hard rules** bounds. Under `gated` no write happens before the gate below; under `unattended` the first comment **is** where that gate would have asked, unless the run stops before reaching it, in which case that stop's own comment is the first and only one.
 
@@ -128,7 +128,12 @@ A comment at the foot of the pull request notifies its author about *the pull re
 2. Attach at `<WORKTREES>/pr-<n>`, the only name this run invents: `git worktree add <WORKTREES>/pr-<n> <headRefName>` where that branch already exists locally, and `git worktree add <WORKTREES>/pr-<n> -b <headRefName> --track origin/<headRefName>` where it does not. That is the only `-b` here. A branch already checked out elsewhere makes `git worktree add` refuse.
 3. The checkout must sit at `origin/<headRefName>` — **checked, not assumed**. `git -C <worktree> merge --ff-only origin/<headRefName>` catches up a stale local branch and refuses a diverged one. Then compare `git -C <worktree> rev-parse HEAD` with `git -C <worktree> rev-parse origin/<headRefName>` and **stop unless the two shas are equal**, reporting both: to a local branch *ahead* of the remote the merge says `Already up to date` and exits zero, and those unpushed commits — someone's work in progress — would ride out on this run's push, landing on the pull request unreviewed.
 4. **That HEAD sha is the base**, captured now, before anything is written. The review below reads `<base>..<headRefName>`; the pull request's own base branch in its place would have it review the human's entire pull request.
-5. **Make the worktree runnable and find the suite the way any session in this repository works them out** — from what the checkout itself says. This skill names no file for either and asks nothing.
+5. **Make the worktree runnable** — from the repository's own files where it has them, from what the checkout itself says where it does not. Nothing here asks.
+   - **`.worktreeinclude` copies**, where `<MAIN>/.worktreeinclude` exists: `git -C <MAIN> ls-files -oi --exclude-from=.worktreeinclude --directory` lists the matches. Copy each from MAIN into the worktree at the same relative path, creating parent directories, stripping the trailing slash git puts on a directory entry first. **Skip any entry under `<WORKTREES>`** — nothing here guarantees the line that keeps worktrees out of that list.
+   - **Setup** — `<MAIN>/docs/agents/worktree.md`'s `## Setup command`, run inside the worktree; unanswered, the setup worked out from the checkout.
+   - **The suite** — that file's `## Full-suite command`; unanswered, the suite worked out from the checkout.
+
+   A key is answered by any non-blank line under its own `## ` heading in that file, and by nothing in any other file. `none` is an answer — no setup run, or a suite reported **not run** — never a cue to work one out. `## Fix cycles` stays unread: the one review pass below is the bound.
 
 ## The fixes — implement, then one review pass
 
@@ -136,7 +141,7 @@ In the worktree, on that branch, in this session:
 
 - **Implement the table's fix rows**, in the order the table lists them, each row's Action as the brief and the comment's body verbatim as what it is against. One commit per row, unless two rows ask for the same change; a later fix opens a file with the earlier ones already in it, which is why they run in one worktree and in order.
 - **Use `/mattpocock-skills:tdd` where it applies**, at seams that already exist. A review comment is not a licence to grow the surface.
-- **Run typechecking and single test files as you go, and the full suite once at the end.** A suite that did not run never reads as green.
+- **Run typechecking and single test files as you go, and the full suite step 5 settled once at the end.** A suite that did not run never reads as green.
 - **Then `/mattpocock-skills:code-review` over `<base>..<headRefName>`, in your own context.** Apply its findings, and **that is the whole of the review — one pass, then stop**, whatever the second pass might have said. What it declined to fix is reported in the report rather than argued with.
 - **Commit to the branch the worktree has** — messages conventional, `<type>(<scope>): #<n> - <what changes>`, `#<n>` being the pull request, GitHub numbering pull requests and issues in one sequence. Never amend or rebase what the branch already held.
 
@@ -181,4 +186,4 @@ Removal is `git -C <MAIN> worktree remove <WORKTREES>/pr-<n>`, **never `--force`
 - **Never force-push, in any form** — no `--force`, no `--force-with-lease`. The push is a fast-forward by construction, so forcing is never the repair.
 - **Worktree removal never passes --force.** The refusal on a dirty worktree IS the guard. Every skill that removes a worktree states this same guardrail, deliberately, because none of them loads the others.
 - **Push before you remove**, never remove the main worktree, and remove only with `git worktree remove`, against a path under `<WORKTREES>`.
-- **Nothing dispatches an agent, nothing runs a workflow, and no file outside this skill's own folder is loaded to decide what this run does.** The review is a pass you make yourself, once.
+- **Nothing dispatches an agent, nothing runs a workflow, and no file outside this skill's own folder is loaded to decide what this run does** — save `.worktreeinclude` and `docs/agents/worktree.md`, read where they exist, never asked for, never written. The review is a pass you make yourself, once.
