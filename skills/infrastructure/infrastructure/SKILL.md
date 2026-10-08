@@ -52,6 +52,8 @@ mode's whole contract.
 5. **maintain** (`acts/maintain.md`): the monthly run — pins bumped and tool scripts refreshed in one
    pull request, each major upgrade in its own, backups pruned past retention, certificates and DNS
    checked, all reported on the pinned reports issue.
+6. **restore** (`acts/restore.md`): `restore-test.sh` run for one environment's data store, its result
+   recorded on the pinned reports issue.
 
 An act that builds or changes `<environment>` is read with the runtime act its `runtime` names:
 `acts/compose.md` or `acts/kubernetes.md`.
