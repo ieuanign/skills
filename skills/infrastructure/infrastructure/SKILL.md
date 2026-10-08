@@ -47,6 +47,8 @@ mode's whole contract.
    from the policy and delivered in one pull request; `<mode>` is `environment-<environment>`.
 3. **change** (`acts/change.md`): one requested change, planned and delivered in one pull request that
    says how to undo it; a plan that destroys data is refused.
+4. **apply** (`acts/apply.md`): one merged change applied from `<TRUNK>`'s current head; any other ref
+   is refused by name.
 
 An act that builds or changes `<environment>` is read with the runtime act its `runtime` names:
 `acts/compose.md` or `acts/kubernetes.md`.
