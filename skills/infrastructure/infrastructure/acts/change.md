@@ -23,7 +23,10 @@ plan machine-readable and the fields carrying each resource's type, address and 
 3. **Branch.** `<WORKTREE>` left by an earlier run: return its path and stop. Otherwise `git fetch origin`;
    `git worktree prune`; `git worktree add -B <BRANCH> <WORKTREE> origin/<TRUNK>`.
    Write the change into `<WORKTREE>`: infrastructure code under `<IAC_PATH>`, the pipeline, or both.
-   Done when every file the change needs is written.
+   Done when every file the change needs is written. From here, every refusal and "nothing differs"
+   first discards this run's unpushed writes — `git -C <WORKTREE> reset --hard`;
+   `git -C <WORKTREE> clean -fd`; `git worktree remove <WORKTREE>` — so a rerun of `<slug>` starts
+   clean. Worktree removal never passes --force.
 4. **A policy change** edits `docs/delivery-policy.md` in `<WORKTREE>` together with the pipeline it
    governs. Invoke `delivery-policy` through the Skill tool for its Check branch on that edited file. A
    failing line: return a refusal naming each one, with nothing pushed. Done when every Check line
