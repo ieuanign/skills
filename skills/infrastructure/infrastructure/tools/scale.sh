@@ -2,13 +2,14 @@
 # infrastructure tool scale.sh, version 1
 set -euo pipefail
 
-# Sets <service> in <environment> to <count> replicas, within the policy's scale bounds for it.
+# Sets <service> in <environment> to <count> replicas, within the policy's scale bounds, refusing a data store.
 # compose: the project in the login directory of ssh host <environment>; kubernetes: context and namespace <environment>.
 
 # One record line per run on stdout: `<status> action=<a> target=<environment>/<name> before=<v> after=<v> undo=<v>`.
 # status is done, dry-run, refused or failed; a field with no value is `-`; undo is last and may hold spaces.
 
 POLICY="docs/delivery-policy.md"
+MARKER="infrastructure.data-store"
 
 usage() {
   echo "usage: scale.sh [--dry-run] <environment> <service> <count>" >&2
@@ -84,6 +85,8 @@ compose)
     refuse "cannot read the compose project on $environment"
   jq -e --arg s "$service" '.services | has($s)' <<<"$config" >/dev/null ||
     refuse "$environment runs no service $service"
+  [ "$(jq -r --arg s "$service" --arg m "$MARKER" '.services[$s].labels[$m] // empty' <<<"$config")" != "true" ] ||
+    refuse "$service is a data store"
   running="$(ssh "$environment" docker compose ps --quiet "$service")" ||
     refuse "cannot read $service's containers on $environment"
   before="$(grep -c . <<<"$running" || true)"
@@ -97,6 +100,8 @@ kubernetes)
     refuse "cannot read the workloads of $environment"
   kind="$(jq -r '.items[0].kind // empty' <<<"$workloads")"
   [ -n "$kind" ] || refuse "$environment runs no service $service"
+  [ "$(jq -r --arg m "$MARKER" '.items[0].metadata.labels[$m] // empty' <<<"$workloads")" != "true" ] ||
+    refuse "$service is a data store"
   before="$(jq -r '.items[0].spec.replicas // 1' <<<"$workloads")"
   [ "$dry_run" -eq 0 ] || { record dry-run "$count"; exit 0; }
   "${kube[@]}" scale "$(tr '[:upper:]' '[:lower:]' <<<"$kind")/$service" --replicas "$count" >&2 ||
