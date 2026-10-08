@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // The prerequisites an unattended run cannot supply for itself, and the ones it defaults instead.
 //
-//   node preconditions.mjs <repo-root> dev-loop|pr-comments
+//   node preconditions.mjs <repo-root> dev-loop
 //
 // `.mjs` on purpose: this ships into arbitrary repositories, and a `.js` file's module system is
 // decided by whichever package.json happens to be nearest once it is installed.
@@ -30,8 +30,8 @@ const worktreeinclude = supplies => ({
   answered: (_profiles, root) => existsSync(join(root, WORKTREEINCLUDE)),
 })
 
-// The caller selects the remediation as well as the key set: naming a run that cannot supply the
-// thing is worse than naming nothing, and `/pr-comments` asks for neither the file nor a PR shape.
+// Keyed by caller because each entry names the run that supplies it, and naming a run that cannot
+// supply the thing is worse than naming nothing.
 const CALLERS = {
   'dev-loop': {
     blocking: [
@@ -45,14 +45,6 @@ const CALLERS = {
       [PIPELINE, 'PR body template', 'the core elements alone, in the order Gate 2 lists them'],
       [WORKTREE, 'Fix cycles', '`2`'],
     ],
-  },
-  'pr-comments': {
-    blocking: [
-      profileKey(WORKTREE, 'Setup command', 'one gated `/pr-comments` run asks for it at Step 6'),
-      profileKey(WORKTREE, 'Full-suite command', 'one gated `/pr-comments` run asks for it at Step 6'),
-      worktreeinclude('one gated `/dev-loop` run writes it at Act 0; `/pr-comments` never asks for it'),
-    ],
-    defaults: [[WORKTREE, 'Fix cycles', '`2`']],
   },
 }
 
@@ -121,7 +113,7 @@ function render({ blocking, defaults }) {
   ].join('\n')
 }
 
-const USAGE = `usage: preconditions.mjs <repo-root> <dev-loop|pr-comments>
+const USAGE = `usage: preconditions.mjs <repo-root> <dev-loop>
 
 Prints two blocks for the caller named: the prerequisites an unattended run cannot supply for
 itself, and the ones it takes a default for. Exits non-zero when the first block is non-empty.
