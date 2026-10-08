@@ -1,5 +1,17 @@
 # ieuanign-skills
 
+## 0.26.0
+
+### Minor Changes
+
+- [#306](https://github.com/ieuanign/skills/pull/306) [`83e994d`](https://github.com/ieuanign/skills/commit/83e994d77987963444fbab19f29f7c3aad92205d) Thanks [@ieuanign](https://github.com/ieuanign)! - pr-comments: model-invoked — it no longer carries `disable-model-invocation`, so another skill or an agent can start it through the Skill tool (with `auto <n>` for an unattended run), and its description now says when to use it. A run itself is unchanged: a gated run still writes nothing before its one approval.
+
+### Patch Changes
+
+- [#307](https://github.com/ieuanign/skills/pull/307) [`b879f3d`](https://github.com/ieuanign/skills/commit/b879f3dd257a63ad7928bda8f1e1af88b7c385e2) Thanks [@ieuanign](https://github.com/ieuanign)! - pr-comments: its worktree is made runnable — it copies what `.worktreeinclude` lists and runs `docs/agents/worktree.md`'s Setup and Full-suite commands where the repository has them, and works them out from the checkout where it does not. It never asks for, writes, or refuses on either file; a Full-suite `none` reports the suite as not run. `preconditions.mjs`, `check.sh` and setup-ieuanign-skills no longer say `/pr-comments` refuses without the worktree profile — only `/dev-loop auto` does.
+
+- [#308](https://github.com/ieuanign/skills/pull/308) [`f74a4bf`](https://github.com/ieuanign/skills/commit/f74a4bfbba11ba4f0ac2e303d12316de25656548) Thanks [@ieuanign](https://github.com/ieuanign)! - dev-loop: a criterion the repository's full suite decides no longer drafts a pull request whose suite gate passed. The reviewer, which never runs a full suite, marks such a criterion `suite` once everything the diff can show is verified; under `unattended` the terminal-state table settles it from the gate — ready when the suite passed, draft with the reason when it failed or did not run. `partial` and `not-met` still draft.
+
 ## 0.25.0
 
 ### Minor Changes
