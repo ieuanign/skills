@@ -23,6 +23,7 @@
     "./skills/dev-loop-cleanup",
     "./skills/grill-prd",
     "./skills/infrastructure/delivery-policy",
+    "./skills/infrastructure/infra-diagnose",
     "./skills/infrastructure/infra-report",
     "./skills/infrastructure/infrastructure",
     "./skills/infrastructure/setup-infra",
