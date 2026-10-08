@@ -1,6 +1,6 @@
 ---
 name: infrastructure
-description: Builds and changes a repository's pipeline and infrastructure code from its delivery policy, only through a pull request. Use to set a repository's pipeline up on a first run.
+description: Builds and changes a repository's pipeline and infrastructure code from its delivery policy, only through a pull request. Use to set a repository's pipeline up on a first run, or to set one environment up.
 ---
 
 # infrastructure — the pipeline and its infrastructure code, from the policy, through a pull request
@@ -43,6 +43,11 @@ mode's whole contract.
 
 1. **first-run** (`acts/first-run.md`): the pull request check, the two tool scripts and the branch
    rules, delivered in one pull request; no environment is built.
+2. **environment** (`acts/environment.md`): one environment the caller names, `<environment>`, built
+   from the policy and delivered in one pull request; `<mode>` is `environment-<environment>`.
+
+An act that builds or changes `<environment>` is read with the runtime act its `runtime` names:
+`acts/compose.md` or `acts/kubernetes.md`.
 
 ## Derived facts
 
