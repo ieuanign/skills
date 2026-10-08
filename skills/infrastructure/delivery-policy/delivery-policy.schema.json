@@ -1,0 +1,256 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:delivery-policy:schema:1",
+  "title": "Delivery policy front matter, schema_version 1",
+  "description": "The front matter of docs/delivery-policy.md. Every rule is an object holding its value beside its mark; a required mark names the change needed.",
+  "type": "object",
+  "properties": {
+    "schema_version": { "const": 1 },
+    "branching": {
+      "type": "object",
+      "properties": {
+        "trunk": { "$ref": "#/$defs/text_rule" },
+        "merge_method": {
+          "$ref": "#/$defs/rule",
+          "properties": { "value": { "enum": ["merge", "squash", "rebase"] } }
+        },
+        "check_command": { "$ref": "#/$defs/text_rule" },
+        "derived_files": {
+          "description": "Globs whose files are only ever generated; a pull request touching nothing else passes the check at once.",
+          "$ref": "#/$defs/rule",
+          "properties": { "value": { "type": "array", "items": { "$ref": "#/$defs/text" } } }
+        }
+      },
+      "required": ["trunk", "merge_method", "check_command", "derived_files"],
+      "additionalProperties": false
+    },
+    "paths": {
+      "type": "object",
+      "properties": {
+        "tools": { "$ref": "#/$defs/text_rule" },
+        "wizard": { "$ref": "#/$defs/text_rule" }
+      },
+      "required": ["tools", "wizard"],
+      "additionalProperties": false
+    },
+    "infrastructure_as_code": {
+      "type": "object",
+      "properties": {
+        "tool": { "$ref": "#/$defs/text_rule" },
+        "path": { "$ref": "#/$defs/text_rule" }
+      },
+      "required": ["tool", "path"],
+      "additionalProperties": false
+    },
+    "services": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "paths": {
+            "description": "Globs this service is built from; a change under one deploys it.",
+            "$ref": "#/$defs/rule",
+            "properties": { "value": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/text" } } }
+          },
+          "mobile_app": { "$ref": "#/$defs/flag_rule" }
+        },
+        "required": ["paths", "mobile_app"],
+        "additionalProperties": false
+      }
+    },
+    "environments": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "runtime": {
+            "$ref": "#/$defs/rule",
+            "properties": { "value": { "enum": ["compose", "kubernetes"] } }
+          },
+          "provider": { "$ref": "#/$defs/text_rule" },
+          "deployed_by": {
+            "$ref": "#/$defs/rule",
+            "properties": { "value": { "enum": ["trunk-push", "named-commit"] } }
+          },
+          "health_check_url": { "$ref": "#/$defs/text_rule" },
+          "monitoring": {
+            "$ref": "#/$defs/rule",
+            "properties": { "value": { "enum": ["own", "added"] } }
+          },
+          "remediation": {
+            "type": "object",
+            "properties": {
+              "enabled": { "$ref": "#/$defs/opt_in_rule" },
+              "allowlist": {
+                "$ref": "#/$defs/rule",
+                "properties": {
+                  "value": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": { "enum": ["rollback", "restart", "scale", "prune"] }
+                  }
+                }
+              }
+            },
+            "required": ["enabled"],
+            "additionalProperties": false,
+            "if": { "$ref": "#/$defs/is_enabled" },
+            "then": { "required": ["allowlist"] }
+          },
+          "scale": {
+            "type": "object",
+            "properties": {
+              "min": {
+                "$ref": "#/$defs/rule",
+                "properties": { "value": { "type": "integer", "minimum": 0 } }
+              },
+              "max": { "$ref": "#/$defs/count_rule" }
+            },
+            "required": ["min", "max"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["runtime", "provider", "deployed_by", "health_check_url", "monitoring", "remediation", "scale"],
+        "additionalProperties": false
+      }
+    },
+    "release": {
+      "type": "object",
+      "properties": {
+        "by_rule": {
+          "type": "object",
+          "properties": {
+            "enabled": { "$ref": "#/$defs/opt_in_rule" },
+            "statuses": {
+              "description": "Commit status contexts whose success on staging releases to production.",
+              "$ref": "#/$defs/rule",
+              "properties": { "value": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/text" } } }
+            }
+          },
+          "required": ["enabled"],
+          "additionalProperties": false,
+          "if": { "$ref": "#/$defs/is_enabled" },
+          "then": { "required": ["statuses"] }
+        },
+        "e2e_tests": {
+          "type": "object",
+          "properties": {
+            "enabled": { "$ref": "#/$defs/opt_in_rule" },
+            "command": { "$ref": "#/$defs/text_rule" }
+          },
+          "required": ["enabled"],
+          "additionalProperties": false,
+          "if": { "$ref": "#/$defs/is_enabled" },
+          "then": { "required": ["command"] }
+        },
+        "tag": {
+          "type": "object",
+          "properties": {
+            "enabled": { "$ref": "#/$defs/opt_in_rule" },
+            "format": { "$ref": "#/$defs/text_rule" }
+          },
+          "required": ["enabled"],
+          "additionalProperties": false,
+          "if": { "$ref": "#/$defs/is_enabled" },
+          "then": { "required": ["format"] }
+        },
+        "soft_release": {
+          "type": "object",
+          "properties": {
+            "enabled": { "$ref": "#/$defs/opt_in_rule" },
+            "prefix": { "$ref": "#/$defs/text_rule" }
+          },
+          "required": ["enabled"],
+          "additionalProperties": false,
+          "if": { "$ref": "#/$defs/is_enabled" },
+          "then": { "required": ["prefix"] }
+        }
+      },
+      "required": ["by_rule", "e2e_tests", "tag", "soft_release"],
+      "additionalProperties": false
+    },
+    "previews": {
+      "type": "object",
+      "properties": {
+        "enabled": { "$ref": "#/$defs/opt_in_rule" },
+        "domain": { "$ref": "#/$defs/text_rule" },
+        "cap": { "$ref": "#/$defs/count_rule" },
+        "idle_days": { "$ref": "#/$defs/count_rule" }
+      },
+      "required": ["enabled"],
+      "additionalProperties": false,
+      "if": { "$ref": "#/$defs/is_enabled" },
+      "then": { "required": ["domain", "cap", "idle_days"] }
+    },
+    "right_sizing": {
+      "type": "object",
+      "properties": {
+        "down_below_percent": { "$ref": "#/$defs/percent_rule" },
+        "up_above_percent": { "$ref": "#/$defs/percent_rule" }
+      },
+      "required": ["down_below_percent", "up_above_percent"],
+      "additionalProperties": false
+    },
+    "tools": {
+      "type": "object",
+      "properties": {
+        "proxy": { "$ref": "#/$defs/text_rule" },
+        "ingress": { "$ref": "#/$defs/optional_text_rule" },
+        "certificates": { "$ref": "#/$defs/text_rule" },
+        "monitoring": { "$ref": "#/$defs/text_rule" },
+        "deployment": { "$ref": "#/$defs/optional_text_rule" },
+        "mobile_build": { "$ref": "#/$defs/optional_text_rule" }
+      },
+      "required": ["proxy", "ingress", "certificates", "monitoring", "deployment", "mobile_build"],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "branching",
+    "paths",
+    "infrastructure_as_code",
+    "services",
+    "environments",
+    "release",
+    "previews",
+    "right_sizing",
+    "tools"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "rule": {
+      "type": "object",
+      "properties": {
+        "value": {},
+        "mark": { "enum": ["client", "suggested", "required"] },
+        "change": { "$ref": "#/$defs/text" }
+      },
+      "required": ["value", "mark"],
+      "additionalProperties": false,
+      "if": { "properties": { "mark": { "const": "required" } }, "required": ["mark"] },
+      "then": { "required": ["change"] }
+    },
+    "text": { "type": "string", "minLength": 1 },
+    "text_rule": { "$ref": "#/$defs/rule", "properties": { "value": { "$ref": "#/$defs/text" } } },
+    "optional_text_rule": {
+      "description": "null where nothing in the policy uses this tool.",
+      "$ref": "#/$defs/rule",
+      "properties": { "value": { "type": ["string", "null"], "minLength": 1 } }
+    },
+    "flag_rule": { "$ref": "#/$defs/rule", "properties": { "value": { "type": "boolean" } } },
+    "opt_in_rule": {
+      "$ref": "#/$defs/rule",
+      "properties": { "value": { "type": "boolean", "default": false } }
+    },
+    "count_rule": { "$ref": "#/$defs/rule", "properties": { "value": { "type": "integer", "minimum": 1 } } },
+    "percent_rule": {
+      "$ref": "#/$defs/rule",
+      "properties": { "value": { "type": "integer", "minimum": 1, "maximum": 100 } }
+    },
+    "is_enabled": {
+      "properties": { "enabled": { "properties": { "value": { "const": true } } } },
+      "required": ["enabled"]
+    }
+  }
+}

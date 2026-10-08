@@ -22,6 +22,7 @@
     "./skills/dev-loop",
     "./skills/dev-loop-cleanup",
     "./skills/grill-prd",
+    "./skills/infrastructure/delivery-policy",
     "./skills/mockup",
     "./skills/pr-comments",
     "./skills/qa/qa-review",
