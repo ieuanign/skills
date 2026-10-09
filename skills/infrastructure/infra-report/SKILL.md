@@ -34,11 +34,11 @@ A **figure** is any number the report states. Each carries its source beside it:
 Paths only, never contents. Keys, from the caller's arguments, else `.infra.local.env` at the repository root:
 
 ```text
-INFRA_CREDENTIAL_<PROVIDER>_<ENVIRONMENT>=<path>
+INFRA_CREDENTIAL_PROVIDER_<ENVIRONMENT>=<path>
 INFRA_CREDENTIAL_GRAFANA_<ENVIRONMENT>=<path>
 ```
 
-`<PROVIDER>` and `<ENVIRONMENT>` are the policy's names, upper-cased. Hand the path to the tool in the form it reads a credential from a file — `curl`'s config or header-from-file form, the provider CLI's own flag or variable — looked up with `--help`. A credential is never opened, printed or quoted, in the report or the return. An absent one makes its figures `not available: no credential for <key>`.
+`<ENVIRONMENT>` is the policy's environment name, upper-cased. Hand the path to the tool in the form it reads a credential from a file — `curl`'s config or header-from-file form, the provider CLI's own flag or variable — looked up with `--help`. A credential is never opened, printed or quoted, in the report or the return. An absent one makes its figures `not available: no credential for <key>`.
 
 ## Read
 
@@ -87,7 +87,7 @@ Period: <month to date, first day – today> · Policy at: <short sha>
 
 ### Cost
 - staging: <amount> <currency> month to date, <amount> <currency> forecast — <source>
-- production: not available: no credential for INFRA_CREDENTIAL_<PROVIDER>_PRODUCTION
+- production: not available: no credential for INFRA_CREDENTIAL_PROVIDER_PRODUCTION
 - Caller-passed, excluded from totals: <figure> — <the caller's source>
 
 ### Usage
