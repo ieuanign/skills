@@ -71,8 +71,8 @@ names only; code takes each credential from its tool's own environment variable 
 4. **Nothing differs.** Every deliverable kept:
    1. The provider credential absent: return a refusal naming its key and `<WIZARD>`'s machine script.
       Otherwise, in `<WORKTREE>` detached at `origin/<TRUNK>`, plan the infrastructure code for
-      `<environment>`. A plan that destroys or replaces a data store, a volume or a bucket is returned
-      for a person, with nothing applied. Any other is applied. Done when a fresh plan shows no change.
+      `<environment>`, applying nothing. A plan that shows any change is drift, returned for a person
+      with the plan's summary. Done when the plan shows no change, or its drift is returned.
    2. Production: `<TOOLS>/restore-test.sh <environment> <store>` per data store. Done when each prints a
       `done` record line.
    3. Staging: generate each test account's password into the test-accounts file by shell redirection,
@@ -102,7 +102,7 @@ names only; code takes each credential from its tool's own environment variable 
    Commit both `100755` on `<BRANCH>`. Done when both are committed, or nothing is missing.
 7. **Push and open.** `git -C <WORKTREE> push -u origin <BRANCH>`, once. Then `gh pr create --base <TRUNK>
    --head <BRANCH> --title "<title>" --body-file -`, the body naming each changed deliverable and that
-   this mode runs again after the merge to apply from `<TRUNK>`. Done when its link is in hand.
+   it takes effect once applied from `<TRUNK>` after the merge. Done when its link is in hand.
 8. **The issue**, after step 6 only. `gh issue create --title "<title>" --body-file -`, the body naming
    the pull request, each script with the command that runs it and who runs it, and that this mode is
    run again once the issue is closed. Done when the issue's link is in hand.
