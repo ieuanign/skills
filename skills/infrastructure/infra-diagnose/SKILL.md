@@ -17,7 +17,7 @@ These, and only these:
 
 - `gh label create alert` / `gh label create bug`, only when `gh label list` lacks one this run applies;
 - the alert issue, opened when no open one exists;
-- new comments on the alert issue: `## Diagnosis`, `## Remediation`, and each ending's record;
+- new comments on the alert issue: `## Diagnosis`, `## Remediation`, each ending's record, and a resolved alert's notice;
 - a new bug labelled `bug`, or a new comment on the open one that links the alert issue;
 - one `infrastructure` invocation in its change mode, which opens a pull request;
 - one real run of one allowed tool script, after its dry run;
@@ -48,7 +48,7 @@ Paths only, never contents. The viewer token's path is the caller's argument, el
 2. **The alert.** From a webhook payload: each firing alert's rule name (`alertname`), labels, `startsAt` and link, the Grafana base address taken from the payload's own URLs. From text: the same facts as written. The environment is the one policy environment a label value or the text names. On [Check](#check), both come from the alert issue's title `Alert: <rule> (<environment>)` instead. Done when rule and environment are known; an alert with no rule, or naming no policy environment, is a refusal naming what is missing.
 3. **The Grafana address**: the alert's own link, else the caller's argument. With `monitoring` `own` it
    is the owner's own Grafana, read with its token exactly as an `added` stack is; an owner's monitoring
-   that is not Grafana ends `not actionable: monitoring is not Grafana`. Done when known or absent.
+   that is not Grafana leaves it absent. Done when known or absent.
 4. **The token path**, by [Credentials](#credentials). Done when it is a path or absent.
 
 ## Pick the branch
@@ -74,7 +74,7 @@ Paths only, never contents. The viewer token's path is the caller's argument, el
 7. **Perform the ending.**
    - **remediation** — read `remediation.md` beside this file and follow it.
    - **change** — invoke `infrastructure` through the Skill tool in its change mode; the request is the alert issue's URL and the infrastructure cause. Comment the pull request it opened, or its refusal, on the alert issue. Not installed: comment the request text and name the missing skill in the return.
-   - **bug** — `gh issue list --state open --label bug --search '"Alert: #<n>" in:body'`. Found: comment on it. None: `gh issue create --label bug` with [the bug body](#the-bug). Comment its number on the alert issue.
+   - **bug** — `gh issue list --state open --label bug --search '"Alert: #<n>" in:body'`. Found: comment the alert issue's link on it. None: `gh issue create --label bug --title '<the cause, in one line>'` with [the bug body](#the-bug). Comment its number on the alert issue.
    - **not actionable** — the diagnosis already names it.
 
    Done when the ending's record is on the alert issue.

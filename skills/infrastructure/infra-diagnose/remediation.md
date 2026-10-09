@@ -19,7 +19,7 @@ One action per alert. A second action for the same alert is never taken.
    ````
 
    Done when it is posted.
-4. **Wait** until the alert rule's own evaluation window, read from the rule in Grafana, has passed since the action. Done when it has.
+4. **Wait** the alert rule's query time range plus its evaluation interval, both read from the rule in Grafana, from the action. Done when that long has passed.
 5. **Re-check.** Read the alert rule's state and its query again from Grafana. Done when the alert is known cleared or not.
 6. **Close or hand on**, naming the re-check: `` `<the rule's query>` — [Explore](<link>) — cleared | not cleared ``.
    - **Cleared** — `gh issue close <n> --comment` with a one-line closing note naming the re-check.
