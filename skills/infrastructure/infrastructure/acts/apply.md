@@ -38,8 +38,9 @@ code uses `<IAC_TOOL>`'s GitHub provider — `<IAC_PATH>/github/`'s only one.
    resource change of every plan is classified and none destroys data.
 7. **Apply.** Before each target, `git ls-remote origin refs/heads/<TRUNK>` must name `<head>`;
    another commit means the trunk moved: return a refusal naming `<head>` as stale, with the
-   targets already applied. Otherwise apply that target's saved plan. Done when a fresh plan
-   of every target shows no change.
+   targets already applied. Otherwise apply that target's saved plan. A failed apply, or a fresh
+   plan of it still showing a change: return a refusal holding its output, with the targets already
+   applied. Done when a fresh plan of every target shows no change.
 8. **Return.** `git -C <WORKTREE> clean -fdx`; `git worktree remove <WORKTREE>`, then return `<head>`
    and each target applied.
    Done when `<WORKTREE>` is gone and all of it is returned. Worktree removal never passes --force.

@@ -1,7 +1,7 @@
 # maintain — the monthly run: pins, tool scripts, retention, backups, certificates and DNS
 
-`<mode>` is `maintain-<YYYY-MM>`. Every change this act makes to the repository goes through
-`acts/change.md`, read when step 4 or 5 first performs it.
+Every change this act makes to the repository goes through `acts/change.md`, read when step 4 or 5
+first performs it; each performance derives its own `<mode>`, `<BRANCH>` and `<WORKTREE>`.
 
 **A pin** is a version the repository names for something it runs or builds with: a workflow action
 under `.github/workflows/`, a base image, a language runtime, and each image and chart of
@@ -43,8 +43,8 @@ body saying what it collects, then `gh issue pin <n>`.
 6. **Retention against disk.** Per environment, each retention its infrastructure code states — the
    backups and `tools.monitoring`'s data — with the used and total size of the storage holding it, read
    through the provider's own query. A finding is data older than its retention still held, or
-   storage too full to take one more retention period's growth. Done when every retention has its
-   sizes and verdict.
+   storage whose free space is under the size of the data held within that retention, one period's
+   growth. Done when every retention has its sizes and verdict.
 7. **Prune.** Per backup bucket: a store whose retention the infrastructure code leaves unstated is not
    pruned and becomes a finding. Otherwise delete each backup object older than that retention, never
    the newest backup of any store. Done when every deleted object is listed, or none was due.

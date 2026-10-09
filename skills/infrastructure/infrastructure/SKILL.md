@@ -1,6 +1,6 @@
 ---
 name: infrastructure
-description: Builds and changes a repository's pipeline and infrastructure code from its delivery policy, only through a pull request. Use to set a repository's pipeline up on a first run, or to set one environment up.
+description: Builds and changes a repository's pipeline and infrastructure code from its delivery policy, only through a pull request. Use to set a repository's pipeline up on a first run or one environment up; to change, apply or check a change; for the monthly maintenance; or to test a restore.
 ---
 
 # infrastructure — the pipeline and its infrastructure code, from the policy, through a pull request
@@ -21,9 +21,9 @@ and you stop.
   own login mechanism — shell redirection, or an environment variable set in the same command. Test a
   credential file with `test -s` alone. Its content stays out of your context, the terminal, every file
   you write and every log; `.infra.local.env` holds paths only.
-- **A person's part is one issue.** A step the credentials given cannot do becomes two scripts authored
-  with `/mattpocock-skills:wizard`, committed under `<WIZARD>` in the delivering pull request: the
-  **Machine part** (the credential files, run on the machine that runs this skill) and the
+- **A person's part is one issue.** Outside an act's own refusals, a step the credentials cannot do
+  becomes two scripts authored with `/mattpocock-skills:wizard`, committed under `<WIZARD>` in the pull
+  request: the **Machine part** (the credential files, run where this skill runs) and the
   **Repository part** (what needs a repository admin, run by one). Open one issue naming both, then
   stop and return its link; the mode is run again once that issue is closed.
 - **A pull request, or nothing.** Every change reaches the repository in one pull request from
