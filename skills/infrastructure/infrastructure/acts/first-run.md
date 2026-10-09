@@ -28,12 +28,12 @@ Any other is **changed**: written anew to meet its contract.
 1. **Resume.** `gh pr list --state open --limit 1000 --json url,headRefName --jq '.[] | select(.headRefName | startswith("<BRANCH_PREFIX>")) | .url'`.
    Done when none is open, or its link is returned as the result with nothing else written.
 2. **Render.** `git fetch origin`, then decide each deliverable against `origin/<TRUNK>`, reading the
-   trunk's files with `git show origin/<TRUNK>:<path>`. Done when every deliverable is kept, or changed
-   with its new content in hand.
-3. **Nothing differs.** Every deliverable kept: prove the pipeline passes, read-only —
+   trunk's files with `git show origin/<TRUNK>:<path>` and modes with `git ls-tree origin/<TRUNK> <path>`.
+   Done when every deliverable is kept, or changed with its new content in hand.
+3. **Nothing differs.** Every deliverable kept: read the trunk's last check run, read-only —
    `gh run list --workflow pull-request-check.yml --branch <TRUNK> --event push --limit 1 --json databaseId,conclusion,url,headSha`,
    and `gh run view <databaseId>` when its conclusion is anything but `success`. Return "nothing
-   differs", the run's conclusion and its link. Done when that is returned, or a deliverable is changed.
+   differs", the run's conclusion, its link and each failed step `gh run view` names. Done when that is returned, or a deliverable is changed.
 4. **Branch.** `<WORKTREE>` left by an earlier run: when `git -C <WORKTREE> status --porcelain` prints
    nothing, `git -C <WORKTREE> switch -C <BRANCH> origin/<TRUNK>`; otherwise return its path and stop.
    No `<WORKTREE>`: `git worktree prune`, then `git worktree add -B <BRANCH> <WORKTREE> origin/<TRUNK>`. Write each changed

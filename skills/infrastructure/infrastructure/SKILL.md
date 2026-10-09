@@ -1,6 +1,6 @@
 ---
 name: infrastructure
-description: Builds and changes a repository's pipeline and infrastructure code from its delivery policy, only through a pull request. Use to set a repository's pipeline up on a first run — the pull request check, the derived-files and changed-paths tool scripts, and the branch rules.
+description: Builds and changes a repository's pipeline and infrastructure code from its delivery policy, only through a pull request. Use to set a repository's pipeline up on a first run.
 ---
 
 # infrastructure — the pipeline and its infrastructure code, from the policy, through a pull request
@@ -46,7 +46,7 @@ mode's whole contract.
 
 ## Derived facts
 
-Compute once, after Check passes and before reading an act. A policy rule's fact is its `value`.
+`<POLICY>` first, for Check; the rest once, after Check passes and before reading an act. A policy rule's fact is its `value`.
 
 - **this-skill-dir** — the directory this file lives in; bundled assets are `<this-skill-dir>/<name>`.
 - **CHECKOUT** — `git rev-parse --show-toplevel` in the invoking directory.
