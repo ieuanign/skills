@@ -10,7 +10,8 @@ at run time. A bump from a pin to its latest is **major** when it changes the ve
 component; every other bump is **minor**.
 
 **A tool script** is `<TOOLS>/<name>` on `origin/<TRUNK>` for each `<name>` in `<this-skill-dir>/tools/`.
-It is **current** when it equals `<this-skill-dir>/tools/<name>` byte for byte; **shipped** when the
+It is **absent** when `origin/<TRUNK>` has no file at that path; **current** when it equals
+`<this-skill-dir>/tools/<name>` byte for byte; **shipped** when the
 last commit touching it on `origin/<TRUNK>` (`git log -1 --format=%H origin/<TRUNK> -- <path>`) belongs
 to a pull request whose head branch starts `infrastructure/`
 (`gh api repos/{owner}/{repo}/commits/<sha>/pulls --jq '.[0].head.ref'`); **edited** otherwise.
@@ -29,8 +30,10 @@ body saying what it collects, then `gh issue pin <n>`.
 2. **Pins.** Read every pin from `origin/<TRUNK>` with `git show origin/<TRUNK>:<path>`, and its latest.
    Done when each pin is classified unchanged, minor or major, with its current and latest version.
 3. **Tool scripts.** Classify each tool script. An edited one is left as it is; its
-   `git diff --no-index <this-skill-dir>/tools/<name> <its trunk content>` goes into the report. Done
-   when each is current, shipped or edited, with each edited one's diff in hand.
+   `git diff --no-index <this-skill-dir>/tools/<name> <its trunk content>` goes into the report. An
+   absent one stays absent and is named in the report, for the mode that delivers it — `first-run` or
+   `environment` — to add. Done when each is absent, current, shipped or edited, with each edited one's
+   diff in hand.
 4. **The monthly change.** A major bump is held out of this change. The request is every minor bump
    and, for each shipped tool script, its content replaced by `<this-skill-dir>/tools/<name>`, mode
    `100755`; its origin is "the monthly maintain run", its slug `maintain-<YYYY-MM>`. Nothing in the
@@ -56,8 +59,8 @@ body saying what it collects, then `gh issue pin <n>`.
    has its verdict.
 10. **Report.** Find or create the reports issue, then post on it with
     `gh issue comment <n> --body-file -` from a quoted heredoc a comment beginning `## Maintain`: the
-    date, each pull request link or "nothing differs", each major held out with its link, each edited
-    tool script's diff, retention against disk, the pruned objects, certificates, DNS, and every
+    date, each pull request link or "nothing differs", each major held out with its link, each absent
+    tool script, each edited one's diff, retention against disk, the pruned objects, certificates, DNS, and every
     finding. A failed pin still posts the comment. Done when the comment's URL is in hand.
 11. **Return** the comment's URL, each pull request link, each refusal from the change act, and every
     finding. Done when all of it is returned.
