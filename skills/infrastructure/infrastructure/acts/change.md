@@ -11,16 +11,8 @@
 `infra-diagnose` request, `report-<comment id>-<n>` for an `infra-report` one, else a few words naming
 the change; lower-cased, each run of characters outside `a-z0-9` becomes `-`.
 
-**Data-holding** — a database, a volume, a bucket, or any managed data store. A plan **destroys data**
-when its machine-readable output gives a data-holding resource the action delete or replace. That
-output's format is `<IAC_TOOL>`'s own: look up, in its documentation, the command that renders a saved
-plan machine-readable and the fields carrying each resource's type, address and actions.
-
-**Targets** — each environment under `<IAC_PATH>`, and `<IAC_PATH>/github/` (first-run's branch rules).
-A target's **credentials**, each the caller's `<key>=<path>` argument, else that line of
-`<CHECKOUT>/.infra.local.env`, read as `<GITHUB_CREDENTIAL>` is: `INFRA_CREDENTIAL_PROVIDER_<ENVIRONMENT>`;
-`INFRA_CREDENTIAL_DNS_<ENVIRONMENT>` when its code declares DNS records; `<GITHUB_CREDENTIAL>` when its
-code uses `<IAC_TOOL>`'s GitHub provider — `<IAC_PATH>/github/`'s only one.
+**Data-holding**, **destroys data**, **Targets** and a target's **credentials** are as
+`<this-skill-dir>/terms.md` defines them; read it with this act.
 
 ## Steps
 

@@ -16,10 +16,7 @@ last commit touching it on `origin/<TRUNK>` (`git log -1 --format=%H origin/<TRU
 to a pull request whose head branch starts `infrastructure/`
 (`gh api repos/{owner}/{repo}/commits/<sha>/pulls --jq '.[0].head.ref'`); **edited** otherwise.
 
-**The reports issue** is the open issue titled exactly `Infrastructure reports`:
-`gh issue list --state open --search 'in:title "Infrastructure reports"' --json number,title`, keeping
-the exact title. None: `gh issue create --title 'Infrastructure reports' --body-file -` with a one-line
-body saying what it collects, then `gh issue pin <n>`.
+**The reports issue** is as `<this-skill-dir>/terms.md` defines it; read it with this act.
 
 ## Steps
 
@@ -60,7 +57,7 @@ body saying what it collects, then `gh issue pin <n>`.
 10. **Report.** Find or create the reports issue, then post on it with
     `gh issue comment <n> --body-file -` from a quoted heredoc a comment beginning `## Maintain`: the
     date, each pull request link or "nothing differs", each major held out with its link, each absent
-    tool script, each edited one's diff, retention against disk, the pruned objects, certificates, DNS, and every
-    finding. A failed pin still posts the comment. Done when the comment's URL is in hand.
+    tool script, each edited one's diff, retention against disk, the pruned objects, certificates, DNS,
+    and every finding. Done when the comment's URL is in hand.
 11. **Return** the comment's URL, each pull request link, each refusal from the change act, and every
     finding. Done when all of it is returned.
