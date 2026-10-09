@@ -11,7 +11,7 @@ One action per alert. A second action for the same alert is never taken.
    ````markdown
    ## Remediation
 
-   Action: <action> · Environment: <environment> · Target: <service>
+   Action: <action> · Environment: <environment> · Target: <service, or the environment for prune>
 
    ```text
    <the record line, verbatim>
