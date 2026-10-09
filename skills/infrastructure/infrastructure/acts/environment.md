@@ -4,8 +4,7 @@
 entry's `deployed_by` is `named-commit`, and **staging** when it is `trunk-push`. The runtime act the
 entry's `runtime` names supplies every part marked **runtime**. Read `acts/environment-opt-ins.md` as
 well when any of `previews.enabled`, `release.soft_release.enabled`, `release.tag.enabled`,
-`release.e2e_tests.enabled` or a `services.<name>.mobile_app` is `true`: it adds to the deployment
-workflow.
+`release.e2e_tests.enabled` or a `services.<name>.mobile_app` is `true`.
 
 ## Inputs
 
@@ -67,8 +66,8 @@ names only; code takes each credential from its tool's own environment variable 
    none are named: return a refusal naming them. Done when neither refusal applies and the runtime act,
    with the opt-ins act where it applies, is read.
 3. **Render.** `git fetch origin`, then decide each deliverable against `origin/<TRUNK>`, reading the
-   trunk's files with `git show origin/<TRUNK>:<path>`. Done when every deliverable is kept, or changed
-   with its new content in hand.
+   trunk's files with `git show origin/<TRUNK>:<path>` and modes with `git ls-tree origin/<TRUNK> <path>`.
+   Done when every deliverable is kept, or changed with its new content in hand.
 4. **Nothing differs.** Every deliverable kept:
    1. The provider credential absent: return a refusal naming its key and `<WIZARD>`'s machine script.
       Otherwise, in `<WORKTREE>` detached at `origin/<TRUNK>`, plan the infrastructure code for
@@ -93,8 +92,8 @@ names only; code takes each credential from its tool's own environment variable 
    commit in the repository's own commit convention, read from `git log`. Done when
    `git -C <WORKTREE> status --porcelain` prints nothing.
 6. **The person's part**, when any of these is missing: the provider credential, the DNS credential
-   while records are to be set, `<GITHUB_CREDENTIAL>`, or a secret value the services or the workflow
-   read. With `/mattpocock-skills:wizard`, author:
+   while records are to be set, `<GITHUB_CREDENTIAL>`, or a secret the services or the workflow read
+   that `gh secret list --env <environment>` lacks. With `/mattpocock-skills:wizard`, author:
    - `<WIZARD>/environment-<environment>-machine.sh` — creates each missing credential file, writes its
      path under its key into `.infra.local.env`, and sets up what **runtime** needs to reach the hosts;
    - `<WIZARD>/environment-<environment>-repository.sh` — sets every secret value as a secret of GitHub

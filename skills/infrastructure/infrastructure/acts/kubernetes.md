@@ -5,8 +5,8 @@ Each section fills the part an act marks **runtime**. The tool scripts reach `<e
 
 ## Cluster
 
-- A `KUBECONFIG` context `<environment>` that already reaches a cluster: that cluster is adopted, and
-  the infrastructure code provisions none.
+- A `KUBECONFIG` context `<environment>` that already reaches a cluster outside the infrastructure
+  code: that cluster is adopted, and the infrastructure code provisions none.
 - Otherwise, in the infrastructure code: the provider's managed cluster where it has one, else k3s on
   virtual machines.
 - The Machine part writes context `<environment>` into the machine's `KUBECONFIG`.

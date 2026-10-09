@@ -1,4 +1,4 @@
-# environment opt-ins — what the deployment workflow adds per opt-in
+# environment opt-ins — what each opt-in adds to an environment
 
 Each section is a deliverable of `acts/environment.md`, decided and delivered with its others, and
 applies only while its opt-in is `true`. **Staging**, **production**, **the entry** and **runtime** mean
@@ -23,13 +23,14 @@ what they mean there.
   while `previews.cap` previews already run.
 - Its address posted on the pull request as one comment.
 - Torn down, its database with it, on `pull_request` closed and on a daily schedule for every preview
-  idle `previews.idle_days` days.
+  whose pull request has had no push for `previews.idle_days` days.
 - Outside every alert rule.
 
 ## Soft release — `release.soft_release.enabled`
 
-- One GitHub environment variable per switch, `<release.soft_release.prefix><switch>`, `on` in
-  staging and `off` in production, set by the infrastructure code or the Repository part.
+- One GitHub environment variable per switch the services' code reads,
+  `<release.soft_release.prefix><switch>`, `on` in staging and `off` in production, set by the
+  infrastructure code or the Repository part.
 - The deploy step passes every variable whose name starts with `release.soft_release.prefix` through
   to the services.
 
