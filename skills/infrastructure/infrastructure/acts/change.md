@@ -7,7 +7,9 @@
 - `Report <comment URL>, suggestion <n>` from `infra-report` — origin that comment; the change is
   block `#### Suggestion <n>` of `gh api <comment URL's API path> --jq .body`.
 
-`<mode>` is `change-<slug>`, `<slug>` a few kebab-case words naming the change.
+`<mode>` is `change-<slug>`. `<slug>` is the caller's when given, `alert-<issue number>` for an
+`infra-diagnose` request, `report-<comment id>-<n>` for an `infra-report` one, else a few words naming
+the change; lower-cased, each run of characters outside `a-z0-9` becomes `-`.
 
 **Data-holding** — a database, a volume, a bucket, or any managed data store. A plan **destroys data**
 when its machine-readable output gives a data-holding resource the action delete or replace. That
@@ -48,7 +50,7 @@ code uses `<IAC_TOOL>`'s GitHub provider — `<IAC_PATH>/github/`'s only one.
    that destroys data: return a refusal holding each plan's text output and, per data-holding resource,
    its address and action, for a person — no push, no pull request, no apply. Done when every resource
    change of every plan is classified and none destroys data.
-7. **Nothing differs.** `git -C <WORKTREE> add --` each file step 3 wrote; then
+7. **Nothing differs.** `git -C <WORKTREE> add --` each file steps 3 and 4 wrote; then
    `git -C <WORKTREE> diff --cached --quiet` succeeding: return "nothing differs",
    with no pull request. Done when that is returned, or a file differs.
 8. **Push and open.** Commit the staged files in the repository's own commit convention, read from

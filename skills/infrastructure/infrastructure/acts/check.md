@@ -21,10 +21,10 @@ code uses `<IAC_TOOL>`'s GitHub provider — `<IAC_PATH>/github/`'s only one.
 1. **The merge.** `gh pr view <pr> --json state,mergeCommit,body`; `git fetch origin`. A state other
    than `MERGED`, or a merge commit `<oid>` for which `git merge-base --is-ancestor <oid> origin/<TRUNK>`
    fails: return fail naming `<pr>`, with nothing run. Done when `<oid>` is on `origin/<TRUNK>`.
-2. **The pipeline.** `gh run list --commit <oid> --json name,status,conclusion,url`. Met when at least
-   one run is listed and every run's conclusion is `success`; a run still in progress is waited on with
-   `gh run watch <id>`. Done when every run has a conclusion and the condition is met or unmet, each
-   failing run's name and link in hand.
+2. **The pipeline.** `gh run list --commit <oid> --json databaseId,name,status,conclusion,url`. Met
+   when at least one run is listed and every run's conclusion is `success`; a run still in progress is
+   waited on with `gh run watch <databaseId>`. Done when every run has a conclusion and the condition is
+   met or unmet, each failing run's name and link in hand.
 3. **The environments.** Per entry of the policy's `environments`, after step 2's runs finished, an HTTP
    GET of its `health_check_url`. Met when every one answers with a 2xx status. Done when each
    environment's status is in hand.
