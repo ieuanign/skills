@@ -353,9 +353,9 @@ stops until that issue is closed.
 ## Tool script
 
 One of the scripts `/infrastructure` bundles and copies into the **delivery policy**'s tools path:
-rollback, restart, scale, prune and restore-test, and the read-only derived-files and changed-paths.
-One action per file, with a branch per **runtime**, a dry run, one record line (action, target,
-before, after, undo), a refusal that exits non-zero, and a version header. The only way
+rollback, restart, scale, prune and restore-test, each one action with a branch per **runtime**, a dry
+run, one record line (action, target, before, after, undo) and a refusal that exits non-zero; and the
+read-only derived-files and changed-paths. Every one carries a version header. The only way
 `/infra-diagnose` acts on a host, and runnable by a person.
 
 ## Alert
