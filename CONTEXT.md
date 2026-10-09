@@ -339,9 +339,9 @@ allowlist and its scale bounds. A GitHub environment is the platform's record of
 
 ## Runtime
 
-How an **environment** runs its services: `compose` or `kubernetes`, the **delivery policy**'s value
-that selects which act `/infrastructure` reads and which branch a **tool script** runs. Anything else
-is a PaaS, out of scope: what would be read from its hosts is reported `not available`.
+How an **environment** runs its services: `compose`, `kubernetes` or `paas`, the **delivery policy**'s
+value that selects which act `/infrastructure` reads and which branch a **tool script** runs. `paas` is
+a hosted platform, out of scope: never built, and what would be read from its hosts is `not available`.
 
 ## Person's part
 
