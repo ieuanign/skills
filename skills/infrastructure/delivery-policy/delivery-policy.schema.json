@@ -65,7 +65,7 @@
         "properties": {
           "runtime": {
             "$ref": "#/$defs/rule",
-            "properties": { "value": { "enum": ["compose", "kubernetes"] } }
+            "properties": { "value": { "enum": ["compose", "kubernetes", "paas"] } }
           },
           "provider": { "$ref": "#/$defs/text_rule" },
           "deployed_by": {
