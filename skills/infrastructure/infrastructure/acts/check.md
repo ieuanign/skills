@@ -3,15 +3,8 @@
 **The input** is the merged pull request `<pr>`. `<mode>` is `check-<pr's number>`; `<WORKTREE>` here
 is a detached checkout, so `<BRANCH>` is unused.
 
-**Data-holding** — a database, a volume, a bucket, or any managed data store. A plan **destroys data**
-when its machine-readable output gives a data-holding resource the action delete or replace; that
-output's format and fields are `<IAC_TOOL>`'s own, looked up in its documentation.
-
-**Targets** — each environment under `<IAC_PATH>`, and `<IAC_PATH>/github/` (first-run's branch rules).
-A target's **credentials**, each the caller's `<key>=<path>` argument, else that line of
-`<CHECKOUT>/.infra.local.env`, read as `<GITHUB_CREDENTIAL>` is: `INFRA_CREDENTIAL_PROVIDER_<ENVIRONMENT>`;
-`INFRA_CREDENTIAL_DNS_<ENVIRONMENT>` when its code declares DNS records; `<GITHUB_CREDENTIAL>` when its
-code uses `<IAC_TOOL>`'s GitHub provider — `<IAC_PATH>/github/`'s only one.
+**Data-holding**, **destroys data**, **Targets** and a target's **credentials** are as
+`<this-skill-dir>/terms.md` defines them; read it with this act.
 
 **Pass** is all three conditions met: the pipeline, the environments, the undo. Any other outcome is
 **fail**, naming each condition unmet.

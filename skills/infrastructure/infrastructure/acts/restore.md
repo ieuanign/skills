@@ -3,10 +3,7 @@
 **The inputs** are `<environment>` and `<store>`, a data store of that environment. `<mode>` is
 `restore-<environment>-<store>`; `<WORKTREE>` here is a detached checkout, so `<BRANCH>` is unused.
 
-**The reports issue** is the open issue titled exactly `Infrastructure reports`:
-`gh issue list --state open --search 'in:title "Infrastructure reports"' --json number,title`, keeping
-the exact title. None: `gh issue create --title 'Infrastructure reports' --body-file -` with a one-line
-body saying what it collects, then `gh issue pin <n>`.
+**The reports issue** is as `<this-skill-dir>/terms.md` defines it; read it with this act.
 
 ## Steps
 

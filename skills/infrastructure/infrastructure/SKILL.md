@@ -38,8 +38,8 @@ and you stop.
 
 ## The modes
 
-Run the mode the caller names. Read its act file before performing it: the freshly read file is that
-mode's whole contract.
+Run the mode the caller names. Read its act file before performing it: the freshly read file, with any
+file it says to read with it, is that mode's whole contract.
 
 1. **first-run** (`acts/first-run.md`): the pull request check, the two tool scripts and the branch
    rules, delivered in one pull request; no environment is built.
