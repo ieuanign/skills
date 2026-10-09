@@ -55,10 +55,12 @@ to read — paths only, never a file's contents. Keys:
 
 ```text
 INFRA_CREDENTIAL_<PROVIDER>_<ENVIRONMENT>=<path>
+INFRA_CREDENTIAL_GRAFANA_<ENVIRONMENT>=<path>
 INFRA_TEST_ACCOUNTS_ENV=<path>
 ```
 
-`<PROVIDER>` and `<ENVIRONMENT>` are the policy's provider and environment names, upper-cased. Where no
+`<PROVIDER>` and `<ENVIRONMENT>` are the policy's provider and environment names, upper-cased. The `GRAFANA` key is each environment's Grafana viewer token, which `infra-report`
+and `infra-diagnose` read. Where no
 environment in the policy needs a credential, skip this step.
 
 1. **Ask once** for every path the policy's environments need. Where the file exists, show it and ask
