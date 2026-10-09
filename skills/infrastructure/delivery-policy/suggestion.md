@@ -33,8 +33,8 @@ fixed rule does, and the values recommended under it apply only then.
 
 ## Services
 
-- `services.<name>.paths` — the folders the service's build reads (its Dockerfile's context, its chart's
-  sources). What deploys is decided by changed paths, so a path left out never deploys.
+- `services.<name>.paths` — a `<folder>/**` glob per folder the service's build reads (its Dockerfile's
+  context, its chart's sources). What deploys is decided by changed paths, so a path left out never deploys.
 - `services.<name>.mobile_app` — `true` only for a service that builds an iOS or Android app.
 
 ## Environments

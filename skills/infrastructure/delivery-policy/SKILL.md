@@ -75,12 +75,12 @@ absent) is **not observed** with its reason, and its rules become gaps.
    Done when `branching.derived_files` has a value or is a gap.
 8. **Sort every rule.** Take every rule the schema requires, for each service and environment observed;
    with none observed, the service and environment names are themselves gaps. A rule under an opt-in
-   (`previews.domain`) counts only when that opt-in is observed on or fixed on. Put each in exactly one
-   place:
+   (`previews.domain`) counts only when that opt-in is observed on or fixed on. Put each in the first
+   place that fits:
+   - a fixed rule the repository breaks → a question of its own, mark `required`;
    - observed → question 1, mark `client`;
    - a fixed rule the repository meets, or one nothing in the repository bears on → question 1, mark
      `client`, source "fixed by the caller";
-   - a fixed rule the repository breaks → a question of its own, mark `required`;
    - anything else → a gap: a question of its own, carrying its recommendation from `suggestion.md`.
 
    Done when every rule sits in exactly one place.
@@ -142,8 +142,8 @@ Answer, the change needed:
    and every `required` rule a change.
 3. **Front matter.** Follow `example-policy.md` for the shape and `delivery-policy.schema.json` for the
    rules. Emit this YAML subset only: block mappings and block sequences, two-space indentation, every
-   string double-quoted, integers, `true`, `false`, `null`, `#` comments. An opt-in left off carries only
-   its `enabled` rule. Done when every rule the schema requires is present with its value and mark.
+   `value` and `change` string double-quoted, each `mark` bare, integers, `true`, `false`, `null`, `#`
+   comments. An opt-in left off carries only its `enabled` rule. Done when every rule the schema requires is present with its value and mark.
 4. **Body.** After the front matter, a `# Delivery policy` heading, then one `##` section per top-level
    front matter section other than `schema_version`, in the same order. Each rule is one bullet: its name, its path, its value, its
    mark, and for a `required` rule "Change needed:" and the change. Done when every rule in the front
@@ -162,8 +162,7 @@ Answer, the change needed:
 2. **Read the body** against the front matter. Done when each front matter rule is matched to its bullet
    or found missing.
 3. **Report** every line of the [checklist](#checklist) as pass or fail, each fail with the rule that
-   fails it, and the script's output beneath. Done when every line carries a verdict. The policy is
-   left as it was.
+   fails it, and the script's output beneath. Done when every line carries a verdict.
 
 ## Checklist
 
