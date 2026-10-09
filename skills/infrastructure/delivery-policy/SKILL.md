@@ -105,6 +105,7 @@ Observed:
 Not observed:
 - `gh api repos/{owner}/{repo}/rulesets` — HTTP 403
 
+Recommendation: keep all of it — each value is what the repository already does
 Answer: keep all of it | keep it with the changes below
 Changes, one `<rule>: <value>` per line:
 ```text
