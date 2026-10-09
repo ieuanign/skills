@@ -76,8 +76,9 @@ names only; code takes each credential from its tool's own environment variable 
       with the plan's summary. Done when the plan shows no change, or its drift is returned.
    2. Production: `<TOOLS>/restore-test.sh <environment> <store>` per data store. Done when each prints a
       `done` record line.
-   3. Staging: generate each test account's password into the test-accounts file by shell redirection,
-      with staging's address, then run the seed step with that file as its environment. Done when every
+   3. Staging: each account in the test-accounts file signs in at staging's address. Where the file is
+      absent or an account fails to sign in, generate that password, with staging's address, into the
+      file by shell redirection, then run the seed step with the file as its environment. Done when every
       account signs in.
    4. **Runtime**'s pending-reboot check, read-only. Done when each host awaiting a reboot is listed.
    5. `gh run list --workflow deployment.yml --branch <TRUNK> --limit 1 --json databaseId,conclusion,url`,
