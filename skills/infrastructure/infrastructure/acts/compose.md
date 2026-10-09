@@ -42,7 +42,3 @@ of its own.
 ## Preview unit
 
 Compose project `pr-<n>` on staging's hosts, behind staging's `tools.proxy`.
-
-## Prune
-
-`prune.sh` frees unused images, build cache and rotated logs on the host.

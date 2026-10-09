@@ -48,7 +48,3 @@ cluster of its own.
 ## Preview unit
 
 Namespace `pr-<n>` on staging's cluster, routed by staging's `tools.ingress`.
-
-## Prune
-
-`prune.sh` deletes finished pods in namespace `<environment>`.
