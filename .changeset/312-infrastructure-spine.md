@@ -1,5 +1,0 @@
----
-"ieuanign-skills": minor
----
-
-infrastructure: a new skill under `skills/infrastructure/` that changes a repository's pipeline and infrastructure code only through a merged pull request, taking every tool from `docs/delivery-policy.md`. It reads the policy and runs `delivery-policy` Check first, writing nothing and naming what is missing when either fails; logs tools in with credential files from the caller's arguments or `.infra.local.env` without reading them; and never applies from a branch. Its first mode, first-run, opens one pull request holding the pull request check workflow, the bundled `derived-files.sh` (passes a change touching only derived files, or an exact revert) and `changed-paths.sh` (the services changed since an environment's last successful Deployment), and the branch rules as infrastructure code where a GitHub admin credential is given, otherwise as a `wizard` step on one issue it stops for; where nothing differs it opens nothing and proves the pipeline passes read-only. `npm run check` drives both scripts over fixtures and caps the spine plus its largest act. Model-invoked.
