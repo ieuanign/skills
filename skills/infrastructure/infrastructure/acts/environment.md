@@ -62,7 +62,8 @@ names only; code takes each credential from its tool's own environment variable 
 
 1. **Resume.** `gh pr list --state open --limit 1000 --json url,headRefName --jq '.[] | select(.headRefName | startswith("<BRANCH_PREFIX>")) | .url'`.
    Done when none is open, or its link is returned as the result with nothing else written.
-2. **Preconditions.** The entry is absent: return a refusal naming it. Contact points are needed and
+2. **Preconditions.** The entry is absent, or its `runtime` is `paas`, which this mode does not build:
+   return a refusal naming it. Contact points are needed and
    none are named: return a refusal naming them. Done when neither refusal applies and the runtime act,
    with the opt-ins act where it applies, is read.
 3. **Render.** `git fetch origin`, then decide each deliverable against `origin/<TRUNK>`, reading the
