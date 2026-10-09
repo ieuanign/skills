@@ -1,6 +1,6 @@
 ---
 name: infra-report
-description: Posts one infrastructure report — cost per environment, usage per host, pipeline minutes, the last restore and right-sizing suggestions, every figure naming its source — as a comment on the pinned "Infrastructure reports" issue, changing nothing. Use when the infrastructure needs a cost, usage or right-sizing report. Use to check that the latest report names a source for every figure.
+description: Posts one infrastructure report — cost per environment, usage per host, pipeline minutes, the last restore and right-sizing suggestions, every figure naming its source — as a comment on the pinned "Infrastructure reports" issue, changing nothing. Use when an infrastructure report is needed, or to check the latest one.
 ---
 
 # infra-report — one report comment, every figure sourced, nothing changed
@@ -62,19 +62,19 @@ INFRA_CREDENTIAL_GRAFANA_<ENVIRONMENT>=<path>
 Five sections, in this order.
 
 1. **Cost.** Per environment: look up the policy's provider's billing API now and read month-to-date and forecast through it. Its own forecast where it gives one; otherwise month-to-date divided by days elapsed, times days in the month, labelled `computed`. A provider with no billing API: each resource's price recorded under `infrastructure_as_code.path`, labelled `list price`, file and line as source. Done when every environment has a cost line or a `not available` line.
-2. **Usage.** Per host: CPU, memory, disk and bandwidth, each a PromQL query through Grafana's datasource proxy API, the Grafana credential's path handed to the request. Runtime `paas` has no hosts: its usage is `not available: PaaS runtime`. Done when every host has four figures or `not available` lines, and every environment with no hosts says why.
+2. **Usage.** Per host declared under `infrastructure_as_code.path`: CPU, memory, disk and bandwidth, each a PromQL query through Grafana's datasource proxy API, the Grafana credential's path handed to the request. Runtime `paas` has no hosts: its usage is `not available: PaaS runtime`. Done when every host has four figures or `not available` lines, and every environment with no hosts says why.
 3. **Pipeline minutes.** The current month's workflow run minutes, from the Actions API through `gh api repos/{owner}/{repo}/actions/...`, looking up the endpoints with `gh api --help` and the API reference. Done when the month's minutes are stated per workflow and in total, or `not available`.
 4. **Last restore.** The date and result from the latest comment on the `Infrastructure reports` issue beginning `## Restore`, that comment's URL as source. None found: `not available: no restore recorded`. Done when the line is written.
 5. **Suggestions.** Two kinds:
    - **Right-sizing**: the 30-day p95 of CPU and of memory per host, by PromQL as in Usage. Below `right_sizing.down_below_percent` proposes the next size down; above `right_sizing.up_above_percent`, the next size up. Sizes and prices from the provider's own listing, read now.
-   - **Idle resources**: unattached IPs, empty load balancers, stopped instances and snapshots past retention, each listed through the provider's read calls, looked up now. The policy holds no retention; state the retention you assumed.
+   - **Idle resources**: unattached IPs, empty load balancers, stopped instances and snapshots past retention, each listed through the provider's read calls, looked up now. Retention is the one the infrastructure code states, else state the one you assumed.
 
    Each suggestion is its own numbered block in the [shape](#the-comment), every field filled. Done when every host and every idle resource found has a block or appears under "Nothing to suggest".
 
 Then post:
 
 6. **The issue.** `gh issue list --state open --search 'in:title "Infrastructure reports"' --json number,title`, keeping the one whose title is exactly `Infrastructure reports`. None: create it with `gh issue create --title 'Infrastructure reports' --body-file - <<'EOF'` (a one-line body saying what the issue collects), then `gh issue pin <n>`. A pin that fails still lets the comment post; name the failure in the return. Done when the issue number is known.
-7. **The comment**, in the shape below, then run [Check](#check) on it and say its verdict in the return. Done when the comment is posted.
+7. **The comment**, in the shape below, then run [Check](#check) on it and say its verdict in the return. Done when the comment is posted and Check's verdict is in hand.
 
 **Return** the comment's URL, the Check verdict, and the number of suggestions with their total `computed` monthly saving.
 
