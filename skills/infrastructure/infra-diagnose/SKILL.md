@@ -46,7 +46,9 @@ Paths only, never contents. The viewer token's path is the caller's argument, el
 
 1. **The policy.** Invoke `delivery-policy` through the Skill tool for its Check branch on `docs/delivery-policy.md`. A missing file, a failing Check or a missing skill is a refusal naming each. Each rule holds its value under `value`. Read `environments.<environment>.runtime`, `.monitoring`, `.remediation.enabled`, `.remediation.allowlist`, `.scale.min`, `.scale.max`; `services`; `paths.tools`. Done when each is known or absent.
 2. **The alert.** From a webhook payload: each firing alert's rule name (`alertname`), labels, `startsAt` and link, the Grafana base address taken from the payload's own URLs. From text: the same facts as written. The environment is the one policy environment a label value or the text names. On [Check](#check), both come from the alert issue's title `Alert: <rule> (<environment>)` instead. Done when rule and environment are known; an alert with no rule, or naming no policy environment, is a refusal naming what is missing.
-3. **The Grafana address**: the alert's own link, else the caller's argument. Done when known or absent.
+3. **The Grafana address**: the alert's own link, else the caller's argument. With `monitoring` `own` it
+   is the owner's own Grafana, read with its token exactly as an `added` stack is; an owner's monitoring
+   that is not Grafana ends `not actionable: monitoring is not Grafana`. Done when known or absent.
 4. **The token path**, by [Credentials](#credentials). Done when it is a path or absent.
 
 ## Pick the branch
