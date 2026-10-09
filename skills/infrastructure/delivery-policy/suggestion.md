@@ -79,8 +79,9 @@ Read over p95 CPU and memory for 30 days.
 
 - `tools.proxy` — `"traefik"`.
 - `tools.ingress` — `"traefik"` where an environment runs `kubernetes`; otherwise `null`.
-- `tools.certificates` — ACME either way: `"acme"`, issued by the proxy, where every environment runs
-  `compose`; `"cert-manager"` where an environment runs `kubernetes`.
+- `tools.certificates` — ACME either way: `"acme"` where no environment runs `kubernetes`, issued by
+  the proxy on `compose` and by the platform on `paas`; `"cert-manager"` where an environment runs
+  `kubernetes`.
 - `tools.monitoring` — `"prometheus-loki-grafana"`: Prometheus with node-exporter and cAdvisor, Loki
   with Grafana Alloy, and Grafana.
 - `tools.deployment` — `"helm"` where an environment runs `kubernetes`; otherwise `null`.
