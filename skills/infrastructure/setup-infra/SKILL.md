@@ -19,7 +19,7 @@ Git host commands are GitHub's, through `gh`; on another host, take the equivale
 - **First run** — `docs/delivery-policy.md` is absent.
 - **Later run** — `docs/delivery-policy.md` is present.
 
-Steps 2, 3 and 5 are the same on both. Done when one branch is chosen.
+Steps 2 and 3 are the same on both. Done when one branch is chosen.
 
 ## 1. The policy
 
@@ -29,11 +29,12 @@ Call `delivery-policy` through the Skill tool for its Observe branch, passing no
   (keep all of it?) first, then each gap and broken fixed rule, each shown with its recommendation.
   Ask only the questions Observe returned.
 - **Later run.** Read `docs/delivery-policy.md` and show it to the person first, then put the question
-  set and ask only what should change; every other answer keeps the policy as it stands.
+  set and ask only what should change; fill every other answer from the policy as it stands — a gap's
+  box with its current value, a Changes line wherever question 1's observed value differs.
 
-Fill the answers into the question set and call `delivery-policy` through the Skill tool for its Write
-branch with it. Write is the only writer of `docs/delivery-policy.md`. Done when Write returns its
-checklist result, and every fail on it is shown to the person.
+Fill the answers into the question set, show it, and on a yes call `delivery-policy` through the Skill
+tool for its Write branch with it. Write is the only writer of `docs/delivery-policy.md`. Done when
+Write returns its checklist result, and every fail on it is shown to the person.
 
 ## 2. The preconditions
 
@@ -43,10 +44,10 @@ item in one list. This step installs nothing and fixes nothing.
 - **Tools on `PATH`**: `gh`, the infrastructure-as-code tool, each runtime's tools, and each
   environment's provider CLI — the binary for each named from the policy's value, confirmed with the
   person where the name is unclear.
-- **Credential files**: a presence test on each path only. Never open, print or copy a credential.
-- **`gh` scopes**: `gh auth status`, against what the policy asks of GitHub. Each missing scope is reported with the rule that needs it.
+- **`gh` scopes**: `gh auth status`, against `repo` and `workflow` — `infrastructure` pushes workflow
+  files and calls the repository API. Each missing scope is reported.
 
-Done when every tool, credential path and scope is reported present or missing.
+Done when every tool and scope is reported present or missing.
 
 ## 3. The machine's paths
 
@@ -54,14 +55,17 @@ Done when every tool, credential path and scope is reported present or missing.
 to read — paths only, never a file's contents. Keys:
 
 ```text
-INFRA_CREDENTIAL_<PROVIDER>_<ENVIRONMENT>=<path>
+INFRA_CREDENTIAL_GITHUB=<path>
+INFRA_CREDENTIAL_PROVIDER_<ENVIRONMENT>=<path>
+INFRA_CREDENTIAL_DNS_<ENVIRONMENT>=<path>
 INFRA_CREDENTIAL_GRAFANA_<ENVIRONMENT>=<path>
 INFRA_TEST_ACCOUNTS_ENV=<path>
 ```
 
-`<PROVIDER>` and `<ENVIRONMENT>` are the policy's provider and environment names, upper-cased. The `GRAFANA` key is each environment's Grafana viewer token, which `infra-report`
-and `infra-diagnose` read. Where no
-environment in the policy needs a credential, skip this step.
+`<ENVIRONMENT>` is the policy's environment name, upper-cased. `GITHUB` is the GitHub admin credential
+and `DNS` the zone's provider credential, both optional; `GRAFANA` is the environment's Grafana viewer
+token, which `infra-report` and `infra-diagnose` read. Where no environment in the policy needs a
+credential, skip this step.
 
 1. **Ask once** for every path the policy's environments need. Where the file exists, show it and ask
    only what should change.
@@ -69,9 +73,11 @@ environment in the policy needs a credential, skip this step.
 3. **Run `git check-ignore -q .infra.local.env`.** On a non-zero exit, offer the `.infra.local.env`
    line for `.gitignore`. Write the file only once it is ignored: a declined line leaves it unwritten,
    with its paths shown for the person to keep.
+4. **Test** each path with a presence test only, reporting each missing one. Never open, print or copy
+   a credential.
 
-Done when the file is written and ignored, or nothing is written because the file or its line was
-declined.
+Done when every path is tested, and the file is written and ignored, or nothing is written because the
+file or its line was declined.
 
 ## 4. Committing
 
@@ -90,4 +96,4 @@ Name the `infrastructure` call to make next; invoke none.
   environment in the policy.
 - **Later run** — `infrastructure` change, with the policy's working-tree change as its input.
 
-Done when the call is named, with every item step 2 reported missing listed beside it.
+Done when the call is named, with every item steps 2 and 3 reported missing listed beside it.
