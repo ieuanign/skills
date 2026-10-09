@@ -65,9 +65,11 @@ environment in the policy needs a credential, skip this step.
    only what should change.
 2. **Show** the proposed file.
 3. **Run `git check-ignore -q .infra.local.env`.** On a non-zero exit, offer the `.infra.local.env`
-   line for `.gitignore`.
+   line for `.gitignore`. Write the file only once it is ignored: a declined line leaves it unwritten,
+   with its paths shown for the person to keep.
 
-Done when the file and any `.gitignore` line are written as accepted, or declined.
+Done when the file is written and ignored, or nothing is written because the file or its line was
+declined.
 
 ## 4. Committing
 
