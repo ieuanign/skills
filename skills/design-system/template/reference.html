@@ -1,0 +1,206 @@
+<!doctype html>
+<!-- REFERENCE — every token and component of the skeleton, in both themes. A colour token is one
+     data-token row and a text-and-background pair one data-pair row; the script fills in their values. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reference</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="skeleton.css">
+<script src="skeleton.js"></script>
+<style>
+/* This page's layout only. */
+section.block { padding: var(--space-5) 0 var(--space-2); scroll-margin-top: 3.5rem; }
+section.block > h2 { margin: var(--space-1) 0 var(--space-3); font-size: var(--text-lg); }
+.ref-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: var(--space-3); align-items: start; }
+.ref-grid > .card { display: grid; gap: var(--space-2); }
+.ref-grid h3 { margin: 0; font-size: var(--text-md); }
+.scroll-x { overflow-x: auto; }
+table.t { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+table.t th, table.t td { padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--color-border); text-align: left; white-space: nowrap; }
+table.t th { font-weight: 600; color: var(--color-text-muted); }
+table.t td:last-child { white-space: normal; }
+code { font-family: var(--font-mono); }
+.hex { display: inline-flex; gap: var(--space-2); align-items: center; }
+.sw { width: 1rem; height: 1rem; flex: none; border-radius: var(--radius-sm); box-shadow: inset 0 0 0 1px #8888884d; }
+.pill { display: inline-flex; gap: var(--space-1); align-items: center; padding: 0 var(--space-2); border: 1px solid; border-radius: var(--radius-lg); }
+.pill[data-ratio="pass"] { color: var(--color-success); }
+.pill[data-ratio="fail"] { color: var(--color-danger); }
+.radii, .icons { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.radii div { width: 6rem; height: 4rem; display: flex; align-items: flex-end; padding: var(--space-1); border: 2px solid var(--color-primary); font-size: var(--text-sm); }
+.space-row { display: grid; grid-template-columns: 8rem 1fr; gap: var(--space-3); align-items: center; font-size: var(--text-sm); }
+.space-row i { height: 0.75rem; background: var(--color-primary); }
+.icons span { display: grid; justify-items: center; gap: var(--space-1); font-size: var(--text-sm); color: var(--color-text-muted); }
+.icons .i { font-size: 1.25rem; color: var(--color-text); }
+.a4 { height: 9.5rem; overflow: hidden; }
+.a4 .frame-page { zoom: 0.3; max-width: none; }
+</style>
+</head>
+<body>
+<header class="top wrap">
+  <div class="eyebrow">Design system</div>
+  <h1>Reference</h1>
+  <p class="lede">Every token and component of the skeleton, in both themes. The colour and contrast tables read their values from the tokens this page links.</p>
+</header>
+
+<div class="bar">
+  <div class="wrap">
+    <nav class="jump" aria-label="Sections"><a href="#tokens">Colour</a><a href="#contrast">Contrast</a><a href="#shape">Shape</a><a href="#type">Type</a><a href="#space">Space</a><a href="#icons">Icons</a><a href="#components">Components</a><a href="#frames">Frames</a><a href="#page">Page</a></nav>
+    <div class="spacer"></div>
+    <div class="seg" role="group" aria-label="Theme"><button type="button" data-theme-btn="light">Light</button><button type="button" data-theme-btn="dark">Dark</button></div>
+  </div>
+</div>
+
+<main class="wrap">
+  <section class="block" id="tokens">
+    <div class="eyebrow">Colour</div><h2>Tokens</h2>
+    <div class="scroll-x"><table class="t">
+      <thead><tr><th>Token</th><th>Light</th><th>Dark</th><th>Use</th></tr></thead>
+      <tbody>
+        <tr data-token="--color-bg"><td><code>--color-bg</code></td><td data-value="light"></td><td data-value="dark"></td><td>Page background, inputs</td></tr>
+        <tr data-token="--color-surface"><td><code>--color-surface</code></td><td data-value="light"></td><td data-value="dark"></td><td>Cards, alerts, segmented controls</td></tr>
+        <tr data-token="--color-border"><td><code>--color-border</code></td><td data-value="light"></td><td data-value="dark"></td><td>Borders and dividers</td></tr>
+        <tr data-token="--color-text"><td><code>--color-text</code></td><td data-value="light"></td><td data-value="dark"></td><td>Headings and body text</td></tr>
+        <tr data-token="--color-text-muted"><td><code>--color-text-muted</code></td><td data-value="light"></td><td data-value="dark"></td><td>Supporting text, labels</td></tr>
+        <tr data-token="--color-primary"><td><code>--color-primary</code></td><td data-value="light"></td><td data-value="dark"></td><td>Primary actions</td></tr>
+        <tr data-token="--color-on-primary"><td><code>--color-on-primary</code></td><td data-value="light"></td><td data-value="dark"></td><td>Text on a primary action</td></tr>
+        <tr data-token="--color-danger"><td><code>--color-danger</code></td><td data-value="light"></td><td data-value="dark"></td><td>Field errors, an error state's mark</td></tr>
+        <tr data-token="--color-success"><td><code>--color-success</code></td><td data-value="light"></td><td data-value="dark"></td><td>Success alerts</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="block" id="contrast">
+    <div class="eyebrow">Accessibility</div><h2>Contrast</h2>
+    <!-- data-pair: the foreground, then its background; a translucent background is followed by what lies beneath it. -->
+    <div class="scroll-x"><table class="t">
+      <thead><tr><th>Foreground</th><th>Background</th><th>Needs</th><th>Light</th><th>Dark</th></tr></thead>
+      <tbody>
+        <tr data-pair="--color-text --color-bg" data-min="4.5"><td><code>--color-text</code></td><td><code>--color-bg</code></td><td>4.5:1</td><td data-value="light"></td><td data-value="dark"></td></tr>
+        <tr data-pair="--color-text --color-surface" data-min="4.5"><td><code>--color-text</code></td><td><code>--color-surface</code></td><td>4.5:1</td><td data-value="light"></td><td data-value="dark"></td></tr>
+        <tr data-pair="--color-text-muted --color-bg" data-min="4.5"><td><code>--color-text-muted</code></td><td><code>--color-bg</code></td><td>4.5:1</td><td data-value="light"></td><td data-value="dark"></td></tr>
+        <tr data-pair="--color-text-muted --color-surface" data-min="4.5"><td><code>--color-text-muted</code></td><td><code>--color-surface</code></td><td>4.5:1</td><td data-value="light"></td><td data-value="dark"></td></tr>
+        <tr data-pair="--color-on-primary --color-primary" data-min="4.5"><td><code>--color-on-primary</code></td><td><code>--color-primary</code></td><td>4.5:1</td><td data-value="light"></td><td data-value="dark"></td></tr>
+        <tr data-pair="--color-primary --color-bg" data-min="4.5"><td><code>--color-primary</code></td><td><code>--color-bg</code></td><td>4.5:1</td><td data-value="light"></td><td data-value="dark"></td></tr>
+        <tr data-pair="--color-danger --color-bg" data-min="4.5"><td><code>--color-danger</code></td><td><code>--color-bg</code></td><td>4.5:1</td><td data-value="light"></td><td data-value="dark"></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="block" id="shape">
+    <div class="eyebrow">Shape</div><h2>Radius</h2>
+    <div class="radii">
+      <div style="border-radius:var(--radius-sm)">radius-sm</div>
+      <div style="border-radius:var(--radius-md)">radius-md</div>
+      <div style="border-radius:var(--radius-lg)">radius-lg</div>
+    </div>
+  </section>
+
+  <section class="block" id="type">
+    <div class="eyebrow">Type</div><h2>Typography</h2>
+    <p style="font-size:var(--text-sm)"><code>--text-sm</code> · The workshop starts repairs once the order is issued.</p>
+    <p style="font-size:var(--text-md)"><code>--text-md</code> · The workshop starts repairs once the order is issued.</p>
+    <p style="font-size:var(--text-lg)"><code>--text-lg</code> · The workshop starts repairs once the order is issued.</p>
+    <p style="font-size:var(--text-xl)"><code>--text-xl</code> · Claim 0812 approved</p>
+    <p style="font-family:var(--font-mono)"><code>--font-mono</code> · REQ-57.1</p>
+  </section>
+
+  <section class="block" id="space">
+    <div class="eyebrow">Layout</div><h2>Spacing</h2>
+    <div class="space-row"><code>--space-1</code><i style="width:var(--space-1)"></i></div>
+    <div class="space-row"><code>--space-2</code><i style="width:var(--space-2)"></i></div>
+    <div class="space-row"><code>--space-3</code><i style="width:var(--space-3)"></i></div>
+    <div class="space-row"><code>--space-4</code><i style="width:var(--space-4)"></i></div>
+    <div class="space-row"><code>--space-5</code><i style="width:var(--space-5)"></i></div>
+  </section>
+
+  <section class="block" id="icons">
+    <div class="eyebrow">Icons</div><h2>The sprite</h2>
+    <div class="icons" data-icons></div>
+  </section>
+
+  <section class="block" id="components">
+    <div class="eyebrow">Components</div><h2>Each in its variants</h2>
+    <div class="ref-grid">
+      <div class="card"><h3>Button</h3><div><button class="button" type="button">Sign in</button> <button class="button button-secondary" type="button">Cancel</button> <button class="button" type="button" disabled>Signing you in…</button></div></div>
+      <div class="card"><h3>Field</h3>
+        <div class="field"><label for="ref-email">Email</label><input id="ref-email" type="email"></div>
+        <div class="field"><label for="ref-password">Password</label><input id="ref-password" type="password" aria-invalid="true"><span class="field-error">That password is not right.</span></div>
+      </div>
+      <div class="card"><h3>Card</h3><div class="card" style="background:var(--color-bg)">Claim 0812 · waiting for photos</div></div>
+      <div class="card"><h3>Alert</h3><p class="alert-success" style="margin:0;background:var(--color-bg)">You are signed in.</p></div>
+    </div>
+  </section>
+
+  <section class="block" id="frames">
+    <div class="eyebrow">Surfaces</div><h2>Frames</h2>
+    <p><code>.frame-browser</code> and <code>.frame-phone</code> are drawn on <a href="skeleton.html">the skeleton</a>, at each size the size switch offers.</p>
+    <div class="ref-grid" style="grid-template-columns:repeat(auto-fill, minmax(22rem, 1fr))">
+      <div class="frame-email">
+        <dl class="mailhead"><dd class="subj">Your sign-in code</dd><dt>From</dt><dd>no-reply@example.com</dd><dt>To</dt><dd>rina@example.com</dd></dl>
+        <div class="mailbody">Enter 481 532 on the page you have open.</div>
+      </div>
+      <div class="frame-notification"><div><b>Claims</b><br>Claim 0812 is waiting for your photos.</div></div>
+      <div class="a4"><div class="frame-page"><h2>Repair order</h2><p>An A4 page, 210 × 297 mm with 20 mm margins.</p></div></div>
+    </div>
+  </section>
+
+  <section class="block" id="page">
+    <div class="eyebrow">Page</div><h2>A page's own pieces</h2>
+    <p>The contract's hooks, as a mockup draws them. The floating panel is drawn on <a href="prototype.html">the design prototype</a>.</p>
+    <div class="ref-grid">
+      <div class="card"><h3>Requirement ids</h3><div><span class="req-chip">REQ-57.1</span> <span class="req-chip">REQ-57.3</span></div></div>
+      <div class="card"><h3>States</h3><div class="states" role="group" aria-label="State"><button type="button" aria-pressed="true">Waiting</button><button type="button" data-kind="error">Wrong code</button></div></div>
+      <div class="card"><h3>Open choice</h3><div class="options" role="group" aria-label="Option"><button type="button" aria-pressed="true">One field</button><button type="button">Six boxes</button></div></div>
+      <div class="card"><h3>Placeholder</h3><p style="margin:0">The code works for <mark data-placeholder>[Code lifetime]</mark>.</p></div>
+      <div class="card"><h3>Behaviour</h3><ul class="behaviour"><li>6 digits, valid 5 minutes, 5 attempts.</li><li>Resend after 60 s, at most 3 times.</li></ul></div>
+    </div>
+  </section>
+</main>
+
+<script>
+// skeleton.js adds the sprite once the page has loaded, and this must run after it.
+document.addEventListener("DOMContentLoaded", () => {
+  // A hidden element in each theme, so both themes' values are read whichever one is showing.
+  const themed = (theme) => {
+    const el = document.createElement("div");
+    applyTheme(el, theme);
+    el.hidden = true;
+    document.body.append(el);
+    return getComputedStyle(el);
+  };
+  const themes = { light: themed("light"), dark: themed("dark") };
+  const value = (theme, token) => themes[theme].getPropertyValue(token).trim();
+
+  document.querySelectorAll("[data-token]").forEach((row) => row.querySelectorAll("[data-value]").forEach((cell) => {
+    const v = value(cell.dataset.value, row.dataset.token);
+    cell.innerHTML = `<span class="hex"><span class="sw" style="background:${v}"></span><code>${v}</code></span>`;
+  }));
+
+  // Painting each colour onto a canvas turns any CSS colour, translucent or not, into the sRGB it shows as.
+  const ink = Object.assign(document.createElement("canvas"), { width: 1, height: 1 }).getContext("2d", { willReadFrequently: true });
+  const painted = (colours) => {
+    ink.clearRect(0, 0, 1, 1);
+    colours.forEach((c) => { ink.fillStyle = c; ink.fillRect(0, 0, 1, 1); });
+    return [...ink.getImageData(0, 0, 1, 1).data].slice(0, 3).map((c) => c / 255);
+  };
+  const luminance = ([r, g, b]) => {
+    const lin = (c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  };
+  document.querySelectorAll("[data-pair]").forEach((row) => row.querySelectorAll("[data-value]").forEach((cell) => {
+    const [fg, ...bg] = row.dataset.pair.split(/\s+/).map((token) => value(cell.dataset.value, token));
+    const beneath = bg.reverse();
+    const [dark, light] = [luminance(painted([...beneath, fg])), luminance(painted(beneath))].sort((a, b) => a - b);
+    const ratio = (light + 0.05) / (dark + 0.05);
+    const pass = ratio >= Number(row.dataset.min);
+    cell.innerHTML = `<span class="pill" data-ratio="${pass ? "pass" : "fail"}"><svg class="i" aria-hidden="true"><use href="#i-${pass ? "success" : "danger"}"/></svg>${ratio.toFixed(2)}:1</span>`;
+  }));
+
+  document.querySelector("[data-icons]").innerHTML = [...document.querySelectorAll("svg symbol[id]")]
+    .map((s) => `<span><svg class="i" aria-hidden="true"><use href="#${s.id}"/></svg>${s.id.slice(2)}</span>`).join("");
+});
+</script>
+</body>
+</html>
