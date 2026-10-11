@@ -62,7 +62,7 @@ Done when one branch is chosen and `N` is known.
    - **A revised PRD** — fetch it and read its last Revisions line. Redo only the screens whose `data-req` names a Changed or Withdrew id; place each Added id on its screen, adding a screen or state where step 1 of Build would. A Withdrew id leaves every `data-req`.
 
    Done when each reason, or each id on the Revisions line, is reflected on the pages, and the [checklist](#checklist) passes.
-3. **Show** as in Build step 4. On the pull request's branch, then **lock in**: stage and commit as in Confirm step 4, `git push` — one new commit on top of the pull request — and `git switch` back to the branch you noted. Done when the commit is on the remote, or the draft folder holds the edit.
+3. **Show** as in Build step 4. On the pull request's branch, then **publish**: stage and commit as in Confirm step 4, `git push` — one new commit on top of the pull request — and `git switch` back to the branch you noted. Done when the commit is on the remote, or the draft folder holds the edit.
 4. **Return** what changed per reason or id, the checklist result, and the pull request's URL where there is one.
 
 ## Confirm
@@ -77,7 +77,7 @@ Done when one branch is chosen and `N` is known.
    - An id the PRD's `## Withdrawn` names leaves every `data-req`.
 
    Done when every screen in the draft folder is a design prototype, and every line of the [checklist](#checklist) passes for each.
-4. **Lock in.** Show the design prototypes as in Build step 4. Stage them and any changes under `docs/design-system/`, and nothing else. Commit, in the repo's commit message convention, naming `#<N>`; `git push -u origin mockup/<N>-<slug>`, and open one pull request titled `Design: <name>` whose body names `#<N>` and lists each design prototype written, each addition and each placeholder left. Then `git switch` back to the branch you noted, and delete the draft folder: the pull request holds its content now. Done when the pull request exists, the checkout is on the branch it started on, and the draft folder is gone.
+4. **Publish.** Show the design prototypes as in Build step 4. Stage them and any changes under `docs/design-system/`, and nothing else. Commit, in the repo's commit message convention, naming `#<N>`; `git push -u origin mockup/<N>-<slug>`, and open one pull request titled `Design: <name>` whose body names `#<N>` and lists each design prototype written, each addition and each placeholder left. Then `git switch` back to the branch you noted, and delete the draft folder: the pull request holds its content now. Done when the pull request exists, the checkout is on the branch it started on, and the draft folder is gone.
 5. **Return** the pull request's URL, each design prototype's path, the checklist result, and `gh pr checkout <number>` as the way to open the pages again.
 
 ## Check
