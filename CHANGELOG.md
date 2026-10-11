@@ -1,5 +1,11 @@
 # ieuanign-skills
 
+## 0.28.2
+
+### Patch Changes
+
+- [#335](https://github.com/ieuanign/skills/pull/335) [`0c44140`](https://github.com/ieuanign/skills/commit/0c44140b53c3cee4445710e6b4b3dcabf6ec8c98) Thanks [@ieuanign](https://github.com/ieuanign)! - mockup: Confirm's last step is now named **Publish**, and Revise uses the same word, lowercase, for the same act on a pull request's branch. The step commits the design prototypes, pushes them and opens the pull request; "lock in" said "make final", which names none of that and which Revise contradicts by adding commits afterwards. "Fold into the prototype" was rejected, because Transform already names that act. What the step does, and when it is done, are unchanged.
+
 ## 0.28.1
 
 ### Patch Changes
