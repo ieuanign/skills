@@ -44,10 +44,19 @@ item in one list. This step installs nothing and fixes nothing.
 - **Tools on `PATH`**: `gh`, the infrastructure-as-code tool, each runtime's tools, and each
   environment's provider CLI — the binary for each named from the policy's value, confirmed with the
   person where the name is unclear.
-- **`gh` scopes**: `gh auth status`, against `repo` and `workflow` — `infrastructure` pushes workflow
-  files and calls the repository API. Each missing scope is reported.
+- **`gh` scopes**: `gh auth status`, read for its `Token scopes` line — `infrastructure` pushes workflow
+  files and calls the repository API.
+  - **The line is present**, whatever it reads: compare it against `repo` and `workflow`, and report
+    each missing scope. A line reading `none` reports both.
+  - **The line is absent** — a token whose access is repository permissions, such as a GitHub App
+    installation token or a fine-grained personal access token: report one note, kept apart from the
+    missing items. It says scopes do not apply to this token, and that its permissions to push to the
+    repository, `.github/workflows/` included, and to call the repository API were not checked.
+    `gh auth status` does not show them, a token cannot read its own workflow permission back, and the
+    one sure test is a push — a write, which this step never makes.
 
-Done when every tool and scope is reported present or missing.
+Done when every tool is reported present or missing, and each of the two scopes is reported present or
+missing — or, for a token without scopes, the one note is reported.
 
 ## 3. The machine's paths
 
@@ -96,4 +105,5 @@ Name the `infrastructure` call to make next; invoke none.
   environment in the policy.
 - **Later run** — `infrastructure` change, with the policy's working-tree change as its input.
 
-Done when the call is named, with every item steps 2 and 3 reported missing listed beside it.
+Done when the call is named, with every item steps 2 and 3 reported missing listed beside it, and each
+note step 2 reported listed after them as a note, never as a missing item.
