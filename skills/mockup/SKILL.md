@@ -1,22 +1,27 @@
 ---
 name: mockup
-description: Mocks up every screen a PRD changes, each in all its states, as one local HTML page built from docs/design-system/skeleton.html. Use to build a PRD's mockup, to revise a mockup from a person's reasons or a revised PRD, or to check a mockup against its checklist.
+description: Drafts the screens a PRD changes as a throwaway mockup under .scratch/, then on a person's confirmation turns each into a design prototype under docs/design/ — one interactive page per screen, shared by every PRD that touches it. Use to build a PRD's mockup, to revise it from a person's reasons or a revised PRD, to confirm it into design prototypes, or to check either against its checklist.
 ---
 
-# mockup — one local HTML page per PRD
+# mockup — a throwaway draft per PRD, a design prototype per screen
 
-A **mockup** is one self-contained `.html` page at `docs/design/<PRD number>-<slug>.html` showing every screen a PRD changes, each in all its states. You build it from `docs/design-system/skeleton.html` with file tools; the page is the deliverable, opened in a browser. Variants inside the running app are `/mattpocock-skills:prototype`'s UI branch, and the app's token file follows the skeleton separately.
+Two things, told apart by what lasts:
 
-**The skeleton's leading comment is the markup contract** — how a screen, its states, its surface, an open choice, a placeholder and the footer are marked up. Read it from the skeleton and follow it for every piece of markup; it is kept there, and only there, so that the page and anything reading the page take it from the one file. Carry it into the mockup verbatim.
+- A **mockup** is the draft of one PRD's screens, each in all its states. It is working material in the **draft folder** `.scratch/mockups/<N>-<slug>/`, opened in a browser by the person deciding the design, and deleted once they confirm it.
+- A **design prototype** is one screen at `docs/design/<folder>/<screen>.html`: every state reachable from its floating panel, its controls driving those states as the requirements say. `<folder>` is the screen's surface — `web`, `mobile` for ios and android, `email`, `pdf` or `notification`. A screen has one however many PRDs touch it, so a later PRD changes the page an earlier one left.
 
-The issue tracker should be in your context, from the consuming repo's `docs/agents/issue-tracker.md`. If it is not, write nothing and return a refusal naming `/mattpocock-skills:setup-matt-pocock-skills`. If `docs/design-system/skeleton.html` is not on the default branch, write nothing and return a refusal naming `/design-system`. Git host commands below are GitHub's, through `gh`; on another host, take the equivalent action.
+Variants inside the running app are `/mattpocock-skills:prototype`'s UI branch.
+
+**The leading comment of `docs/design-system/skeleton.html` is the markup contract** — how a screen, its states, its frame, an open choice, a placeholder, the footer and the panel are marked up, and which files a page links. Read it there and follow it for every piece of markup.
+
+The issue tracker should be in your context, from the consuming repo's `docs/agents/issue-tracker.md`. If it is not, write nothing and return a refusal naming `/mattpocock-skills:setup-matt-pocock-skills`. If `docs/design-system/prototype.html` is not on the default branch, write nothing and return a refusal naming `/design-system`. Git host commands below are GitHub's, through `gh`; on another host, take the equivalent action.
 
 ## The PRD
 
 Fetch the PRD as the issue tracker doc fetches the relevant ticket; its issue number is the PRD number `N`, its title `PRD: <name>`. Read it by its anchors:
 
 - `Changes what a person sees: yes | no` — with `no`, there is nothing to mock up: write nothing and return that.
-- Under `## Requirements`, each block `- **REQ-N.n** <behaviour>` with `  - Visible: yes | no`. The requirements marked `Visible: yes` are what the mockup shows; the user-story `###` heading above a block says who sees it.
+- Under `## Requirements`, each block `- **REQ-N.n** <behaviour>` with `  - Visible: yes | no`. The requirements marked `Visible: yes` are what the screens show; the user-story `###` heading above a block says who sees it.
 - `## Withdrawn` — ids no screen carries.
 - `## Revisions` — its last line, `- <date>: <reason>. Added REQ-N.9. Changed REQ-N.2. Withdrew REQ-N.5.`, names what a revised PRD touched.
 
@@ -24,49 +29,76 @@ The slug is the PRD's `<name>` in lowercase kebab-case. The branch is `mockup/<N
 
 ## Pick the branch
 
-- **Check** — you were asked to check a mockup. Go to [Check](#check).
-- **Revise** — an open pull request holds `docs/design/<N>-<slug>.html` and you have a person's reasons or a revised PRD. Go to [Revise](#revise).
+- **Check** — you were asked to check a mockup or a design prototype. Go to [Check](#check).
+- **Confirm** — the person has confirmed the design the draft folder holds. Go to [Confirm](#confirm).
+- **Revise** — the draft folder exists, or an open pull request is on `mockup/<N>-<slug>`, and you have a person's reasons or a revised PRD. Go to [Revise](#revise).
 - **Build** — anything else. Go to [Build](#build).
 
 Done when one branch is chosen and `N` is known.
 
 ## Build
 
-1. **Path.** Fetch the default branch (`git fetch origin`) and add a worktree on a new branch from it, outside the checkout you were invoked in: `git worktree add -b mockup/<N>-<slug> ../<checkout dir>-mockup-<N> origin/<default branch>`. Every write below goes into that worktree, so the invoking checkout stays on its branch with its files as they were. Done when the worktree exists and holds `docs/design-system/skeleton.html`.
-2. **Inventory.** List each screen the `Visible: yes` requirements change, with its surface and the ids it covers. Then, per screen, list every state that changes what it shows: each error the PRD names, plus empty, loading, success, dialog and first-run where they apply. Done when every `Visible: yes` id is on a screen, and every screen and every error in the PRD has a state.
-3. **Build** `docs/design/<N>-<slug>.html` from the skeleton, replacing its example section with one section per screen from step 2:
-   - **Behaviour.** Beside each screen, at most six of the PRD's rules for it, in the PRD's words.
-   - **Copy and controls.** Real copy, from the PRD where it gives any; a fact the PRD lacks is a placeholder. Controls are real elements, and any behaviour the PRD specifies works on the page.
-   - **Open choices.** Where a new screen's structure is open, up to three options for a person to name one of when they review it.
-   - **Footer.** Every choice the PRD did not make, every placeholder, every addition.
-   - **Missing pieces.** A token or component the skeleton lacks is added to `docs/design-system/skeleton.html` and `docs/design-system/reference.html` in both themes, then used.
+1. **Inventory.** List each screen the `Visible: yes` requirements change, with its surface and the ids it covers. Per screen, list every state that changes what it shows: each error the PRD names, plus empty, loading, success, dialog and first-run where they apply. Then mark each screen **existing** or **new**: after `git fetch origin`, `git ls-tree -r --name-only origin/<default branch> docs/design/` lists the design prototypes, each named for its screen. A screen one of them already draws is existing, and keeps that page's name and folder. Done when every `Visible: yes` id is on a screen, every screen and every error in the PRD has a state, and every screen is marked.
+2. **Patterns.** For each pattern the screens need — a table, a form, a dialog, navigation, an empty state — find how it is already built: first in the design prototypes, then in the code components, at the path the components comment in `docs/design-system/skeleton.css` names. Draw each as it is already built. A **conflict** is a pattern the design prototypes and the code build differently, or one the PRD needs that contradicts either, and every conflict is settled before anything is drawn:
+   - **Raise** each with both sides and their paths. Where a person invoked you in an interactive session, run `/mattpocock-skills:grilling` over them until each has a ruling: the side that stands. Otherwise write nothing and return the list.
+   - **Fix** the side that lost. The design side — a design prototype, the skeleton, the reference page — is fixed in a pull request of its own, on `design-fix/<N>-<slug>` and titled `Design fix: <pattern>`, opened as [Confirm](#confirm) steps 2 and 4 open one; return its URL and stop, because Build starts again once it merges. The code side is filed as an issue, as the issue tracker doc files one, and the mockup is drawn to the ruling.
 
-   Done when every screen and state from step 2 is a section, and every line of the [checklist](#checklist) passes.
-4. **Show.** Where a person invoked you in an interactive session, open the file with the OS opener (`open`, `xdg-open` or `start`). Otherwise, carry its path to the return.
-5. **Lock in.** In the worktree, stage the mockup and any changes under `docs/design-system/`, and nothing else. Commit, in the repo's commit message convention, naming `#<N>`; `git push -u origin mockup/<N>-<slug>`, and open one pull request titled `Mockup: <name>` whose body names `#<N>` and lists the footer's open choices for the reviewer. The worktree stays while the pull request is open: it holds the file the person reviews, and Revise works in it. Done when the pull request exists.
-6. **Return** the pull request's URL, the worktree's path to the mockup, and the checklist result.
+   Done when every pattern on the screens names where it is already built or is new to the project, and every conflict has a ruling and a pull request or an issue.
+3. **Draft** into the draft folder. `git check-ignore -q .scratch` says whether the repository ignores it; where it does not, add `.scratch/` to `.git/info/exclude`.
+   - **New screens** are sections of `mockup.html`, built from `docs/design-system/skeleton.html`. Beside each, at most six of the PRD's rules for it, in the PRD's words. Where a new screen's structure is open, up to three options for the person to name one of. The footer lists every choice the PRD did not make, every placeholder and every addition.
+   - **Existing screens** are copies of their design prototypes, at `<folder>/<screen>.html` (`git show origin/<default branch>:docs/design/<folder>/<screen>.html`). Change the copy: its states, its controls, and this PRD's ids added to `data-req`.
+   - **Copy and controls.** Real copy, from the PRD where it gives any; a fact the PRD lacks is a placeholder. Controls are real elements.
+   - **Missing pieces.** A token or component the skeleton lacks goes in that page's `<style data-additions>`, in both themes.
+
+   Done when every screen from step 1 is drawn, a new one on `mockup.html` and an existing one in its copy, and every line of the [checklist](#checklist) passes.
+4. **Show.** Where a person invoked you in an interactive session, open each page in the draft folder with the OS opener (`open`, `xdg-open` or `start`). Otherwise, carry their paths to the return.
+5. **Return** the draft folder's path, the pages in it, the open choices for the person to name, and the checklist result. Every tracked file is as it was: nothing is committed until the design is confirmed.
 
 ## Revise
 
-1. **Find the branch** through the open pull request whose files include `docs/design/<N>-<slug>.html`. Use the worktree `git worktree list` shows on its head branch, or add one: `git fetch origin`, then `git worktree add ../<checkout dir>-mockup-<N> <head branch>`. Done when a worktree on the pull request's head branch is up to date with its remote.
-2. **Edit** the same file, by whichever input you have:
-   - **A person's reasons** — change what each reason asks for, and nothing else.
-   - **A revised PRD** — fetch it and read its last Revisions line. Redo only the sections whose `data-req` names a Changed or Withdrew id; place each Added id on its screen, adding a section or state where step 2 of Build would. A Withdrew id leaves every section.
+1. **Find the pages.** The draft folder, where it exists. Otherwise the design prototypes on the pull request's branch: note the branch you are on, `git fetch origin`, then `git switch mockup/<N>-<slug>`. Done when the pages to edit are in the working tree.
+2. **Edit** those pages, by whichever input you have:
+   - **A person's reasons** — change what each reason asks for, and nothing else. A reason naming an option keeps that option, drops the others, and takes its line off the footer.
+   - **A revised PRD** — fetch it and read its last Revisions line. Redo only the screens whose `data-req` names a Changed or Withdrew id; place each Added id on its screen, adding a screen or state where step 1 of Build would. A Withdrew id leaves every `data-req`.
 
-   Done when each reason, or each id on the Revisions line, is reflected on the page, and the [checklist](#checklist) passes.
-3. **Show** as in Build step 4. Then **lock in**: stage as in Build step 5, commit as in Build step 5, and `git push`. The branch moves forward only — one new commit on top of the pull request. Done when the commit is on the remote.
-4. **Return** the pull request's URL, what changed per reason or id, and the checklist result.
+   Done when each reason, or each id on the Revisions line, is reflected on the pages, and the [checklist](#checklist) passes.
+3. **Show** as in Build step 4. On the pull request's branch, then **lock in**: stage and commit as in Confirm step 4, `git push` — one new commit on top of the pull request — and `git switch` back to the branch you noted. Done when the commit is on the remote, or the draft folder holds the edit.
+4. **Return** what changed per reason or id, the checklist result, and the pull request's URL where there is one.
+
+## Confirm
+
+1. **Ready.** While the footer's open-choices list holds an item, or a line of the [checklist](#checklist) fails, write nothing and return what is open. Done when the list is empty and every line passes.
+2. **Branch.** Note the branch you are on. `git fetch origin`, then `git switch --no-track -c mockup/<N>-<slug> origin/<default branch>`; where git refuses, write nothing and return its message. Done when the checkout is on the new branch.
+3. **Transform** the draft folder into design prototypes:
+   - Each section of `mockup.html` becomes `docs/design/<folder>/<screen>.html`, built from `docs/design-system/prototype.html`: the section's states drawn as one page, what differs between them marked `data-when`, and its states, its Behaviour list and its placeholders in the panel.
+   - Each copy of an existing design prototype is written over the page it was copied from.
+   - Every control the requirements give a behaviour carries it, and a link to another screen opens that screen's design prototype.
+   - Each `<style data-additions>` moves into `docs/design-system/`: `tokens.css` or `skeleton.css`, with an example on `reference.html`.
+   - An id the PRD's `## Withdrawn` names leaves every `data-req`.
+
+   Done when every screen in the draft folder is a design prototype, and every line of the [checklist](#checklist) passes for each.
+4. **Lock in.** Show the design prototypes as in Build step 4. Stage them and any changes under `docs/design-system/`, and nothing else. Commit, in the repo's commit message convention, naming `#<N>`; `git push -u origin mockup/<N>-<slug>`, and open one pull request titled `Design: <name>` whose body names `#<N>` and lists each design prototype written, each addition and each placeholder left. Then `git switch` back to the branch you noted, and delete the draft folder: the pull request holds its content now. Done when the pull request exists, the checkout is on the branch it started on, and the draft folder is gone.
+5. **Return** the pull request's URL, each design prototype's path, the checklist result, and `gh pr checkout <number>` as the way to open the pages again.
 
 ## Check
 
-**Read** the mockup — from the path given, or `git show <head branch>:docs/design/<N>-<slug>.html` from its pull request — its `skeleton.html` and `reference.html` from the same branch, and the PRD. **Report** every line of the [checklist](#checklist) as pass or fail, each fail naming the id, error, token, component, placeholder or URL that fails it. Done when all five lines carry a verdict. The result is the return; every file, branch and pull request is left as it was, so any caller can run Check with no side effects.
+**Read** the page — a mockup from its draft folder; a design prototype from the path given, or `git show <head branch>:<path>` from its pull request — with the contract in `docs/design-system/skeleton.html`, and the PRD. **Report** every line of the [checklist](#checklist) that applies to it as pass or fail, each fail naming the id, error, token, component, placeholder, state or link that fails it. Done when every such line carries a verdict. The result is the return; every file, branch and pull request is left as it was, so any caller can run Check with no side effects.
 
 ## Checklist
 
-The Build and Revise branches end on this list, and the Check branch reports on it.
+The Build, Revise and Confirm branches end on this list, and the Check branch reports on it.
 
-- Every requirement marked `Visible: yes` is on a screen, and every id on a screen is in the PRD's Requirements.
+Every page:
+
+- Every requirement marked `Visible: yes` is on a screen, and every id of this PRD on a screen is in its Requirements.
 - Every error the PRD names has a state.
-- Only the skeleton's tokens and components are used, or additions the footer lists.
-- Every `[Placeholder]` is in the footer.
-- The page opens with nothing loaded from the network but fonts: CSS and JS inline, `brand/` assets by relative path.
+- Only the skeleton's tokens and components are used, or the additions the page carries.
+- Every `[Placeholder]` is listed: in a mockup's footer, in a design prototype's panel.
+- The page links the files `docs/design-system/skeleton.html` links, and loads nothing else but fonts from the network.
+
+A design prototype, also:
+
+- Every state has its button in the panel and changes something on the page, and every `data-go` and `data-then` names a state.
+- Every control the requirements give a behaviour carries it.
+- Every link to another screen opens a page that exists.
+- It carries no open choice and no `<style data-additions>`.
