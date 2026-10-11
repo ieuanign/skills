@@ -42,7 +42,7 @@ Expected: …
 - **Requirement**: exactly one id that exists. A requirement may have several cases.
 - **Kind**: `positive` when the requirement's behaviour happens, `negative` when the software refuses or reports an error as it should.
 - **Priority**, on positive cases only: `high` when a person would be blocked if the case failed, otherwise `normal`.
-- **Surface**: web, iOS, Android, email, PDF or notification, as the mockup frames it.
+- **Surface**: web, iOS, Android, email, PDF or notification, as its design prototype frames it.
 
 **Where each case is tested.**
 
@@ -53,7 +53,7 @@ Expected: …
 ## Read
 
 1. **The bug.** `gh issue view <bug> --json number,title,state,body,comments`. One that already carries a `## Test case` comment is reproduced: write nothing and return that comment's URL. Done when the reported symptom — what was done, what was expected, what happened — is in hand.
-2. **The requirement.** Find the requirement the reported behaviour breaks: an id the bug names (`REQ-57.3`, or a case `TC-57.4` whose `Requirement:` line names one), else the PRDs' `## Requirements` (`gh issue list --state all --search 'in:title "PRD:"'`, then `gh issue view <N> --json body,comments`), their `## Test cases` comments, and their mockups under `docs/design/` on the default branch. Behaviour in no requirement, mockup or test case is a new request, not a bug: write nothing and return why. Done when one `REQ-N.n` is named, with its PRD's `## Test cases` comment where there is one.
+2. **The requirement.** Find the requirement the reported behaviour breaks: an id the bug names (`REQ-57.3`, or a case `TC-57.4` whose `Requirement:` line names one), else the PRDs' `## Requirements` (`gh issue list --state all --search 'in:title "PRD:"'`, then `gh issue view <N> --json body,comments`), their `## Test cases` comments, and the design prototypes under `docs/design/` on the default branch. Behaviour in no requirement, design prototype or test case is a new request, not a bug: write nothing and return why. Done when one `REQ-N.n` is named, with its PRD's `## Test cases` comment where there is one.
 3. **The runner.** The test runner for the case's seam, the local-stack bring-up, and the project's check: whatever the caller named, or what the project's manifests name (package.json scripts, Makefile, CI config). Found in neither, write nothing and return what is missing. Done when each command is known.
 
 ## Reproduce
