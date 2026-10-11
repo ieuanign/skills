@@ -259,15 +259,16 @@ and the person confirms the list.
 
 A project's look, set down once as plain HTML a person opens in a browser: a reference page showing
 every token and component in both themes, the **skeleton**, and the client's brand as they supplied
-it. What every **mockup** is built from, and only from.
+it. What every **mockup** and **design prototype** is built from, and only from.
 
 _Avoid_: style guide, theme — each names one part of it.
 
 ## Skeleton
 
-The one page of a **design system** every **mockup** starts from: its tokens for a light and a dark
-theme, its frames and components, and the markup contract a mockup follows, which lives in the
-skeleton alone so that a mockup and anything reading one take it from the same file.
+The files of a **design system** every **mockup** and **design prototype** links and starts from: its
+tokens for a light and a dark theme, its frames and components, the script behind a page's switches,
+and a starting page for each. Its markup contract lives in the skeleton alone, so that a page and
+anything reading one take it from the same file.
 
 Unrelated to the skeleton of acts a **spine** carries.
 
@@ -281,16 +282,26 @@ _Avoid_: variant, option — an option is an open choice on a **mockup**.
 
 ## Mockup
 
-One local HTML page per PRD showing every screen it changes, each in all its **states**, built from
-the **skeleton** and reviewed on a pull request of its own. What a person sees before anything is
-built, and what tests read a screen's states and surface from.
+The throwaway draft of one PRD's screens, each in all its **states**, built from the **skeleton** and
+kept in scratch: what a person looks at while the design is still being decided. Once they confirm
+it, each screen becomes a **design prototype** and the mockup is deleted.
 
-_Avoid_: prototype — a prototype runs inside the app; wireframe — a mockup carries real copy and the
-design system's look.
+_Avoid_: wireframe — a mockup carries real copy and the design system's look; prototype — unqualified,
+a prototype runs inside the app.
+
+## Design prototype
+
+One page per screen, kept in the repository and shared by every PRD that touches the screen: every
+**state** reachable from a floating panel, its controls driving them as the requirements say. What a
+later PRD starts from when it changes the screen, and what tests read a screen's states and surface
+from.
+
+_Avoid_: prototype — unqualified, a prototype runs inside the app; mockup — the draft a design
+prototype is confirmed from.
 
 ## State
 
-One version of a screen on a **mockup** that changes what it shows: the default, each error the PRD
+One version of a screen on a **mockup** or a **design prototype** that changes what it shows: the default, each error the PRD
 names, and empty, loading, success, a dialog or first-run where they apply. An error state is marked
 as one, so it can be told from the rest.
 
@@ -304,7 +315,7 @@ test's title starts with it. Its **kind** is `positive` when the requirement's b
 `negative` when the software refuses or reports an error as it should; only a positive case is an
 end-to-end test. A positive case carries a **priority**, `high` when a person would be blocked if it
 failed, otherwise `normal`. Its **surface** is where it is seen — web, iOS, Android, email, PDF or a
-notification — as the **mockup** frames it.
+notification — as its **design prototype** frames it.
 
 _Avoid_: test — a test is the code that runs a case; scenario.
 
