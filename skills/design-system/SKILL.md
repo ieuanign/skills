@@ -1,6 +1,6 @@
 ---
 name: design-system
-description: Sets up a project's design system as local HTML under docs/design-system/ — a reference page, the skeleton.html every mockup is built from, and the client's brand/. Use to draw three directions from a PRD, to build the design system from a chosen direction, to adopt a design system already in code, or to check one against its checklist.
+description: Sets up a project's design system as local HTML under docs/design-system/ — a reference page, the skeleton every mockup and design prototype is built from, and the client's brand/. Use to draw three directions from a PRD, to build the design system from a chosen direction, to adopt a design system already in code, or to check one against its checklist.
 ---
 
 # design-system — set up a project's design system as local HTML
@@ -8,16 +8,20 @@ description: Sets up a project's design system as local HTML under docs/design-s
 The design system is three things under `docs/design-system/`, plain files a person opens in a browser:
 
 - **`reference.html`** shows every token and every component, in both themes.
-- **`skeleton.html`** is what every mockup is built from: the tokens in plain CSS for a light and a dark theme, a browser frame and a phone frame, the components in HTML and CSS named as the project's component kit names them, the state buttons and the theme switch.
+- **The skeleton** is what every mockup and design prototype is built from, and links: `tokens.css`, the tokens for a light and a dark theme; `skeleton.css`, a frame per surface and the components, named as the project's component kit names them; `skeleton.js`, the state, size and theme switches and a design prototype's floating panel; and the two pages built on them, `skeleton.html` for a mockup and `prototype.html` for a design prototype.
 - **`brand/`** holds what the client already has: a logo, colours, fonts, or a site to match as a URL in a text file. A person puts it there; you read it as it is.
 
-Your writes are those files and, in Directions, `directions.html` beside them. The app's own token file follows the skeleton separately, through a test the project writes; variants inside the running app are `/mattpocock-skills:prototype`'s UI branch. You leave every file uncommitted, for the person to review and commit.
+Your writes are those files and, in Directions, `directions.html` beside them. Variants inside the running app are `/mattpocock-skills:prototype`'s UI branch. You leave every file uncommitted, for the person to review and commit.
 
-## The skeleton template
+## The template
 
-[`skeleton-template.html`](skeleton-template.html), at `<this-skill-dir>/skeleton-template.html`, is the scaffold every page here starts from. Its leading comment is the **markup contract** every mockup follows: how a screen, its states, its surface and the footer are marked up. The contract lives in that comment, and travels inside every `skeleton.html`, so that `mockup` and anything reading a mockup take it from the one file they already hold. Carry the comment into each page verbatim; change the tokens, frames and components around it.
+[`template/`](template/), at `<this-skill-dir>/template/`, holds the skeleton's five files and `reference.html` under the names they are written to; every page here starts from it. The leading comment of its `skeleton.html` is the **markup contract** every mockup and design prototype follows: how a screen, its states, its frame, the footer and the panel are marked up. The contract lives in that comment alone, so that `mockup` and anything reading a page take it from the one file. Carry the comment into `skeleton.html` verbatim; change the tokens, frames and components around it. In `skeleton.js` the sizes the size switch offers and the icon sprite are the project's, and the hooks stay as they are.
 
-Every page you write inlines its CSS and JS and loads nothing from the network but fonts. `brand/` assets are linked by relative path.
+Every page links the token file, `skeleton.css` and `skeleton.js` by relative path, as it does `brand/` assets, and loads nothing from the network but fonts.
+
+## One source for the tokens
+
+Where the app has its own token file, that file is the source. If a browser loads it as it stands — plain CSS custom properties for both themes, with no preprocessor or framework at-rules — every page links it in place of `tokens.css`, which is not written, and the theme switch in `skeleton.js` sets whatever that file keys its dark theme on. Otherwise `tokens.css` mirrors it, name for name and value for value. With no token file in the app yet, `tokens.css` is the source, and the app's file follows it through a test the project writes.
 
 ## Pick the branch
 
@@ -32,28 +36,28 @@ Done when one branch is chosen and, for Directions, the PRD's number is known.
 
 1. **Read.** The issue tracker should be in your context, from the consuming repo's `docs/agents/issue-tracker.md`. If it is not, write nothing and return a refusal naming `/mattpocock-skills:setup-matt-pocock-skills`. Fetch the PRD as that doc fetches the relevant ticket, and the epic its `Epic:` line names. Read every file in `docs/design-system/brand/`. Done when the PRD's requirements marked `Visible: yes`, the epic and the brand are in hand.
 2. **Pick the screens.** Choose the PRD's screens that best show a direction: the main one, and one with a form or list. Done when two or three real screens are named, each with the requirement ids it covers.
-3. **Draw three directions.** Write `docs/design-system/directions.html` from the template: one section whose `data-option` buttons switch between the directions, each option panel setting its own token values for both themes and showing the screens from step 2 with the PRD's real copy. The directions differ in **structure** — layout, navigation, density, type scale — as well as colour. With a brand, each direction keeps its logo, colours and fonts; with an empty `brand/`, the directions are free. Done when each direction holds every screen from step 2 in both themes and passes the contrast line of the [checklist](#checklist).
+3. **Draw three directions.** Copy the template's `skeleton.css` and `skeleton.js` into `docs/design-system/`, and write `directions.html` beside them from its `skeleton.html`: one section whose `data-option` buttons switch between the directions, each option panel setting its own token values for both themes in the page's own `<style>` and showing the screens from step 2 with the PRD's real copy. The directions differ in **structure** — layout, navigation, density, type scale — as well as colour. With a brand, each direction keeps its logo, colours and fonts; with an empty `brand/`, the directions are free. Done when each direction holds every screen from step 2 in both themes and passes the contrast line of the [checklist](#checklist).
 4. **Return** the page's path, one line per direction saying what sets it apart, and the questions for the caller to put to a person: which direction to take, and what to change.
 
 ## Build
 
 1. **Inputs.** Take the chosen direction from `directions.html` and the changes the person asked for. Done when the direction's tokens, frames and components are known, with each change applied.
-2. **Skeleton.** Write `docs/design-system/skeleton.html` from the template: its tokens, frames, components and state buttons from step 1, the theme switch, and the contract comment verbatim. Name each component as the project's component kit names it, or by the direction where there is no kit. Done when every token and component the direction uses is in the file.
-3. **Reference page.** Write `docs/design-system/reference.html` with the skeleton's `<style>` copied verbatim, an example of every token (a swatch per colour in both themes, each size and space) and every component in each of its variants, and a list of the text and background pairs the components use. Done when every token and component in the skeleton has an example.
-4. **Clear the directions.** Delete `directions.html`. Done when the folder holds `reference.html`, `skeleton.html` and `brand/`.
+2. **Skeleton.** Write the skeleton's five files from the template: the tokens by [One source for the tokens](#one-source-for-the-tokens), the frames and components from step 1 in `skeleton.css`, and `skeleton.html` and `prototype.html` with their example screens drawn in those components and the contract comment verbatim. Name each component as the project's component kit names it, or by the direction where there is no kit, and name the kit's path in the components comment of `skeleton.css`. Done when every token and component the direction uses is in the files.
+3. **Reference page.** Write `docs/design-system/reference.html` from the template: a `data-token` row for every colour token, a `data-pair` row for every text and background pair the components use, an example of each size and space, and every component in each of its variants. Done when every token and component in the skeleton has an example.
+4. **Clear the directions.** Delete `directions.html`. Done when the folder holds the skeleton's files, `reference.html` and `brand/`.
 5. **Checklist.** Run every line of the [checklist](#checklist) and fix each fail. Done when every line passes.
-6. **Return** both paths and the checklist result.
+6. **Return** the files written and the checklist result.
 
 ## Adopt
 
 1. **Review the code.** Read the token file and the component kit. List what is missing: a token without a value in one theme, a component without a state the app renders, text below 4.5:1 against a background it is used on. Done when every token and every component in the kit has been read and each gap is listed.
 2. **Skeleton and reference page** as in Build steps 2 and 3, from the code as it is: its token names and values, its component names, its gaps left as they are. Done as in those steps.
-3. **Checklist.** Run every line of the [checklist](#checklist). Fix a fail in the two pages; a fail that comes from the code stays, and goes in the return. Done when every line has a verdict.
-4. **Return** both paths, the list of what is missing, and the checklist result.
+3. **Checklist.** Run every line of the [checklist](#checklist). Fix a fail in the files you wrote; a fail that comes from the code stays, and goes in the return. Done when every line has a verdict.
+4. **Return** the files written, the list of what is missing, and the checklist result.
 
 ## Check
 
-**Read** `reference.html` and `skeleton.html`, then **report** every line of the [checklist](#checklist) as pass or fail, each fail naming the token, component or pair that fails it. Done when all four lines carry a verdict. The result is the return; the files are left as they were, so any caller can run Check with no side effects.
+**Read** `reference.html` and the skeleton's files, then **report** every line of the [checklist](#checklist) as pass or fail, each fail naming the token, component, pair or page that fails it. Done when every line carries a verdict. The result is the return; the files are left as they were, so any caller can run Check with no side effects.
 
 ## Contrast
 
@@ -66,4 +70,5 @@ The Build and Adopt branches end on this list, and the Check branch reports on i
 - Every token and component has an example on the reference page.
 - The light and dark themes hold the same keys.
 - All text reaches 4.5:1 against the backgrounds it is used on, in both themes.
-- The skeleton and the reference page agree: the same tokens with the same values, and the same components.
+- Every page links the one token file, `skeleton.css` and `skeleton.js`, and carries no copy of what they hold.
+- Where `tokens.css` mirrors the app's token file, the two hold the same names and values.

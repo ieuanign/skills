@@ -1,0 +1,158 @@
+<!doctype html>
+<!--
+  SKELETON — the markup contract every mockup and design prototype follows. This comment is its one
+  source: a page links the files below and carries no copy, so anything reading a page reads its
+  contract here.
+
+  Files, in docs/design-system/
+  - tokens.css: the tokens for a light and a dark theme, the two holding identical keys.
+  - skeleton.css: the frames, the components and the page pieces. skeleton.js: the hooks.
+  - skeleton.html, this file: what a mockup is built from. prototype.html: what a design prototype is.
+  - A page links the stylesheets and the script this file links, by relative path from its own
+    folder (from docs/design/web/, ../../design-system/skeleton.css), as it does brand/ assets, and
+    loads nothing from the network but fonts. Its own <style> and <script> hold only what is that
+    page's alone.
+  - Only these tokens and components are used. One a draft adds sits in that page's
+    <style data-additions> until it is moved here and onto the reference page.
+
+  Screen
+  - The element carrying data-screen="<name>" data-req="REQ-57.1 REQ-57.3" data-surface="<surface>":
+    each <section> of a mockup, and the <body> of a design prototype, which is one screen.
+  - data-req holds every requirement id the screen covers, space-separated. A mockup also shows each
+    as a <span class="req-chip"> in the section's <h2>; a design prototype's panel draws them.
+  - data-surface is exactly one of: web, ios, android, email, pdf, notification.
+  - The screen is drawn in its .stage, in its surface's frame: web -> .frame-browser in a mockup and
+    the bare .viewport in a design prototype; ios, android -> .frame-phone; email -> .frame-email
+    (its real width); pdf -> .frame-page; notification -> .frame-notification (a push banner, toast
+    or SMS, drawn where it appears).
+  - A web or phone screen's content sits in .viewport. Layout that changes with width is an
+    @container rule, so the size switch redraws it.
+
+  State
+  - <button data-state="<name>" data-kind="<kind>"> in the screen's <div class="states">; the first
+    is the default state.
+  - data-kind is exactly one of: default, error, empty, loading, success, dialog, first-run.
+    Every error state is data-kind="error"; its data-state names the error.
+  - data-when="<state> <state>" on any element of the screen: shown in those states only.
+    data-when="!<state>" shows it in every state but that one.
+  - data-disabled-when and data-invalid-when take the same list, and disable or mark invalid.
+  - data-go="<state>" on a control or a <form>: a click or a submit moves the screen to that state.
+    data-then="<state>" on a state button: reached through data-go, the state moves on after a moment.
+
+  Copy
+  - Real copy. A fact the PRD lacks is <mark data-placeholder>[What is missing]</mark>.
+
+  Mockup — one page of a PRD's screens
+  - .states sits in the section's .head, and <ul class="behaviour"> beside the stage holds at most
+    six of the requirement's rules for the screen.
+  - Where a new screen's structure is open: <div class="options"> with up to three
+    <button data-option="<name>">, each showing its <div data-option-panel="<name>">.
+  - <footer data-footer> holds three lists, each item one line:
+    <ul data-list="open-choices"> every choice the PRD did not make;
+    <ul data-list="placeholders"> every [Placeholder] on the page, by its text;
+    <ul data-list="additions"> every token or component the page adds.
+
+  Design prototype — one page for one screen
+  - <aside data-panel> holds the screen's .states, its <ul class="behaviour"> and its
+    <ul data-list="placeholders">. skeleton.js draws the floating panel around them, with the size
+    switch, the theme switch and the requirement ids.
+  - Every state is reachable from the panel, and every control the requirements give a behaviour
+    carries it: data-go, or the page's own script.
+  - A link to another screen is an <a href> to that screen's design prototype; #<state> opens it in
+    that state.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skeleton</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="skeleton.css">
+<script src="skeleton.js"></script>
+</head>
+<body>
+<header class="top wrap">
+  <div class="eyebrow">Mockup</div>
+  <h1>Skeleton</h1>
+  <p class="lede">What every mockup is built from. Each screen has its states and its sizes in a row above it.</p>
+</header>
+
+<div class="bar">
+  <div class="wrap">
+    <nav class="jump" aria-label="Screens"><a href="#sign-in">Sign in</a><a href="#claims">Claims</a></nav>
+    <div class="spacer"></div>
+    <div class="seg" role="group" aria-label="Theme"><button type="button" data-theme-btn="light">Light</button><button type="button" data-theme-btn="dark">Dark</button></div>
+  </div>
+</div>
+
+<main class="wrap">
+  <!-- Examples of the contract, one per kind of frame; a mockup replaces them with its own screens. -->
+  <section id="sign-in" data-screen="sign-in" data-req="REQ-0.1" data-surface="web">
+    <div class="head">
+      <h2>Sign in <span class="req-chip">REQ-0.1</span></h2>
+      <div class="states" role="group" aria-label="State">
+        <button type="button" data-state="default" data-kind="default">Default</button>
+        <button type="button" data-state="wrong-password" data-kind="error">Wrong password</button>
+        <button type="button" data-state="signing-in" data-kind="loading">Signing in</button>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage">
+        <div class="frame-browser">
+          <div class="chrome"><i></i><i></i><i></i><span class="url">example.com/sign-in</span></div>
+          <div class="viewport">
+            <form class="page narrow">
+              <p class="field-error" data-when="wrong-password">That password is not right. <mark data-placeholder>[Attempts left]</mark> tries left.</p>
+              <div class="field"><label for="si-email">Email</label><input id="si-email" type="email" data-disabled-when="signing-in"></div>
+              <div class="field"><label for="si-password">Password</label><input id="si-password" type="password" data-invalid-when="wrong-password" data-disabled-when="signing-in"></div>
+              <button class="button" type="submit" data-disabled-when="signing-in"><span data-when="!signing-in">Sign in</span><span data-when="signing-in">Signing you in…</span></button>
+            </form>
+          </div>
+        </div>
+      </div>
+      <ul class="behaviour">
+        <li>A wrong password shows how many tries are left.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="claims" data-screen="claims" data-req="REQ-0.2" data-surface="ios">
+    <div class="head">
+      <h2>Claims <span class="req-chip">REQ-0.2</span></h2>
+      <div class="states" role="group" aria-label="State">
+        <button type="button" data-state="list" data-kind="default">List</button>
+        <button type="button" data-state="empty" data-kind="empty">Empty</button>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage">
+        <div class="frame-phone">
+          <div class="screen">
+            <div class="statusbar"><span>9:41</span><span>100%</span></div>
+            <div class="viewport">
+              <div class="page">
+                <div class="card" data-when="list">Claim 0812 · waiting for photos</div>
+                <p data-when="empty">You have no claims yet.</p>
+                <button class="button" type="button">Report a claim</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <ul class="behaviour">
+        <li>A person with no claims is told so, with the way to report one.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap" data-footer>
+  <h2>Open choices</h2>
+  <ul data-list="open-choices"></ul>
+  <h2>Placeholders</h2>
+  <ul data-list="placeholders"><li>[Attempts left]</li></ul>
+  <h2>Additions</h2>
+  <ul data-list="additions"></ul>
+</footer>
+</body>
+</html>

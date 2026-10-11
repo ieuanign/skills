@@ -1,0 +1,43 @@
+<!doctype html>
+<!-- PROTOTYPE — what every design prototype is built from: one screen, its states driven by its own
+     controls, and the floating panel. The markup contract is skeleton.html's leading comment. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="skeleton.css">
+<script src="skeleton.js"></script>
+</head>
+<body data-screen="sign-in" data-req="REQ-0.1" data-surface="web">
+<aside data-panel>
+  <div class="states" role="group" aria-label="State">
+    <button type="button" data-state="default" data-kind="default">Default</button>
+    <button type="button" data-state="signing-in" data-kind="loading" data-then="signed-in">Signing in</button>
+    <button type="button" data-state="wrong-password" data-kind="error">Wrong password</button>
+    <button type="button" data-state="signed-in" data-kind="success">Signed in</button>
+  </div>
+  <ul class="behaviour">
+    <li>A wrong password shows how many tries are left.</li>
+  </ul>
+  <ul data-list="placeholders"><li>[Attempts left]</li></ul>
+</aside>
+
+<!-- An example of the contract; a design prototype replaces it with its own screen. -->
+<main class="stage">
+  <div class="viewport">
+    <form class="page narrow" data-go="signing-in" data-when="!signed-in">
+      <p class="field-error" data-when="wrong-password">That password is not right. <mark data-placeholder>[Attempts left]</mark> tries left.</p>
+      <div class="field"><label for="si-email">Email</label><input id="si-email" type="email" data-disabled-when="signing-in"></div>
+      <div class="field"><label for="si-password">Password</label><input id="si-password" type="password" data-invalid-when="wrong-password" data-disabled-when="signing-in"></div>
+      <button class="button" type="submit" data-disabled-when="signing-in"><span data-when="!signing-in">Sign in</span><span data-when="signing-in">Signing you in…</span></button>
+    </form>
+    <div class="page narrow" data-when="signed-in">
+      <p class="alert-success">You are signed in.</p>
+      <button class="button button-secondary" type="button" data-go="default">Sign out</button>
+    </div>
+  </div>
+</main>
+</body>
+</html>
