@@ -5,7 +5,7 @@ description: Writes, revises or checks a PRD's test cases — one plain-words ch
 
 # test-cases — one comment of test cases per PRD
 
-You turn a PRD written by `to-prd`, and its mockup from `mockup` where there is one, into test cases, and post them as one comment on the PRD's issue. Nobody is asked anything: whatever the PRD and the mockup left open you decide, and list under **Assumptions**. A caller with no person present gets a finished comment or a refusal that says why.
+You turn a PRD written by `to-prd`, and the design prototypes `mockup` built for it where there are any, into test cases, and post them as one comment on the PRD's issue. Nobody is asked anything: whatever the PRD and the design prototypes left open you decide, and list under **Assumptions**. A caller with no person present gets a finished comment or a refusal that says why.
 
 The issue tracker should be in your context, from the consuming repo's `docs/agents/issue-tracker.md`. If it is not, write nothing and return a refusal naming `/mattpocock-skills:setup-matt-pocock-skills`. The commands below are GitHub's, through `gh`, run inside the checkout and with no `--repo`; on another tracker, take the equivalent action its doc names.
 
@@ -16,7 +16,7 @@ These, and only these — each one an external integration other people read:
 - one new comment on the PRD's issue, headed `## Test cases`, continued in `## Test cases (2 of 2)` and onward past GitHub's 65,536-character limit, split between cases, never inside one;
 - edits to those comments of its own.
 
-Every other body stays as it was: the PRD, the epic, the mockup, and every earlier issue's `## Test cases` comment. The check branch and every stop write nothing. Each comment body goes on stdin from a quoted heredoc (`<<'EOF'`), because cases are full of backticks and `$`.
+Every other body stays as it was: the PRD, the epic, the design prototypes, and every earlier issue's `## Test cases` comment. The check branch and every stop write nothing. Each comment body goes on stdin from a quoted heredoc (`<<'EOF'`), because cases are full of backticks and `$`.
 
 ## A test case
 
@@ -35,7 +35,7 @@ Expected: …
 - **Requirement**: exactly one id that exists. A requirement may have several cases.
 - **Kind**: `positive` when the requirement's behaviour happens, `negative` when the software refuses or reports an error as it should.
 - **Priority**, on positive cases only: `high` when a person would be blocked if the case failed, otherwise `normal`.
-- **Surface**: web, iOS, Android, email, PDF or notification, as the mockup frames it.
+- **Surface**: web, iOS, Android, email, PDF or notification, as its design prototype frames it.
 
 **Where each case is tested.**
 
@@ -48,10 +48,10 @@ Expected: …
 ```markdown
 ## Test cases
 
-PRD: #57 · Mockup: <path on the default branch, the mockup's pull request, or none>
+PRD: #57 · Design: <the design prototypes' paths on the default branch, their pull request, or none>
 
 **Assumptions**
-- <each choice the PRD and the mockup left open, such as test data, and what you chose>
+- <each choice the PRD and the design prototypes left open, such as test data, and what you chose>
 
 **Retires**
 - Retires: TC-12.4 (REQ-12.4 → REQ-57.2)
@@ -73,9 +73,9 @@ Every branch reads the same inputs. Fetch the PRD with `gh issue view <N> --json
 
 **Earlier cases.** For every id under a `Replaces:` line or `## Withdrawn`, the earlier cases sit in the `## Test cases` comment of the issue whose number the id carries (`REQ-12.4` → #12). Fetch that issue's comments the same way and collect each case whose `Requirement:` is that id.
 
-**The mockup.** The slug is the PRD's `<name>` in lowercase kebab-case. After `git fetch origin`, read `docs/design/<N>-<slug>.html` with `git show origin/<default branch>:<path>`, or, where it has not merged, from the head of the open pull request on `mockup/<N>-<slug>` (`gh pr list --head mockup/<N>-<slug> --state open`). The page's leading comment is its markup contract: each `section[data-screen]` names its requirement ids in `data-req` and its frame in `data-surface`, and each state button with `data-kind="error"` is an error state. With no mockup, take each requirement's surface from the PRD and record the choice under Assumptions.
+**The design prototypes.** After `git fetch origin`, `git grep -l 'REQ-<N>\.' origin/<default branch> -- docs/design/` lists the pages that carry this PRD's ids; where none has merged, run it at the head of the open pull request on `mockup/<N>-<slug>`, the slug being the PRD's `<name>` in lowercase kebab-case (`gh pr list --head mockup/<N>-<slug> --state open`). Read each with `git show <ref>:<path>`. A page is one screen: its `<body>` names its requirement ids in `data-req` and its frame in `data-surface`, and each state button with `data-kind="error"` is an error state. The leading comment of `docs/design-system/skeleton.html` is the markup contract. With no design prototype, take each requirement's surface from the PRD and record the choice under Assumptions.
 
-Done when the PRD, its epic where named, the mockup or its absence, and every earlier case under Replaces or Withdrawn are in hand.
+Done when the PRD, its epic where named, the design prototypes or their absence, and every earlier case under Replaces or Withdrawn are in hand.
 
 ## Pick the branch
 
@@ -86,10 +86,10 @@ Done when the PRD, its epic where named, the mockup or its absence, and every ea
 ## Write
 
 1. **Pass or fail.** Read each requirement as a test would. One that cannot pass or fail as written stops the skill: write nothing, and return the PRD's number and those ids. Done when every requirement can be checked.
-2. **Inventory.** A positive case for every requirement. A negative case for every error the PRD names and every error state on the mockup, each under the requirement it belongs to. Done when every requirement, every named error and every error state is on the list.
+2. **Inventory.** A positive case for every requirement. A negative case for every error the PRD names and every error state on a design prototype, each under the requirement it belongs to. Done when every requirement, every named error and every error state is on the list.
 3. **Write** each case in the [shape](#a-test-case), ids `TC-N.1`, `TC-N.2`, … in the order you write them. Done when every field of every case is filled in plain words.
 4. **Retires.** A line for each earlier case whose requirement is replaced or withdrawn: `Retires: TC-12.4 (REQ-12.4 → REQ-57.2)`, or `(REQ-12.6 withdrawn)`. The earlier comment is left as it is. Done when every earlier case from [Read](#read) has its line.
-5. **Assumptions.** At the top, every choice the PRD and the mockup left open. Done when a reader could build the tests without asking.
+5. **Assumptions.** At the top, every choice the PRD and the design prototypes left open. Done when a reader could build the tests without asking.
 6. **Checklist.** Run every line of the [checklist](#the-checklist) against the comment and fix each fail. Done when every line passes.
 7. **Post.** `gh issue comment <N> --body-file - <<'EOF'`, one comment per part. Done when every part is on the issue.
 8. **Return** each comment's URL, the count of positive and negative cases, and the checklist result.
@@ -113,7 +113,7 @@ Done when the PRD, its epic where named, the mockup or its absence, and every ea
 ## The checklist
 
 - Every requirement has a positive case.
-- Every error the PRD names, and every error state on the mockup, has a negative case.
+- Every error the PRD names, and every error state on a design prototype, has a negative case.
 - Every case names one requirement that exists in the PRD.
 - Every field is filled, in plain words.
 - Every positive case has a priority.
