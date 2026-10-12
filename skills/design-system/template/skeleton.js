@@ -113,14 +113,20 @@ function holds(list, keys) {
 // from the persona's own.
 const views = new WeakMap();
 const view = (screen) => views.get(screen) || views.set(screen, { keys: [] }).get(screen);
-// One pass over both attributes, so neither change can show what the other hides.
-function reveal(screen) {
+// The rows a filter leaves out.
+const filteredOut = new WeakSet();
+function allows(screen, el) {
   const { state, keys } = view(screen);
-  screen.querySelectorAll("[data-when], [data-perm]").forEach((el) => {
-    const { when, perm } = el.dataset;
+  const { when, perm } = el.dataset;
+  return (when == null || state == null || names(when, state)) && (perm == null || holds(perm, keys));
+}
+// One pass over the state, the keys and the filter, so no change can show what another hides.
+function reveal(screen) {
+  const stateless = view(screen).state == null;
+  screen.querySelectorAll("[data-when], [data-perm], [data-filter-scope] [data-row]").forEach((el) => {
     // With no state to ask, data-when decides nothing, and an element written hidden stays so.
-    if (state == null && perm == null) return;
-    el.hidden = !((when == null || state == null || names(when, state)) && (perm == null || holds(perm, keys)));
+    if (stateless && el.dataset.perm == null && !el.matches("[data-filter-scope] [data-row]")) return;
+    el.hidden = !allows(screen, el) || filteredOut.has(el);
   });
 }
 // The keys in effect on a screen; a project hook calls it when something other than the persona grants them.
@@ -151,6 +157,9 @@ function wireStates(screen) {
     reveal(screen);
     screen.querySelectorAll("[data-disabled-when]").forEach((el) => { el.disabled = names(el.dataset.disabledWhen, state); });
     screen.querySelectorAll("[data-invalid-when]").forEach((el) => { el.setAttribute("aria-invalid", String(names(el.dataset.invalidWhen, state))); });
+    // The attribute stays as written, so the next state still has what to fill.
+    screen.querySelectorAll("[data-value-when]").forEach((el) => { el.value = names(el.dataset.valueWhen, state) ? el.defaultValue : ""; });
+    screen.querySelectorAll("[data-checked-when]").forEach((el) => { el.checked = names(el.dataset.checkedWhen, state); });
     if (driven && button.dataset.then) timer = setTimeout(() => show(button.dataset.then, true), 1200);
     screen.dispatchEvent(new CustomEvent("state", { detail: { state, label: button.textContent } }));
   };
@@ -175,6 +184,76 @@ function wireStates(screen) {
   });
   show.first = buttons[0].dataset.state;
   return show;
+}
+
+// A button that waits out its seconds, then again from each click.
+function wireCountdowns(screen) {
+  screen.querySelectorAll("[data-countdown]").forEach((button) => {
+    const own = [...button.childNodes];
+    let left = 0;
+    let timer;
+    const draw = () => {
+      const { state } = view(screen);
+      const { disabledWhen, wait = "{t}" } = button.dataset;
+      // Set here as well as by the state, which alone would enable a button still counting.
+      button.disabled = left > 0 || (disabledWhen != null && state != null && names(disabledWhen, state));
+      if (left > 0) button.textContent = wait.replace("{t}", `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`);
+      else button.replaceChildren(...own);
+    };
+    const start = () => {
+      clearInterval(timer);
+      left = Math.max(0, Math.floor(Number(button.dataset.countdown)) || 0);
+      if (left) timer = setInterval(() => { if (--left === 0) clearInterval(timer); draw(); }, 1000);
+      draw();
+    };
+    button.addEventListener("click", start);
+    screen.addEventListener("state", draw);
+    start();
+  });
+}
+
+// A scope's filter buttons: one filter at a time, and none once the state changes.
+function wireFilters(screen) {
+  screen.querySelectorAll("[data-filter-scope]").forEach((scope) => {
+    const buttons = [...scope.querySelectorAll("[data-filter]")];
+    const rows = [...scope.querySelectorAll("[data-row]")];
+    const passes = (button, row) => {
+      const [key, value] = button.dataset.filter.split(/=(.*)/s);
+      return row.getAttribute(`data-${key}`) === value;
+    };
+    let active = null;
+    const draw = () => {
+      buttons.forEach((b) => {
+        const count = rows.filter((row) => allows(screen, row) && passes(b, row)).length;
+        b.setAttribute("aria-pressed", String(b === active));
+        b.querySelectorAll("[data-count]").forEach((el) => { el.textContent = count; });
+        if (b.dataset.hideEmpty != null) b.hidden = count === 0;
+      });
+      rows.forEach((row) => (active && !passes(active, row) ? filteredOut.add(row) : filteredOut.delete(row)));
+      reveal(screen);
+    };
+    buttons.forEach((b) => b.addEventListener("click", () => {
+      active = b === active ? null : b;
+      draw();
+    }));
+    screen.addEventListener("state", () => {
+      active = null;
+      draw();
+    });
+    // The keys change which rows a count may include.
+    screen.addEventListener("persona", draw);
+    draw();
+  });
+}
+
+// A row that opens: the click is the link's own, so the link leaves as one followed by hand does.
+function wireRowlinks(screen) {
+  screen.addEventListener("click", (e) => {
+    const row = e.target.closest("[data-rowlink]");
+    if (!row) return;
+    const control = e.target.closest("a, button, input, select, textarea, label, summary");
+    if (!control || !row.contains(control)) row.querySelector("a[href]")?.click();
+  });
 }
 
 // A mockup's open choice: each option button shows the panel it names; the first is shown.
@@ -483,6 +562,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const sizes = framed ? null : wireSizes(screen);
     const personas = wirePersonas(screen);
     const shell = wireShell(screen);
+    // Before the first state shows, so each already hears it; a screen with no states runs them too.
+    wireCountdowns(screen);
+    wireFilters(screen);
+    wireRowlinks(screen);
     if (screen.querySelector("[data-panel]")) {
       if (!framed) buildPanel(screen, sizes, personas, shell);
       wireAddress(show, sizes, personas, shell);
