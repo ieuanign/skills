@@ -40,6 +40,8 @@ Gather every candidate, recommend a disposal for each, stop for an answer unless
 
    **A draft-folder row has one half**: `gh issue view <N> --json state` reports `CLOSED` ⇒ `remove`, anything else ⇒ `keep`. No pull request decides it.
 
+   **A lane with no branch and no worktree left** — only its scratch files or its cost log, as a lane dropped at intake leaves — is one row decided the same way, by `gh issue view <n> --json state`.
+
    **A state that cannot be read is `keep`**: a branch with no pull request, a detached `infrastructure` worktree, which has none to ask about, or a `gh` call that failed, with **Why** saying which.
 
 4. **Print one table**, in both modes, with these columns:
@@ -48,7 +50,7 @@ Gather every candidate, recommend a disposal for each, stop for an answer unless
 
    It is a proposal: nothing has happened when it prints, and nothing below runs until step 5 has an answer. Lane and Scratch repeat down a lane's rows — the number and its scratch files belong to the lane — and every other cell is that row's branch's own.
 
-5. **Ask, then wait.** Ask in plain text for what to reap — lane numbers, one row's branch where a lane's rows differ, `all`, or `none` — since the table has a row per branch and AskUserQuestion's four options cannot hold an arbitrary number of them. **The answer is what authorises a deletion**; the argument only decided what to look at. A picked lane number takes every row it shows, and a `pr-<n>` or `staged-scripts` row is picked by that full key; `none`, silence and an answer you cannot read all end the run on the proposal.
+5. **Ask, then wait.** Ask in plain text for what to reap — lane numbers, one row's branch where a lane's rows differ, `all`, or `none` — since the table has a row per branch and AskUserQuestion's four options cannot hold an arbitrary number of them. **The answer is what authorises a deletion**; the argument only decided what to look at. A picked lane number takes every row it shows, and a `pr-<n>`, `staged-scripts` or `infrastructure-<mode>` row is picked by that full key; `none`, silence and an answer you cannot read all end the run on the proposal.
 
    **Under `unattended` there is no question.** The picked set is exactly the `remove` rows — never a `keep`, never a row the table does not show — and step 4's table is the report of what is kept and why. Steps 6 and 7 follow as they would on that answer.
 
@@ -56,7 +58,7 @@ Gather every candidate, recommend a disposal for each, stop for an answer unless
 
    - **Worktree** — `git worktree remove <path>`, the path as `git worktree list` reports it rather than one rebuilt from the lane number, and only once it is confirmed to be under `<WORKTREES>`, or at exactly `<MAIN>-infrastructure-<mode>`, and not MAIN. A refusal is the guard working: report that worktree's `git -C <wt> status --porcelain` verbatim, keep it, and carry on to the next row.
    - **Branch** — `git branch -d <branch>`, escalating to `git branch -D` where step 3's merged check passed, since squash and rebase replay the work under new shas and ancestry can no longer prove the merge, or where its closed-pull-request check matched the tip, since ancestry cannot show those commits are on the pull request. Any other refusal — a `mockup` branch MAIN is still on — is reported verbatim and the branch kept: this skill never switches MAIN.
-   - **Scratch** — every `.scratch/**/<n>-*.md` keyed to that number, whichever folder holds it, and its cost log, each by the path step 2 gathered, once no row of that lane is left standing: the files are the lane's, and a sub-lane still in flight reads its plan from them. Scratch is working material, so a plan, a comment table or a note all go the same way. The `staged-scripts` row reaps exactly `<MAIN>/.scratch/dev-loop-scripts/`, that directory by its path and never a glob. A draft-folder row reaps exactly the `<MAIN>/.scratch/mockups/<N>-<slug>/` step 2 gathered, the same way.
+   - **Scratch** — every `.scratch/**/<n>-*.md` keyed to that number, whichever folder holds it, and its cost log, each by the path step 2 gathered, once no row of that lane is left standing: the files are the lane's, and a sub-lane still in flight reads its plan from them. Scratch is working material, so a plan, a comment table or a note all go the same way. The `staged-scripts` row reaps exactly `<MAIN>/.scratch/dev-loop-scripts/`, that directory by its path and never a glob. A draft-folder row reaps exactly the `<MAIN>/.scratch/mockups/<N>-<slug>/` step 2 gathered, by that path and never a glob, whatever other rows share its number.
 
 7. **Confirm in one line per reaped row**: what went, in the order it went. Step 4's table already carries every kept row's reason, which makes the confirmation a line rather than a second table.
 
