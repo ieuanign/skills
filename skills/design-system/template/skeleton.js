@@ -430,9 +430,10 @@ function buildPanel(screen, sizes, personas, shell) {
   const panel = screen.querySelector("[data-panel]");
   const body = document.createElement("div");
   body.className = "panel-body";
-  // A fixed path, as every design prototype sits one folder below the index. An attribute naming
-  // it was the alternative, and would be markup every page of every project must carry.
-  body.append(Object.assign(document.createElement("a"), { href: "../index.html", textContent: "All pages" }));
+  // Read from the address, as only a page at design/<folder>/ sits one folder below the index. An
+  // attribute naming it was the alternative, and would be markup every page of every project must carry.
+  if (/\/design\/[^/]+\/[^/]+$/.test(location.pathname))
+    body.append(Object.assign(document.createElement("a"), { href: "../index.html", textContent: "All pages" }));
   const group = (label, el) => {
     if (!el || !el.children.length) return;
     const box = document.createElement("div");
