@@ -196,6 +196,10 @@ code { font-family: var(--font-mono); }
           <label><input type="checkbox" data-checked-when="filled"> Keep me signed in</label>
           <div><button class="button button-secondary" type="button" data-go="filled">Fill them in</button></div>
         </div>
+        <div class="card"><h3>A hook of the project's</h3>
+          <div class="field"><label for="ref-new-password">New password</label><input id="ref-new-password" type="password" value="harbour-tide-2026" data-value-when="filled" data-strength></div>
+          <p style="margin:0;font-size:var(--text-sm);color:var(--color-text-muted)"><code>data-strength</code> is a hook in <code>project.js</code>: it marks the field once Filled in has filled it, and again at each state.</p>
+        </div>
         <div class="card"><h3>Checkbox that goes and comes back</h3>
           <label><input type="checkbox" data-go="terms"> Show the terms</label>
           <p style="margin:0" data-when="terms">Ticked, the screen is in Terms. Cleared, it returns to the state it left.</p>
@@ -229,7 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // A hidden element in each theme, so both themes' values are read whichever one is showing.
   const themed = (theme) => {
     const el = document.createElement("div");
-    applyTheme(el, theme);
+    PROJECT.theme(el, theme);
     el.hidden = true;
     document.body.append(el);
     return getComputedStyle(el);

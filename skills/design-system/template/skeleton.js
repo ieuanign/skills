@@ -1,20 +1,9 @@
-/* SKELETON — the hooks every page runs. The markup contract is skeleton.html's leading comment; a hook
-   a project adds is listed here. */
+/* SKELETON — the template's hooks, which every page runs and no project edits. The markup contract is
+   skeleton.html's leading comment. */
 
-// The sizes the size switch offers, as [label, width, height] in CSS pixels. A null width is as wide
-// as the stage: the window, in a design prototype. START names the size each kind opens at.
-const SIZES = {
-  web: [["Phone", 360], ["Tablet", 768], ["Desktop", 1024], ["Full", null]],
-  mobile: [["Phone", 360, 800], ["Tablet", 768, 1024]],
-};
-const START = { web: "Full", mobile: "Phone" };
+// A page may link no project file, and its states must still run.
+const project = typeof PROJECT === "undefined" ? {} : PROJECT;
 const KIND = { web: "web", ios: "mobile", android: "mobile" };
-
-// The icons, each drawn as <svg class="i"><use href="#i-name"/></svg>.
-const SPRITE = `
-  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
-  <symbol id="i-danger" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5m0 3h.01"/></symbol>
-  <symbol id="i-success" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol>`;
 
 const root = document.documentElement;
 // Drawn behind another screen, a page fills its frame and writes nothing back.
@@ -77,14 +66,11 @@ function wireOver(screen) {
   screen.querySelectorAll("[data-over]").forEach((el) => { if (/[./]/.test(el.dataset.over)) drawBehind(el); });
 }
 
-// The one place that knows what the token file keys a theme on; the reference page calls it too.
-function applyTheme(el, theme) {
-  el.dataset.theme = theme;
-}
 let theme;
 function setTheme(next) {
   theme = next;
-  applyTheme(root, theme);
+  // The project's, as only it knows what its token file keys a theme on.
+  project.theme?.(root, theme);
   document.querySelectorAll("[data-theme-btn]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.themeBtn === theme)));
 }
 // Set while the head loads, so the page never paints in the other theme first. It has no default to
@@ -281,8 +267,7 @@ function wireOptions(screen) {
 
 // The persona switch of a screen naming one of the project's; a screen naming none holds no keys.
 function wirePersonas(screen) {
-  // A page may link no project file, and its states must still run.
-  const all = typeof PROJECT === "undefined" ? {} : PROJECT.personas || {};
+  const all = project.personas || {};
   setKeys(screen, []);
   const own = screen.dataset.persona;
   if (own == null || !Object.hasOwn(all, own)) return null;
@@ -331,7 +316,7 @@ function markCurrent(frame, route) {
 // The shell a screen names, drawn by the project around what the page wrote there. Returns its switches.
 function wireShell(screen) {
   const el = screen.querySelector("[data-shell]");
-  const shell = el && typeof PROJECT !== "undefined" && (PROJECT.shells || {})[el.dataset.shell];
+  const shell = el && (project.shells || {})[el.dataset.shell];
   if (!shell) return [];
   // Moved into each frame, never written again, so what is wired to these nodes stays wired.
   const content = [...el.childNodes];
@@ -383,10 +368,12 @@ function wireShell(screen) {
 const sizeName = (label) => label.toLowerCase().replace(/\s+/g, "-");
 // The size switch of a web or phone screen: sets its frame's width, and shrinks the frame to its stage.
 function wireSizes(screen) {
-  const kind = KIND[screen.dataset.surface];
+  const { offers = [], start } = (project.sizes || {})[KIND[screen.dataset.surface]] || {};
   const stage = screen.querySelector(".stage");
   const frame = stage && stage.querySelector(".frame-browser, .frame-phone, .viewport");
-  if (!kind || !frame) return null;
+  if (!offers.length || !frame) return null;
+  // A start naming no size offered would leave the screen at none.
+  const first = offers.some(([label]) => label === start) ? start : offers[0][0];
   const sized = frame.classList.contains("frame-phone") ? frame.querySelector(".screen") : frame;
   const fit = () => {
     frame.style.zoom = "";
@@ -398,7 +385,7 @@ function wireSizes(screen) {
   group.setAttribute("role", "group");
   group.setAttribute("aria-label", "Size");
   const buttons = {};
-  SIZES[kind].forEach(([label, width, height]) => {
+  offers.forEach(([label, width, height]) => {
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = label;
@@ -412,11 +399,11 @@ function wireSizes(screen) {
     });
     group.append(button);
     buttons[sizeName(label)] = button;
-    if (label === START[kind]) button.click();
+    if (label === first) button.click();
   });
   let room = stage.clientWidth;
   new ResizeObserver(() => { if (stage.clientWidth !== room) { room = stage.clientWidth; fit(); } }).observe(stage);
-  group.first = sizeName(START[kind]);
+  group.first = sizeName(first);
   group.pick = (name) => (Object.hasOwn(buttons, name) ? buttons[name].click() : false);
   return group;
 }
@@ -532,7 +519,7 @@ function buildPanel(screen, sizes, personas, shell) {
   });
   panel.replaceChildren(toggle, body);
   // Kept by the browser and never in the address: a link says nothing of where its reader likes the panel.
-  dock(kept.get("skeleton-dock") || (typeof PROJECT === "undefined" ? null : PROJECT.dock));
+  dock(kept.get("skeleton-dock") || project.dock);
   // The elements' own boxes are watched, so whatever shows or hides one counts: a state, a persona, a page's script.
   new MutationObserver(stepAside).observe(screen, { subtree: true, childList: true, attributes: true });
   new ResizeObserver(stepAside).observe(panel);
@@ -570,8 +557,16 @@ function wireAddress(show, sizes, personas, shell) {
   ["click", "auxclick", "contextmenu"].forEach((type) => document.addEventListener(type, carried));
 }
 
+// A hook that sets the keys would otherwise run itself again without end.
+const hooking = new WeakSet();
+function runHooks(screen) {
+  if (hooking.has(screen)) return;
+  hooking.add(screen);
+  try { (project.hooks || []).forEach((hook) => hook(screen)); } finally { hooking.delete(screen); }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
-  document.body.insertAdjacentHTML("beforeend", `<svg width="0" height="0" style="position:absolute" aria-hidden="true">${SPRITE}</svg>`);
+  if (project.sprite) document.body.insertAdjacentHTML("beforeend", `<svg width="0" height="0" style="position:absolute" aria-hidden="true">${project.sprite}</svg>`);
   document.querySelectorAll("[data-screen]").forEach((screen) => {
     const show = wireStates(screen);
     wireOptions(screen);
@@ -596,6 +591,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     // Last, so the frame's first address already carries every switch.
     wireOver(screen);
+    // After every hook above, here and on each event, so a project's hook reads what they have drawn.
+    runHooks(screen);
+    ["state", "persona", "keys"].forEach((type) => screen.addEventListener(type, () => runHooks(screen)));
   });
   setTheme(theme);
   document.addEventListener("click", (e) => {

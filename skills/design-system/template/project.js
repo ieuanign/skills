@@ -1,9 +1,24 @@
-/* PROJECT — what the project defines once and every page reads. The markup contract is skeleton.html's
-   leading comment. */
+/* PROJECT — what the project defines once and every page reads; the markup contract is skeleton.html's
+   leading comment. Hooks: data-strength on a password field marks its strength beside the field. */
 
 const PROJECT = {
   // The side the floating panel starts on, "left" or "right", until a person docks it.
   dock: "right",
+  // The sizes the size switch offers each kind of screen, as [label, width, height] in CSS pixels,
+  // and the one it opens at. A null width is as wide as the stage: the window, in a design prototype.
+  sizes: {
+    web: { start: "Full", offers: [["Phone", 360], ["Tablet", 768], ["Desktop", 1024], ["Full", null]] },
+    mobile: { start: "Phone", offers: [["Phone", 360, 800], ["Tablet", 768, 1024]] },
+  },
+  // The icons, each drawn as <svg class="i"><use href="#i-name"/></svg>.
+  sprite: `
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-danger" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5m0 3h.01"/></symbol>
+    <symbol id="i-success" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol>`,
+  // The one place that knows what the token file keys a theme on.
+  theme(el, name) {
+    el.dataset.theme = name;
+  },
   // The personas, in the order the switch draws them. keys are what data-perm asks for.
   personas: {
     holder: { label: "Policy holder", name: "Rina Okafor", email: "rina@example.com", keys: ["claims.report"] },
@@ -36,4 +51,13 @@ const PROJECT = {
       },
     },
   },
+  // Each is run again whenever its screen's view changes, so it draws from the screen and wires nothing.
+  hooks: [
+    function strength(screen) {
+      screen.querySelectorAll("input[data-strength]").forEach((field) => {
+        const mark = field.parentElement.querySelector("output") || field.parentElement.appendChild(document.createElement("output"));
+        mark.textContent = !field.value ? "" : field.value.length >= 12 && /\d/.test(field.value) ? "Strong" : "Weak";
+      });
+    },
+  ],
 };
