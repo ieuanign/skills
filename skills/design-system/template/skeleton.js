@@ -23,6 +23,41 @@ const kept = {
   set(key, value) { try { localStorage.setItem(key, value); } catch {} },
 };
 
+// The switches the address names, by query key: a default leaves its key out, and own marks a switch
+// a link to another page leaves behind. Only a design prototype writes the address.
+const switches = new Map();
+const asked = new URLSearchParams(location.search);
+let addressed = false;
+function address() {
+  if (!addressed) return;
+  const query = new URLSearchParams();
+  // The page's own switches lead, where a link written by hand puts them.
+  [...switches].sort(([, a], [, b]) => b.own - a.own).forEach(([key, s]) => { if (s.now !== s.first) query.set(key, s.now); });
+  // A page opened from disk may refuse the write, and a switch must still work.
+  try { history.replaceState(null, "", location.pathname + (`${query}` && `?${query}`)); } catch {}
+}
+// The address is read first, then each fallback, then the default; apply returns false for a value
+// the switch does not know.
+function addSwitch(key, { first, apply, own = false }, ...fallbacks) {
+  const s = { first, own, now: first };
+  switches.set(key, s);
+  s.now = [asked.get(key), ...fallbacks, first].find((value) => value != null && apply(value) !== false);
+}
+function switched(key, value) {
+  const s = switches.get(key);
+  if (!s) return;
+  s.now = value;
+  address();
+}
+// The link, carrying every switch but the page's own; a key the link already sets wins.
+function carry(href) {
+  const url = new URL(href, location.href);
+  switches.forEach((s, key) => {
+    if (!s.own && s.now !== s.first && !url.searchParams.has(key)) url.searchParams.set(key, s.now);
+  });
+  return url.href;
+}
+
 // The one place that knows what the token file keys a theme on; the reference page calls it too.
 function applyTheme(el, theme) {
   el.dataset.theme = theme;
@@ -34,7 +69,8 @@ function setTheme(next) {
   document.querySelectorAll("[data-theme-btn]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.themeBtn === theme)));
 }
 // Set while the head loads, so the page never paints in the other theme first.
-setTheme(kept.get("skeleton-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+addSwitch("theme", { first: "light", apply: (name) => (name === "light" || name === "dark" ? setTheme(name) : false) },
+  kept.get("skeleton-theme"), matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : null);
 
 function press(group, button) {
   group.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
@@ -56,7 +92,7 @@ function wireStates(screen) {
   let timer;
   const show = (state, driven) => {
     const button = buttons.find((b) => b.dataset.state === state);
-    if (!button) return;
+    if (!button) return false;
     clearTimeout(timer);
     buttons.forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
     screen.querySelectorAll("[data-when]").forEach((el) => { el.hidden = !names(el.dataset.when, state); });
@@ -90,6 +126,8 @@ function wireOptions(screen) {
   if (buttons.length) show(buttons[0]);
 }
 
+// A size is named in the address as a state is: lowercase, hyphenated.
+const sizeName = (label) => label.toLowerCase().replace(/\s+/g, "-");
 // The size switch of a web or phone screen: sets its frame's width, and shrinks the frame to its stage.
 function wireSizes(screen) {
   const kind = KIND[screen.dataset.surface];
@@ -106,6 +144,7 @@ function wireSizes(screen) {
   group.className = "sizes";
   group.setAttribute("role", "group");
   group.setAttribute("aria-label", "Size");
+  const buttons = {};
   SIZES[kind].forEach(([label, width, height]) => {
     const button = document.createElement("button");
     button.type = "button";
@@ -116,12 +155,16 @@ function wireSizes(screen) {
       stage.classList.toggle("sized", Boolean(width));
       press(group, button);
       fit();
+      switched("size", sizeName(label));
     });
     group.append(button);
+    buttons[sizeName(label)] = button;
     if (label === START[kind]) button.click();
   });
   let room = stage.clientWidth;
   new ResizeObserver(() => { if (stage.clientWidth !== room) { room = stage.clientWidth; fit(); } }).observe(stage);
+  group.first = sizeName(START[kind]);
+  group.pick = (name) => (Object.hasOwn(buttons, name) ? buttons[name].click() : false);
   return group;
 }
 
@@ -176,10 +219,28 @@ function buildPanel(screen, sizes) {
   });
   panel.replaceChildren(toggle, body);
   collapse(kept.get("skeleton-panel") === "collapsed");
-  // The collapsed panel still names the state on show, and the address carries it, so a link can open it.
+  // The collapsed panel still names the state on show.
   screen.addEventListener("state", (e) => {
     toggle.querySelector(".now").textContent = e.detail.label;
-    try { history.replaceState(null, "", `#${e.detail.state}`); } catch {}
+    switched("state", e.detail.state);
+  });
+}
+
+// A design prototype's switches, read from its address, which then names every one off its default.
+function wireAddress(show, sizes) {
+  // #<state> opened a state before the query did, and links already written still use it.
+  if (show) addSwitch("state", { first: show.first, apply: (name) => show(name, false), own: true }, decodeURIComponent(location.hash.slice(1)));
+  if (sizes) addSwitch("size", { first: sizes.first, apply: sizes.pick });
+  addressed = true;
+  address();
+  // Each click starts from the link as written, so one followed twice carries the view of the second time.
+  const written = new WeakMap();
+  document.addEventListener("click", (e) => {
+    const link = e.target.closest("a[href]");
+    if (!link || link.getAttribute("href").startsWith("#")) return;
+    if (link.protocol !== location.protocol || link.host !== location.host) return;
+    if (!written.has(link)) written.set(link, link.href);
+    link.href = carry(written.get(link));
   });
 }
 
@@ -189,10 +250,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const show = wireStates(screen);
     wireOptions(screen);
     const sizes = wireSizes(screen);
-    const prototype = screen.querySelector("[data-panel]");
-    if (prototype) buildPanel(screen, sizes);
-    else if (sizes) screen.querySelector(".head")?.append(sizes);
-    if (show) show(prototype && decodeURIComponent(location.hash.slice(1)) || show.first, false);
+    if (screen.querySelector("[data-panel]")) {
+      buildPanel(screen, sizes);
+      wireAddress(show, sizes);
+    } else {
+      if (sizes) screen.querySelector(".head")?.append(sizes);
+      if (show) show(show.first, false);
+    }
   });
   setTheme(theme);
   document.addEventListener("click", (e) => {
@@ -200,5 +264,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!button) return;
     setTheme(button.dataset.themeBtn);
     kept.set("skeleton-theme", button.dataset.themeBtn);
+    switched("theme", button.dataset.themeBtn);
   });
 });

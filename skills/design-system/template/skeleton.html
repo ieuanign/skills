@@ -58,8 +58,11 @@
     switch, the theme switch and the requirement ids.
   - Every state is reachable from the panel, and every control the requirements give a behaviour
     carries it: data-go, or the page's own script.
-  - A link to another screen is an <a href> to that screen's design prototype; #<state> opens it in
-    that state.
+  - Every switch in the panel has a key in the page's address: ?state=<state>, ?size=<size> (its
+    label in lower case, as phone), ?theme=dark. A switch at its default leaves its key out, and
+    switching rewrites the address, so the address always opens the view on show.
+  - A link to another screen is an <a href> to that screen's design prototype; ?state=<state> opens
+    it in that state. Followed, it carries every switch but the state, and a key the link sets wins.
 -->
 <html lang="en">
 <head>
