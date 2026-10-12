@@ -6,11 +6,20 @@
 
   Files, in docs/design-system/
   - tokens.css: the tokens for a light and a dark theme, the two holding identical keys.
-  - skeleton.css: the frames, the components and the page pieces. skeleton.js: the hooks.
+  - skeleton.css: the frames, the components and the page pieces.
+  - skeleton.js: the template's hooks, and nothing a project edits, so a project's copy is the
+    template's file.
   - project.js: what the project defines once, as one object, PROJECT. PROJECT.personas holds each
     persona by its identifier, in the order the switch draws them: its label, name, email and keys.
-    PROJECT.shells holds each shell by its name, as Shell below says. A page links it before
-    skeleton.js.
+    PROJECT.shells holds each shell by its name, as Shell below says. PROJECT.sizes holds, under
+    web and under mobile, the sizes the size switch offers, each a label with its width and height
+    in CSS pixels, a width of null being as wide as the stage, and start, the label of the size it
+    opens at. PROJECT.sprite holds the icons' symbols. PROJECT.theme is a function given an element
+    and a theme, light or dark, which sets on the element whatever tokens.css keys a theme on.
+    PROJECT.hooks holds the project's own hooks, each a function given the screen: run for every
+    screen after skeleton.js's own hooks, and again when the screen's state, persona or keys
+    change, so a hook draws from what the screen shows and wires nothing twice. Each is listed in
+    project.js's header. A page links it before skeleton.js.
   - skeleton.html, this file: what a mockup is built from. prototype.html: what a design prototype is.
   - A page links the stylesheets and the scripts this file links, by relative path from its own
     folder (from docs/design/web/, ../../design-system/skeleton.css), as it does brand/ assets, and
