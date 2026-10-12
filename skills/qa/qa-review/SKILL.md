@@ -21,10 +21,11 @@ Invoke `/mattpocock-skills:code-review` and read it; where it is not installed, 
 
 These, and only these — each one an external integration other people read:
 
-- a comment-only review on the pull request, `gh pr review <n> --comment --body-file - <<'EOF'`, and on each pull request below it that the e2e branch re-marks;
-- the `qa/review` commit status on each of those pull requests' head commit: `gh api repos/{owner}/{repo}/statuses/<sha> -f state=<success|failure> -f context=qa/review -f description='<n> met, <n> not-met, <n> no-test, <n> untested'`.
+- a comment-only review on the pull request, and on each pull request below it that the e2e branch re-marks: one `POST repos/{owner}/{repo}/pulls/<n>/reviews` carrying the verdict body and its [inline comments](#inline-comments) together;
+- the `qa/review` commit status on each of those pull requests' head commit: `gh api repos/{owner}/{repo}/statuses/<sha> -f state=<success|failure> -f context=qa/review -f description='<n> met, <n> not-met, <n> no-test, <n> untested'`;
+- resolving a review thread this skill opened, once its case is `met`: GraphQL `resolveReviewThread`.
 
-It never approves or requests changes, resolves a thread, edits a body, changes a draft or ready state, commits or pushes. Every stop writes nothing. Each body goes on stdin from a quoted heredoc (`<<'EOF'`), because cases are full of backticks and `$`.
+It never approves or requests changes, resolves a thread it did not open, edits a body, changes a draft or ready state, commits or pushes. Every stop writes nothing. Each body goes on stdin from a quoted heredoc (`<<'EOF'`) or into the request as a `jq` value, never spliced into a command string, because cases are full of backticks and `$`.
 
 ## The fields you consume
 
@@ -80,4 +81,48 @@ PRD: #57 · Ticket: #61 · Base: <baseRefName> · Head: <short sha>
 
 Evidence is a `file:line` from the diff, the failing step with expected against actual, or the reason a line is not met. The status is `failure` on any `not-met` or `no-test`, otherwise `success`; `untested`, flaky, `not run: no device` and `not-met — assigned to #<n>` never fail it.
 
-**Return** each review's URL, each status set, and the counts per mark.
+### Inline comments
+
+Every verdict this skill posts takes these steps — a ticket's, the `test(e2e):` pull request's own, each re-mark below it — against that pull request's own diff and own threads. They start once judging is complete; a stop reaches none of them.
+
+1. **Own open threads.** Read the pull request's review threads:
+
+   ```bash
+   gh api graphql --paginate -F owner='{owner}' -F repo='{repo}' -F n=<n> -f query='
+     query($owner: String!, $repo: String!, $n: Int!, $endCursor: String) {
+       repository(owner: $owner, name: $repo) { pullRequest(number: $n) {
+         reviewThreads(first: 100, after: $endCursor) {
+           pageInfo { hasNextPage endCursor }
+           nodes { id isResolved comments(first: 1) { nodes { body } } }
+         }
+       } }
+     }'
+   ```
+
+   A thread is this skill's own when its first comment opens with a case id in the inline shape, `TC-<issue>.<n> — <not-met|no-test> — `; keep the own ones with `isResolved: false`. This is its own read and not `/pr-comments`' reader, which hides every thread `/pr-comments` has answered — threads this skill must still find. Done when each case in the verdict has an own open thread or is known to have none.
+2. **Choose the inline comments.** A `not-met` or `no-test` line is also an inline comment when its evidence is a `file:line` on the head side of `git diff origin/<baseRefName>...origin/<headRefName>` — an added or context line of one of its hunks — and its case has no own open thread. The comment sits at that path and line; its body is the verdict line without the bullet, so the id opens it. Every other line stays in the body alone: evidence with no such `file:line`, a case with an own open thread whatever line its evidence now names, `not-met — assigned to #<n>`. The body carries every line either way. Done when each anchor has been checked against the diff.
+3. **Resolve what is met.** For each own open thread whose case is `met` in this verdict:
+
+   ```bash
+   gh api graphql -f id=<thread id> -f query='
+     mutation($id: ID!) { resolveReviewThread(input: {threadId: $id}) { thread { isResolved } } }'
+   ```
+
+   No other thread: not a person's, not one whose case is `untested`, `not run: no device`, out of scope or absent from this verdict. Done when every such thread is resolved.
+4. **Post one review**, body and inline comments together — one line per comment, none when there are none:
+
+   ```bash
+   comments=$(jq -Rn '[inputs | capture("^(?<path>.+?):(?<line>[0-9]+) (?<body>TC-.*)$") | .line |= tonumber | .side = "RIGHT"]' <<'EOF'
+   <path>:<line> <the verdict line, without its bullet>
+   EOF
+   )
+   jq -Rs --arg sha <headRefOid> --argjson comments "$comments" \
+     '{commit_id: $sha, event: "COMMENT", body: ., comments: $comments}' <<'EOF' |
+   <the verdict body>
+   EOF
+     gh api --method POST repos/{owner}/{repo}/pulls/<n>/reviews --input -
+   ```
+
+   GitHub rejects a line outside the diff, and the body with it: on a rejected post, post again with no comment lines and report each comment that could not be placed. Never a second review for the comments. Done when the review is posted and the status set.
+
+**Return** each review's URL, each status set, the counts per mark, and the threads opened and resolved.
