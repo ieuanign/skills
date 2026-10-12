@@ -134,6 +134,7 @@ function reveal(screen) {
 function setKeys(screen, keys) {
   view(screen).keys = [...(keys || [])];
   reveal(screen);
+  screen.dispatchEvent(new CustomEvent("keys"));
 }
 // The persona in effect on a screen, as { id, persona }; null on a screen naming none.
 function personaOf(screen) {
@@ -142,14 +143,16 @@ function personaOf(screen) {
 
 // A target naming a file is a page; a mistyped state must stay a state no button answers to.
 const PAGE = /\.html([?#]|$)/;
+// What a field was written with: a select keeps it in its selected option, having no defaultValue.
+const ownValue = (el) => (el.options ? [...el.options].find((o) => o.defaultSelected)?.value ?? "" : el.defaultValue);
 // A screen's states. Returns show(target, driven): only a control on the screen drives it, so a state
 // picked from its button stays, and a page the address names is never opened.
 function wireStates(screen) {
   const buttons = [...screen.querySelectorAll("[data-state]")];
-  if (!buttons.length) return null;
   let timer;
   const show = (state, driven) => {
-    if (driven && PAGE.test(state)) return void (location.href = carry(state));
+    // Carried only where a followed link is: on a design prototype.
+    if (driven && PAGE.test(state)) return void (location.href = addressed ? carry(state) : state);
     const button = buttons.find((b) => b.dataset.state === state);
     if (!button) return false;
     clearTimeout(timer);
@@ -159,7 +162,7 @@ function wireStates(screen) {
     screen.querySelectorAll("[data-disabled-when]").forEach((el) => { el.disabled = names(el.dataset.disabledWhen, state); });
     screen.querySelectorAll("[data-invalid-when]").forEach((el) => { el.setAttribute("aria-invalid", String(names(el.dataset.invalidWhen, state))); });
     // The attribute stays as written, so the next state still has what to fill.
-    screen.querySelectorAll("[data-value-when]").forEach((el) => { el.value = names(el.dataset.valueWhen, state) ? el.defaultValue : ""; });
+    screen.querySelectorAll("[data-value-when]").forEach((el) => { el.value = names(el.dataset.valueWhen, state) ? ownValue(el) : ""; });
     screen.querySelectorAll("[data-checked-when]").forEach((el) => { el.checked = names(el.dataset.checkedWhen, state); });
     if (driven && button.dataset.then) timer = setTimeout(() => show(button.dataset.then, true), 1200);
     screen.dispatchEvent(new CustomEvent("state", { detail: { state, label: button.textContent } }));
@@ -179,10 +182,17 @@ function wireStates(screen) {
     show(box.dataset.go, true);
   });
   screen.addEventListener("submit", (e) => {
-    e.preventDefault();
     const form = e.target.closest("form[data-go]");
+    // A screen with no states still opens a page, and leaves every other form as it was written.
+    if (!buttons.length && !form) return;
+    e.preventDefault();
     if (form) show(form.dataset.go, true);
   });
+  // A state reached another way leaves the screen out of the one a ticked box names.
+  screen.addEventListener("state", (e) => {
+    screen.querySelectorAll("input[type=checkbox][data-go]").forEach((box) => { box.checked = box.dataset.go === e.detail.state; });
+  });
+  if (!buttons.length) return null;
   show.first = buttons[0].dataset.state;
   return show;
 }
@@ -242,8 +252,8 @@ function wireFilters(screen) {
       active = null;
       draw();
     });
-    // The keys change which rows a count may include.
-    screen.addEventListener("persona", draw);
+    // The keys change which rows a count may include, whoever set them.
+    screen.addEventListener("keys", draw);
     draw();
   });
 }
