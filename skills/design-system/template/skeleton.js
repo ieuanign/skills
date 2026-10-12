@@ -113,7 +113,7 @@ function holds(list, keys) {
 // from the persona's own.
 const views = new WeakMap();
 const view = (screen) => views.get(screen) || views.set(screen, { keys: [] }).get(screen);
-// The rows a filter leaves out.
+// What a filter leaves out: the rows it does not name, and a button it would leave with none.
 const filteredOut = new WeakSet();
 function allows(screen, el) {
   const { state, keys } = view(screen);
@@ -123,9 +123,10 @@ function allows(screen, el) {
 // One pass over the state, the keys and the filter, so no change can show what another hides.
 function reveal(screen) {
   const stateless = view(screen).state == null;
-  screen.querySelectorAll("[data-when], [data-perm], [data-filter-scope] [data-row]").forEach((el) => {
+  const filtered = "[data-filter-scope] :is([data-row], [data-hide-empty])";
+  screen.querySelectorAll(`[data-when], [data-perm], ${filtered}`).forEach((el) => {
     // With no state to ask, data-when decides nothing, and an element written hidden stays so.
-    if (stateless && el.dataset.perm == null && !el.matches("[data-filter-scope] [data-row]")) return;
+    if (stateless && el.dataset.perm == null && !el.matches(filtered)) return;
     el.hidden = !allows(screen, el) || filteredOut.has(el);
   });
 }
@@ -227,7 +228,8 @@ function wireFilters(screen) {
         const count = rows.filter((row) => allows(screen, row) && passes(b, row)).length;
         b.setAttribute("aria-pressed", String(b === active));
         b.querySelectorAll("[data-count]").forEach((el) => { el.textContent = count; });
-        if (b.dataset.hideEmpty != null) b.hidden = count === 0;
+        if (b.dataset.hideEmpty != null && count === 0) filteredOut.add(b);
+        else filteredOut.delete(b);
       });
       rows.forEach((row) => (active && !passes(active, row) ? filteredOut.add(row) : filteredOut.delete(row)));
       reveal(screen);
