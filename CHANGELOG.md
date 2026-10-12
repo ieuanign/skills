@@ -1,5 +1,11 @@
 # ieuanign-skills
 
+## 0.30.0
+
+### Minor Changes
+
+- [`2197756`](https://github.com/ieuanign/skills/commit/2197756b4e7b26ac553d2c405123a5dc958ba9ec) Thanks [@ieuanign](https://github.com/ieuanign)! - qa-review: a failing case is also an inline comment on the line that fails it. A `not-met` or `no-test` case whose evidence is a `file:line` on the head side of the pull request's diff is posted as an inline comment at that line, in the same comment-only review as the verdict — one review, body and comments together, on every verdict the skill posts. A case with no such line stays in the body alone. A later run resolves the thread of a case that is now `met`, and no other thread — not a person's, not one whose case is `untested`, not run or out of scope — and a case that already has an open thread gets no second one. The verdict body and the `qa/review` status are unchanged, so `/pr-comments` reads each failing case as its own fix-or-skip row beside the one row for the body.
+
 ## 0.29.0
 
 ### Minor Changes
