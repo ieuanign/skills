@@ -1,5 +1,125 @@
 # ieuanign-skills
 
+## 0.29.0
+
+### Minor Changes
+
+- [`b5200fa`](https://github.com/ieuanign/skills/commit/b5200fab76d3b9cafca280028a62f4d9d191160a) Thanks [@ieuanign](https://github.com/ieuanign)! - dev-loop-cleanup: `/dev-loop-cleanup auto` reaps every row the table recommends removing and asks nothing, so an unattended run can be followed by an unattended tidy-up; a run without `auto` is unchanged. The table now also lists what the plugin's other skills leave: a lane's cost log, `mockup`'s two branches and its draft folder — `remove` once the PRD's issue is closed — and `infrastructure`'s sibling worktree and its branches. A pull request closed without merging counts as `remove` when its head is the local tip, so nothing unpushed is lost. Reaping the infrastructure worktree by a glob over sibling paths was rejected: the one exact path `git worktree list` reports is the only shape admitted outside the worktrees folder.
+
+- [`7aa24c5`](https://github.com/ieuanign/skills/commit/7aa24c5742ab6d52ee217756155fc42d9971ad2a) Thanks [@ieuanign](https://github.com/ieuanign)! - design-system: a project's design prototypes are now listed on one page, `docs/design/index.html`, written from the new `template/index.html`. It holds a section for each folder under `docs/design/`, with the app's name and a "Start at" link to the screen a person reaches first, and in it a row for each view: the screen's name linking to the page, its route, and one line on what it shows. A row is keyed by its page's path in `data-page` and carries the page's `data-route`, so a person may put the rows and the sections in any order. A second row for the same page opens it in a state or as a persona. The markup is the new "Index" section of the contract comment in `skeleton.html`.
+
+  Every design prototype's floating panel now opens with a link "All pages" to the index. `skeleton.js` draws it, so no page carries it.
+
+  mockup: a design prototype's folder is the app the screen belongs to, no longer its surface. A project names its folders — a staff app and a customer site are two, both web — and one with a single app per surface keeps the surface's name, as `web`. How a screen is framed is still its `data-surface`. Build files a new screen in the folder whose pages carry its shell or link to it, and opens a folder for an app that has none.
+
+  Confirm keeps the index current: a row for each new design prototype under its folder's section, a section for each new folder, and an existing page's row left where it is with its route and its line made current. Publish stages the index with the pages.
+
+  The checklist gains three lines for the index: every design prototype has a row, every row's page exists, and every row's route is its page's.
+
+  **For a project already set up:** `mockup` now refuses, naming `/design-system`, until `docs/design/index.html` is on the default branch. Write it from `template/index.html` with a section for each folder under `docs/design/` and a row for each design prototype in it, never the template's example section as it is. Copy the new `skeleton.js`, the `.panel-body > a` rule from `template/skeleton.css`, and the "Files", "Design prototype" and "Index" sections of the contract comment in `skeleton.html`. Pages already drawn need no edit, and a folder already named for its surface keeps its name.
+
+- [`29b399d`](https://github.com/ieuanign/skills/commit/29b399d05f9a87e0fe272ed88ead12f3e331f4e5) Thanks [@ieuanign](https://github.com/ieuanign)! - design-system: a design prototype keeps its design record. The contract gains four optional lists, in a mockup's footer and in a design prototype's panel: `conflicts`, every conflict still open, with both sides and their paths; `settled`, every conflict ruled on, with the date and the ruling; `todo`, the code a ruling leaves to change and the issue filed for it; and `choices`, what the page chose that no requirement did.
+
+  `skeleton.js` draws every `data-list` the panel holds — these four, the placeholders and any list a project adds alike — after Behaviour and in the page's order, as a section headed by the list's name and its count, as "Settled (1)". The heading is the list's `aria-label` where it carries one, else its name with each hyphen a space and its first letter a capital. A list that is empty or absent draws nothing. The collapsed panel shows a badge counting the open conflicts, and none when there are none. `prototype.html` shows a `settled` and a `choices` line on the sign-in example.
+
+  mockup: a conflict is recorded where it is found, on its screen's `conflicts` list. With a person in the session it is grilled to a ruling as before; with nobody to ask, its screen is drawn as the design prototypes have it and the conflict stays open on the draft, where Build used to write nothing. A ruling moves the item to `settled`; the issue filed for the code side is named in a `todo` line, and a design-fix pull request carries the ruling on each design prototype it changes. A copy of an existing screen keeps its panel's lists, less each `todo` whose issue is closed. Revise moves a named option into `choices`. Confirm refuses while a conflict is open and carries each screen's lists into its panel. The checklist fails a `todo` that names no issue or a closed one, and an open conflict on a design prototype.
+
+  **For a project already set up:** copy the new `skeleton.js` and the contract comment in `skeleton.html` from `template/`, and copy the `.panel-toggle .badge` rule from the page pieces of `template/skeleton.css` into the project's own. Pages already drawn need no other edit: their placeholders are now headed with their count.
+
+- [#360](https://github.com/ieuanign/skills/pull/360) [`af67ab3`](https://github.com/ieuanign/skills/commit/af67ab3315659b1eac263524a484770567659ec7) Thanks [@ieuanign](https://github.com/ieuanign)! - design-system: a screen that opens over another — a side panel, a sheet, a dialog with its own route — is drawn over it. `data-over="<page>"` on an element of the screen makes `skeleton.js` draw that page's design prototype in it, behind the rest of the screen, dimmed and inert, with no floating panel of its own. The page behind fills the screen's `.viewport`, so it is drawn at the screen's own size.
+
+  The value is a link as an `<a href>` is. It may name a state, as `data-over="orders.html?state=filtered"`, and it carries the theme, the size, the persona and every other switch, so the page behind is drawn again whenever one changes and never differs from the screen over it. `data-when` and `data-perm` choose a `data-over` element as they do any other: a state with nothing behind hides it, and two of them under their own keys give each persona the page it is really over.
+
+  A design prototype drawn inside another page draws no panel, no size and no backdrop, fills its frame, and leaves the address and what the browser keeps as they are. `reference.html` draws one live, in a "Page behind" card under "A page's own pieces".
+
+  mockup: Build names, for each screen that opens over another, the screen behind it, and the draft carries `data-over` — the draft's copy of that screen, else its design prototype, else the bare name of a screen new in the draft, which stands in by its name. Confirm writes each as the path of the page behind, and the checklist fails a `data-over` whose page does not exist.
+
+  **For a project already set up:** copy the new `skeleton.js` and the contract comment in `skeleton.html` from `template/`, and copy the `[data-over]` and `.framed` rules from the page pieces of `template/skeleton.css` into the project's own. Pages already drawn need no other edit; to draw a screen over the one it opens over, add an element with `data-over` to its `.viewport`.
+
+- [`7879d15`](https://github.com/ieuanign/skills/commit/7879d150eed9a3f7db6b739a00265a0178830e8c) Thanks [@ieuanign](https://github.com/ieuanign)! - design-system: `skeleton.js` gains the interactions most screens need, each one attribute documented in the contract comment in `skeleton.html`.
+
+  - `data-go` and `data-then` may name a page in place of a state: a link to another screen's design prototype, as `data-go="home.html"` or `data-then="../web/orders.html?state=empty"`. A value with `.html` in it, alone or before a `?` or a `#`, is a page; any other is a state. The page opens as a followed `<a href>` does, carrying the same switches.
+  - `data-go` on a checkbox: ticked, the screen moves to that state; cleared, it returns to the state it left.
+  - `data-value-when` and `data-checked-when` take the list `data-disabled-when` does: a field shows its `value` attribute, and a box is ticked, in the states listed, and is empty or clear in every other.
+  - `data-countdown="<seconds>"` with `data-wait="Resend code in {t}"` on a button: disabled when the page opens, it shows `data-wait` with the time left, then its own text at 0, and a click starts it again.
+  - `data-filter-scope` around a list: inside it `<button data-filter="<key>=<value>">` shows only the `data-row` elements carrying `data-<key>="<value>"`. One filter holds at a time, a second click clears it, and a state change clears them all. `<span data-count>` in a filter button holds the rows it would show, and `data-hide-empty` hides the button at 0.
+  - `data-rowlink` on a row or a card holding an `<a href>`: a click anywhere in it but on a control follows its first link.
+
+  `reference.html` works each one live, in a screen of its own under "A page's own pieces".
+
+  mockup: the checklist lets a `data-go` or a `data-then` name a page that exists, as well as a state.
+
+  **For a project already set up:** copy the new `skeleton.js` and the "State" section of the contract comment in `skeleton.html` from `template/`, and copy the `[data-rowlink]` rule from the page pieces of `template/skeleton.css` into the project's own. Pages already drawn need no edit.
+
+- [`d5d188c`](https://github.com/ieuanign/skills/commit/d5d188cf84fabec4d05dad15285ae64b9bf1845f) Thanks [@ieuanign](https://github.com/ieuanign)! - design-system: a design prototype's floating panel docks either side, opens by the window's width, and steps aside for what it would cover. A dock switch in the panel moves it between the bottom right and the bottom left; the browser keeps the side, and the side it starts on is the project's, `dock` in `project.js`, `"left"` or `"right"`, with right the side when none is set.
+
+  A browser that has kept nothing opens the panel in a window 64rem or wider and collapsed in a narrower one; once a person toggles it, that choice holds at every width. The side and whether the panel is open are the browser's alone — neither has a key in the page's address, and neither is carried on a link.
+
+  `data-avoid` on an element of the screen the panel must not cover, such as a toast region, makes the panel move to the top of its side while that element shows in its corner, open or collapsed, and come back when it no longer does. An element on the other side leaves the panel where it is. `prototype.html` shows one: the sign-in example's signed-in toast.
+
+  The panel's state buttons are drawn under their kind, in the contract's order — default, error, empty, loading, success, dialog, first-run — with a kind that has no state left out and a kind the contract does not name last. The page's own order is unchanged, so its first button is still the default state, and a mockup section's states stay as written.
+
+  **For a project already set up:** copy the new `skeleton.js` and the "Design prototype" section of the contract comment in `skeleton.html` from `template/`, and copy the `[data-panel].docked-left`, `[data-panel].raised` and `[data-panel] .states .kind` rules from the page pieces of `template/skeleton.css` into the project's own. To start the panel on the left, add `dock: "left"` to `project.js`. Pages already drawn need no other edit; mark what the panel must not cover with `data-avoid`.
+
+- [`f1db552`](https://github.com/ieuanign/skills/commit/f1db552f791a1bd863192ccaee646c26ddf29e0b) Thanks [@ieuanign](https://github.com/ieuanign)! - design-system: a design prototype can be viewed as each persona who uses it. The template gains a sixth file, `project.js`, which holds what the project defines once as one object, `PROJECT`; `PROJECT.personas` gives each persona its label, name, email and keys. A screen names who it opens as with `data-persona`, and `skeleton.js` draws the switch between them — in a design prototype's floating panel under "Signed in as", above that persona's name and email, and in a mockup section's `.head`.
+
+  `data-perm="<key> !<key>"` shows an element only to a persona holding every key listed and none marked `!`. An element carrying both `data-perm` and `data-when` is shown only when both allow it. A screen naming no persona, such as sign-in or an email, has no switch and holds no keys.
+
+  The persona is a panel switch like the others: `?persona=<persona>` opens a design prototype as that persona, the screen's own leaves the key out, a link to another design prototype carries it, and one `project.js` lacks opens the screen's own. A screen announces a change as a `persona` event, `personaOf(screen)` reads the persona in effect, and `setKeys(screen, keys)` sets the keys in effect apart from the persona's own.
+
+  mockup: a persona or key a draft needs and `project.js` lacks is an addition. It sits in the page's `<script data-additions>` and its additions list, and Confirm writes it into `project.js`.
+
+  **For a project already set up:** copy `project.js` and the new `skeleton.js` from `template/`, write the project's own personas into `project.js`, link it before `skeleton.js` on every page, and copy the contract comment in `skeleton.html`. Pages already drawn need no other edit.
+
+- [#370](https://github.com/ieuanign/skills/pull/370) [`07cf07e`](https://github.com/ieuanign/skills/commit/07cf07eb71840d9d24878ba18f9175b6f208a21e) Thanks [@ieuanign](https://github.com/ieuanign)! - design-system: everything a project owns in the skeleton's script is in `project.js`, and `skeleton.js` is the template's file, which no project edits.
+
+  `PROJECT` gains four keys beside `dock`, `personas` and `shells`, each documented in the contract comment in `skeleton.html`:
+
+  - `PROJECT.sizes`: the sizes the size switch offers each kind of screen, and the one each opens at.
+  - `PROJECT.sprite`: the icons' symbols.
+  - `PROJECT.theme`: a function that applies a theme name to an element, the one place that knows what the token file keys a theme on. The template's sets `data-theme`.
+  - `PROJECT.hooks`: the project's own hooks. Each is given the screen, and `skeleton.js` runs them for every screen after its own hooks and again when the screen's state, persona or keys change. Each is listed in `project.js`'s header.
+
+  `skeleton.js` reads each of these from `PROJECT` and holds no default for any: a page linking no project file has no size switch, no sprite and no hook, its theme switch applies nothing, and its states still run.
+
+  The template ships one hook as an example, a password field's strength marked beside the field, and `reference.html` shows it live with the other hooks under "A page's own pieces". `reference.html` reads its token values in both themes through `PROJECT.theme`.
+
+  The skill's checklist fails a `skeleton.js` that differs from the template's.
+
+  **For a project already set up:** move the sizes, the sprite, the theme key and any hook of its own from `skeleton.js` into `project.js`, then copy the new `skeleton.js` whole and the contract comment in `skeleton.html` from `template/`. Pages already drawn need no edit.
+
+- [`31bfc19`](https://github.com/ieuanign/skills/commit/31bfc19d45ab0c68d30d2714f0e5e434f457220c) Thanks [@ieuanign](https://github.com/ieuanign)! - design-system: an app's shell — the frame every signed-in screen shares — is drawn once, by the project. A screen marks where it goes with `data-shell="<name>"` on an element in its `.viewport`, around its own content, and `skeleton.js` draws the shell of that name from `project.js` around it, so no page carries a copy of the frame. `PROJECT.shells.<name>` holds `draw`, a function given `{ persona, route, switches }` and returning the frame in the skeleton's components with a `<div data-shell-slot>` where the screen's content goes, and `switches`, each a name with its values, the first its default.
+
+  `data-route="<route>"` on a web or phone screen names its route in the app, as `/orders/{id}`. Each navigation item in a shell carries its own `data-route`, and `skeleton.js` marks one `aria-current="page"`: the item whose route is the screen's, or else the longest one the screen's sits under, as `/orders` for `/orders/{id}`.
+
+  A shell's switches are panel switches like the others: in a design prototype they sit in the floating panel below the states, and each travels in the address as `?<switch>=<value>`, left out at its default and carried on a link to another design prototype. In a mockup they sit in the section's `.head` and leave the address as it is. The frame is drawn again when the persona or a switch changes, and the screen's content is moved into it rather than written again, so its states and its own script keep working.
+
+  The template ships one shell, `app`: a navigation list, the signed-in person, and a `notifications` switch — closed, open, empty, loading, failed. Its styles sit in the components section of `skeleton.css`, with the narrow layout as an `@container` rule, and `reference.html` draws it live in a Shell section.
+
+  mockup: Build names each web or phone screen's route, and a signed-in screen sits in its app's shell rather than carrying a copy of it. A navigation item the PRD adds and `project.js` lacks is an addition: it sits in the page's `<script data-additions>` and its additions list, and Confirm writes it into the shell in `project.js`.
+
+  **For a project already set up:** copy the new `skeleton.js` and the contract comment in `skeleton.html` from `template/`, write the app's own shell into `project.js` under `shells` with its styles in the components section of `skeleton.css`, and show it on `reference.html`. A page already drawn keeps working as it is; to put one in the shell, add `data-route` to its screen and `data-shell` around its signed-in content, and delete its copy of the frame.
+
+- [`c5bec8a`](https://github.com/ieuanign/skills/commit/c5bec8afd7d797e613e02378d9887246f6e886f9) Thanks [@ieuanign](https://github.com/ieuanign)! - design-system: a new branch, **Upgrade**, for a project whose skeleton is behind the template. It is picked when `docs/design-system/skeleton.html` exists and any of three template lines fails: the contract comment of `skeleton.html` is not the template's, `skeleton.js` differs from the template's, or a file the template holds is missing. The app's token file linked in place of `tokens.css` is not a missing file.
+
+  Upgrade keeps what is the project's — its token names and values, its frames and components, its screens, `project.js` — replaces what is the template's, and writes each missing file from the template with the project's tokens and components in its example screens. Whatever of the project's sits in what is the template's — the sizes, the sprite and the theme key of an old `skeleton.js`, a persona, shell or hook added there — moves into `project.js`, and what `project.js` already holds is kept. A project on one `skeleton.html` with its styles and script inline is taken the whole way: to the linked files, the template's comment and its own screens.
+
+  Where the contract comment differed, Upgrade rewrites `reference.html`, the index and every design prototype under `docs/design/` to the comment, keeping each page's screen, states, controls, links, requirement ids, behaviour and placeholders. A value the comment requires that a page lacks is taken from the page's own name or path and listed in the return. Any other page under `docs/design/` is left as it is and listed.
+
+  Upgrade deletes no file, leaves `brand/` untouched and commits nothing: the rewritten pages wait on the person's review.
+
+  "The template" now says, file by file, what is the template's, what is the project's and what is written from the template around the project's content; Build, Adopt, Upgrade and Check all take the line from there. The three template lines join the checklist, so Check reports them too — each fail naming the file and what differs — and still changes nothing.
+
+  **For a project already set up:** run `/design-system` and it picks Upgrade where the skeleton is behind; review the uncommitted files before committing them.
+
+- [`c76767c`](https://github.com/ieuanign/skills/commit/c76767c1719e2ebc2c486d81108222a0e114ac17) Thanks [@ieuanign](https://github.com/ieuanign)! - design-system: every switch in a design prototype's floating panel now travels in the page's address. The state, the size and the theme each have a key in the query — `?state=<state>`, `?size=<size>` (its label in lower case, as `phone`), `?theme=<light or dark>` — so one link names the whole view. A state or a size at its default leaves its key out; the theme is always in the address, since without it each reader gets their own. Switching rewrites the address without a reload and without a history entry.
+
+  A link to another design prototype, when followed or opened in a new tab, carries every switch but the state, and a key the link sets itself wins; a link that is only a `#…` fragment, or that leaves the page's origin, is left as written. `?theme=` is read on every page that links `skeleton.js` — the skeleton and the reference too — ahead of the theme the browser kept, and is never saved as kept.
+
+  `#<state>` still opens a design prototype in that state, so links already written keep working, but it is no longer written and has left the contract comment in `skeleton.html`: write `?state=<state>`.
+
+  **For a project already set up:** copy the new `skeleton.js` and the "Design prototype" section of the contract comment in `skeleton.html` from `template/`. Pages already drawn need no edit.
+
 ## 0.28.2
 
 ### Patch Changes
