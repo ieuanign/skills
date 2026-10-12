@@ -38,7 +38,7 @@ Done when one branch is chosen and `N` is known.
 
 ## Build
 
-1. **Inventory.** List each screen the `Visible: yes` requirements change, with its surface and the ids it covers. Per screen, list every state that changes what it shows: each error the PRD names, plus empty, loading, success, dialog and first-run where they apply. Then mark each screen **existing** or **new**: after `git fetch origin`, `git ls-tree -r --name-only origin/<default branch> docs/design/` lists the design prototypes, each named for its screen. A screen one of them already draws is existing, and keeps that page's name and folder. Done when every `Visible: yes` id is on a screen, every screen and every error in the PRD has a state, and every screen is marked.
+1. **Inventory.** List each screen the `Visible: yes` requirements change, with its surface and the ids it covers. Per screen, list every state that changes what it shows: each error the PRD names, plus empty, loading, success, dialog and first-run where they apply. Per screen, name the persona it opens as — the user-story heading its requirements sit under — or none, and what on it differs by key. Then mark each screen **existing** or **new**: after `git fetch origin`, `git ls-tree -r --name-only origin/<default branch> docs/design/` lists the design prototypes, each named for its screen. A screen one of them already draws is existing, and keeps that page's name and folder. Done when every `Visible: yes` id is on a screen, every screen and every error in the PRD has a state, every screen names its persona or none, and every screen is marked.
 2. **Patterns.** For each pattern the screens need — a table, a form, a dialog, navigation, an empty state — find how it is already built: first in the design prototypes, then in the code components, at the path the components comment in `docs/design-system/skeleton.css` names. Draw each as it is already built. A **conflict** is a pattern the design prototypes and the code build differently, or one the PRD needs that contradicts either, and every conflict is settled before anything is drawn:
    - **Raise** each with both sides and their paths. Where a person invoked you in an interactive session, run `/mattpocock-skills:grilling` over them until each has a ruling: the side that stands. Otherwise write nothing and return the list.
    - **Fix** the side that lost. The design side — a design prototype, the skeleton, the reference page — is fixed in a pull request of its own, on `design-fix/<N>-<slug>` and titled `Design fix: <pattern>`, opened as [Confirm](#confirm) steps 2 and 4 open one; return its URL and stop, because Build starts again once it merges. The code side is filed as an issue, as the issue tracker doc files one, and the mockup is drawn to the ruling.
@@ -48,7 +48,7 @@ Done when one branch is chosen and `N` is known.
    - **New screens** are sections of `mockup.html`, built from `docs/design-system/skeleton.html`. Beside each, at most six of the PRD's rules for it, in the PRD's words. Where a new screen's structure is open, up to three options for the person to name one of. The footer lists every choice the PRD did not make, every placeholder and every addition.
    - **Existing screens** are copies of their design prototypes, at `<folder>/<screen>.html` (`git show origin/<default branch>:docs/design/<folder>/<screen>.html`). Change the copy: its states, its controls, and this PRD's ids added to `data-req`.
    - **Copy and controls.** Real copy, from the PRD where it gives any; a fact the PRD lacks is a placeholder. Controls are real elements.
-   - **Missing pieces.** A token or component the skeleton lacks goes in that page's `<style data-additions>`, in both themes.
+   - **Missing pieces.** A token or component the skeleton lacks goes in that page's `<style data-additions>`, in both themes. A persona or key `docs/design-system/project.js` lacks goes in that page's `<script data-additions>`, and on the footer's additions list.
 
    Done when every screen from step 1 is drawn, a new one on `mockup.html` and an existing one in its copy, and every line of the [checklist](#checklist) passes.
 4. **Show.** Where a person invoked you in an interactive session, open each page in the draft folder with the OS opener (`open`, `xdg-open` or `start`). Otherwise, carry their paths to the return.
@@ -73,7 +73,7 @@ Done when one branch is chosen and `N` is known.
    - Each section of `mockup.html` becomes `docs/design/<folder>/<screen>.html`, built from `docs/design-system/prototype.html`: the section's states drawn as one page, what differs between them marked `data-when`, and its states, its Behaviour list and its placeholders in the panel.
    - Each copy of an existing design prototype is written over the page it was copied from.
    - Every control the requirements give a behaviour carries it, and a link to another screen opens that screen's design prototype.
-   - Each `<style data-additions>` moves into `docs/design-system/`: `tokens.css` or `skeleton.css`, with an example on `reference.html`.
+   - Each `<style data-additions>` moves into `docs/design-system/`: `tokens.css` or `skeleton.css`, with an example on `reference.html`. Each `<script data-additions>` moves into the personas of `docs/design-system/project.js`.
    - An id the PRD's `## Withdrawn` names leaves every `data-req`.
 
    Done when every screen in the draft folder is a design prototype, and every line of the [checklist](#checklist) passes for each.
@@ -92,7 +92,7 @@ Every page:
 
 - Every requirement marked `Visible: yes` is on a screen, and every id of this PRD on a screen is in its Requirements.
 - Every error the PRD names has a state.
-- Only the skeleton's tokens and components are used, or the additions the page carries.
+- Only the skeleton's tokens and components and `docs/design-system/project.js`'s personas and keys are used, or the additions the page carries.
 - Every `[Placeholder]` is listed: in a mockup's footer, in a design prototype's panel.
 - The page links the files `docs/design-system/skeleton.html` links, and loads nothing else but fonts from the network.
 
@@ -101,4 +101,4 @@ A design prototype, also:
 - Every state has its button in the panel and changes something on the page, and every `data-go` and `data-then` names a state.
 - Every control the requirements give a behaviour carries it.
 - Every link to another screen opens a page that exists.
-- It carries no open choice and no `<style data-additions>`.
+- It carries no open choice, no `<style data-additions>` and no `<script data-additions>`.
