@@ -78,6 +78,13 @@
     <ul data-list="open-choices"> every choice the PRD did not make;
     <ul data-list="placeholders"> every [Placeholder] on the page, by its text;
     <ul data-list="additions"> every token, component, persona, key or navigation item the page adds.
+  - It may hold four more, the screen's design record, each optional, an item naming its screen where
+    the page holds more than one:
+    <ul data-list="conflicts"> every conflict still open: both sides and their paths;
+    <ul data-list="settled"> every conflict ruled on: the date, as 2026-01-12, and the ruling;
+    <ul data-list="todo" aria-label="Code to change"> the code a ruling leaves to change, and the
+    issue filed for it;
+    <ul data-list="choices"> what the page chose that no requirement did.
   - A persona, key or navigation item the draft adds sits in the page's <script data-additions>,
     which adds it to PROJECT.personas or to its shell in PROJECT.shells, until it is moved into
     project.js.
@@ -92,6 +99,14 @@
     under their kind, a shell's switches below the states, the persona switch under "Signed in as"
     above that persona's name and email, the size switch, the theme switch, the dock switch and the
     requirement ids.
+  - The panel also holds the screen's design record, as a mockup's footer does: the same
+    <ul data-list="conflicts">, "settled", "todo" and "choices", each optional, each item one line.
+  - skeleton.js draws every data-list the panel holds, after Behaviour and in the page's order, as a
+    section headed by the list's name and its count, as "Settled (1)": these lists, the
+    placeholders and any list a project adds alike. A list that is empty or absent draws nothing.
+  - The heading is the list's aria-label where it carries one, else its name with each hyphen a
+    space and its first letter a capital.
+  - The collapsed panel still shows a badge counting the conflicts open, and none when there are none.
   - The dock switch moves the panel between the bottom right and the bottom left. Its side, and
     whether it is open, are the browser's: kept per browser, never in the address and never carried
     on a link. The side it starts on is project.js's, PROJECT.dock, "left" or "right". A browser
@@ -211,6 +226,14 @@
   <ul data-list="placeholders"><li>[Attempts left]</li></ul>
   <h2>Additions</h2>
   <ul data-list="additions"></ul>
+  <h2>Conflicts</h2>
+  <ul data-list="conflicts"></ul>
+  <h2>Settled</h2>
+  <ul data-list="settled"></ul>
+  <h2>Code to change</h2>
+  <ul data-list="todo" aria-label="Code to change"></ul>
+  <h2>Choices</h2>
+  <ul data-list="choices"></ul>
 </footer>
 </body>
 </html>
