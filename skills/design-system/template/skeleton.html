@@ -68,12 +68,12 @@
   - Either may name a page in place of a state: a link to another screen's design prototype, as
     data-go="home.html" or data-then="../web/orders.html?state=empty". A value with .html in it,
     alone or before a ? or a #, is a page; any other is a state. The page opens as a followed
-    <a href> does, carrying the same switches.
+    <a href> does, carrying the same switches, and a screen with no states opens one too.
   - data-go on a checkbox: ticked, the screen moves to that state; cleared, it returns to the state
-    it left.
+    it left. A state reached any other way clears the box.
   - data-value-when and data-checked-when take the list data-disabled-when does: a field shows its
-    value attribute, and a box is ticked, in the states listed; in every other the field is empty and
-    the box clear.
+    value attribute, a <select> its selected option, and a box is ticked, in the states listed; in
+    every other the field is empty and the box clear.
   - data-countdown="<seconds>" data-wait="Resend code in {t}" on a button: disabled when the page
     opens, it shows data-wait with {t} the time left, as 0:30. At 0 it shows its own text and can be
     clicked, which starts it again. A state changes neither; data-disabled-when still disables it.
