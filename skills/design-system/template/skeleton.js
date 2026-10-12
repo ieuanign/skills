@@ -99,12 +99,14 @@ function reveal(screen) {
   const { state, keys } = view(screen);
   screen.querySelectorAll("[data-when], [data-perm]").forEach((el) => {
     const { when, perm } = el.dataset;
+    // With no state to ask, data-when decides nothing, and an element written hidden stays so.
+    if (state == null && perm == null) return;
     el.hidden = !((when == null || state == null || names(when, state)) && (perm == null || holds(perm, keys)));
   });
 }
 // The keys in effect on a screen; a project hook calls it when something other than the persona grants them.
 function setKeys(screen, keys) {
-  view(screen).keys = [...keys];
+  view(screen).keys = [...(keys || [])];
   reveal(screen);
 }
 // The persona in effect on a screen, as { id, persona }; null on a screen naming none.
