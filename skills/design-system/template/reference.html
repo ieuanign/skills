@@ -37,6 +37,7 @@ code { font-family: var(--font-mono); }
 .a4 { height: 9.5rem; overflow: hidden; }
 .a4 .frame-page { zoom: 0.3; max-width: none; }
 .behind { height: 16rem; display: grid; place-items: center; padding: var(--space-3); }
+.ref-grid + [data-screen] { margin-top: var(--space-4); }
 </style>
 </head>
 <body>
@@ -166,7 +167,7 @@ code { font-family: var(--font-mono); }
 
   <section class="block" id="page">
     <div class="eyebrow">Page</div><h2>A page's own pieces</h2>
-    <p>The contract's hooks, as a mockup draws them. The floating panel is drawn on <a href="prototype.html">the design prototype</a>.</p>
+    <p>The contract's hooks, as a mockup draws them, then each one working on a screen of its own. The floating panel is drawn on <a href="prototype.html">the design prototype</a>.</p>
     <div class="ref-grid">
       <div class="card"><h3>Requirement ids</h3><div><span class="req-chip">REQ-57.1</span> <span class="req-chip">REQ-57.3</span></div></div>
       <div class="card"><h3>States</h3><div class="states" role="group" aria-label="State"><button type="button" aria-pressed="true">Waiting</button><button type="button" data-kind="error">Wrong code</button></div></div>
@@ -175,6 +176,49 @@ code { font-family: var(--font-mono); }
       <div class="card" data-screen="persona" data-persona="holder"><h3>Persona and key</h3><div class="head"></div><p style="margin:0" data-perm="claims.approve">Shown to the claims adjuster, who holds <code>claims.approve</code>.</p><p style="margin:0" data-perm="!claims.approve">The policy holder does not hold <code>claims.approve</code>.</p></div>
       <div class="card" data-screen="page-behind" data-surface="web"><h3>Page behind</h3><div class="viewport behind"><div data-over="prototype.html"></div><div class="card" role="dialog" aria-label="Signed out">You were signed out. <button class="button" type="button">Sign in again</button></div></div></div>
       <div class="card"><h3>Behaviour</h3><ul class="behaviour"><li>6 digits, valid 5 minutes, 5 attempts.</li><li>Resend after 60 s, at most 3 times.</li></ul></div>
+    </div>
+    <div data-screen="hooks">
+      <div class="head">
+        <div class="states" role="group" aria-label="State">
+          <button type="button" data-state="default" data-kind="default">Default</button>
+          <button type="button" data-state="filled" data-kind="default">Filled in</button>
+          <button type="button" data-state="terms" data-kind="dialog">Terms</button>
+          <button type="button" data-state="leaving" data-kind="loading" data-then="prototype.html">Leaving</button>
+        </div>
+      </div>
+      <div class="ref-grid">
+        <div class="card"><h3>Another page</h3>
+          <div><button class="button" type="button" data-go="prototype.html">Open the design prototype</button> <button class="button button-secondary" type="button" data-go="leaving" data-disabled-when="leaving">Open it after a moment</button></div>
+          <p style="margin:0" data-when="leaving">Opening the design prototype…</p>
+        </div>
+        <div class="card"><h3>State-filled field and box</h3>
+          <div class="field"><label for="ref-filled-email">Email</label><input id="ref-filled-email" type="email" value="rina@example.com" data-value-when="filled"></div>
+          <label><input type="checkbox" data-checked-when="filled"> Keep me signed in</label>
+          <div><button class="button button-secondary" type="button" data-go="filled">Fill them in</button></div>
+        </div>
+        <div class="card"><h3>Checkbox that goes and comes back</h3>
+          <label><input type="checkbox" data-go="terms"> Show the terms</label>
+          <p style="margin:0" data-when="terms">Ticked, the screen is in Terms. Cleared, it returns to the state it left.</p>
+        </div>
+        <div class="card"><h3>Countdown</h3>
+          <div><button class="button button-secondary" type="button" data-countdown="10" data-wait="Resend code in {t}">Resend code</button></div>
+        </div>
+        <div class="card" data-filter-scope><h3>Filtered list</h3>
+          <div class="seg" role="group" aria-label="Filter">
+            <button type="button" data-filter="status=waiting">Waiting <span data-count></span></button>
+            <button type="button" data-filter="status=approved">Approved <span data-count></span></button>
+            <button type="button" data-filter="status=closed" data-hide-empty>Closed <span data-count></span></button>
+          </div>
+          <div class="card" style="background:var(--color-bg)" data-row data-status="waiting">Claim 0812 · waiting for photos</div>
+          <div class="card" style="background:var(--color-bg)" data-row data-status="waiting">Claim 0815 · waiting for a quote</div>
+          <div class="card" style="background:var(--color-bg)" data-row data-status="approved">Claim 0790 · approved</div>
+          <div class="card" style="background:var(--color-bg)" data-row data-status="closed" data-when="!default">Claim 0744 · closed</div>
+          <p style="margin:0;font-size:var(--text-sm);color:var(--color-text-muted)">The closed claim shows in every state but Default, where Closed counts 0 and hides.</p>
+        </div>
+        <div class="card"><h3>Row that opens</h3>
+          <div class="card" style="background:var(--color-bg)" data-rowlink>Claim 0812 · <a href="prototype.html">waiting for photos</a> <button class="button button-secondary" type="button">Remind</button></div>
+        </div>
+      </div>
     </div>
   </section>
 </main>
