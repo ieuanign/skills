@@ -210,15 +210,19 @@ Beside a lane's worktree, branch and `.scratch/**/<n>-*.md` files, the candidate
 - `/mockup`'s branches `mockup/<N>-<slug>` and `design-fix/<N>-<slug>`, and its draft folder
   `.scratch/mockups/<N>-<slug>/` as a row of its own;
 - `/infrastructure`'s worktree, a sibling of the checkout at `<checkout>-infrastructure-<mode>`, and its
-  branches `infrastructure/<mode>` and `infrastructure/<mode>-<k>`.
+  branches `infrastructure/<mode>` and `infrastructure/<mode>-<k>`;
+- a `/pr-comments` worktree, `pr-<n>`, as a row keyed by its pull request;
+- the staged phase scripts, `.scratch/dev-loop-scripts/`, as one row keyed `staged-scripts`.
 
 `remove` is recommended only where both halves hold: the pull request is **merged**, and the worktree
 is clean — or absent, which is the ordinary case and has nothing to be dirty. The merge alone will not
 do, because it says nothing about whether the run holding that checkout has finished with it — the
 clean half is what answers that. A pull request **closed without merging** passes the first half only
 when its head is the local branch's tip, so no unpushed commit goes with the branch. A draft folder has
-no pull request: it is `remove` once its PRD's issue is closed. Every other row is `keep`, with **Why**
-naming what failed — including a state that could not be read, which is never taken as permission.
+no pull request: it is `remove` once its PRD's issue is closed, and so is a lane left with only its
+scratch files, by its own issue. The staged scripts are always `remove`, since every run stages its own
+copy before it reads one. Every other row is `keep`, with **Why** naming what failed — including a
+state that could not be read, which is never taken as permission.
 
 Each reaped row goes in one order — worktree, then branch, then scratch files — since a branch
 checked out in a worktree is held by that checkout for as long as it stands. That first step is the
