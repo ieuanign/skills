@@ -36,6 +36,7 @@ code { font-family: var(--font-mono); }
 .icons .i { font-size: 1.25rem; color: var(--color-text); }
 .a4 { height: 9.5rem; overflow: hidden; }
 .a4 .frame-page { zoom: 0.3; max-width: none; }
+.behind { height: 16rem; display: grid; place-items: center; padding: var(--space-3); }
 </style>
 </head>
 <body>
@@ -172,6 +173,7 @@ code { font-family: var(--font-mono); }
       <div class="card"><h3>Open choice</h3><div class="options" role="group" aria-label="Option"><button type="button" aria-pressed="true">One field</button><button type="button">Six boxes</button></div></div>
       <div class="card"><h3>Placeholder</h3><p style="margin:0">The code works for <mark data-placeholder>[Code lifetime]</mark>.</p></div>
       <div class="card" data-screen="persona" data-persona="holder"><h3>Persona and key</h3><div class="head"></div><p style="margin:0" data-perm="claims.approve">Shown to the claims adjuster, who holds <code>claims.approve</code>.</p><p style="margin:0" data-perm="!claims.approve">The policy holder does not hold <code>claims.approve</code>.</p></div>
+      <div class="card" data-screen="page-behind" data-surface="web"><h3>Page behind</h3><div class="viewport behind"><div data-over="prototype.html"></div><div class="card" role="dialog" aria-label="Signed out">You were signed out. <button class="button" type="button">Sign in again</button></div></div></div>
       <div class="card"><h3>Behaviour</h3><ul class="behaviour"><li>6 digits, valid 5 minutes, 5 attempts.</li><li>Resend after 60 s, at most 3 times.</li></ul></div>
     </div>
   </section>
