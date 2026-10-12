@@ -81,6 +81,9 @@ main.stage, main.stage > .viewport { min-height: 100vh; }
 main.stage.sized, body:not([data-surface="web"]) > main.stage { padding: var(--space-4) 0; background: var(--color-surface); }
 main.stage.sized > .viewport { min-height: calc(100vh - 2 * var(--space-4)); box-shadow: 0 0 0 1px var(--color-border), var(--frame-shadow); }
 [data-panel] { position: fixed; right: var(--space-3); bottom: var(--space-3); z-index: 50; width: 17rem; max-width: calc(100vw - 2 * var(--space-3)); max-height: calc(100vh - 2 * var(--space-3)); display: flex; flex-direction: column; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-bg); color: var(--color-text); box-shadow: var(--frame-shadow); font-size: var(--text-sm); }
+[data-panel].docked-left { right: auto; left: var(--space-3); }
+/* Stepped aside for a data-avoid element showing in its corner. */
+[data-panel].raised { top: var(--space-3); bottom: auto; }
 [data-panel].collapsed { width: auto; }
 [data-panel].collapsed .panel-body { display: none; }
 .panel-toggle { display: flex; gap: var(--space-2); align-items: center; width: 100%; padding: var(--space-2) var(--space-3); border: 0; background: transparent; color: inherit; font: inherit; font-weight: 600; text-align: left; cursor: pointer; }

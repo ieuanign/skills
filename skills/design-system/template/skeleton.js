@@ -318,6 +318,8 @@ function wireSizes(screen) {
   return group;
 }
 
+// From this width a fresh browser opens the panel: the line skeleton.css draws between wide and narrow.
+const WIDE = "(min-width: 64rem)";
 // A design prototype's floating panel, drawn around the lists its <aside data-panel> holds.
 function buildPanel(screen, sizes, personas, shell) {
   const panel = screen.querySelector("[data-panel]");
@@ -352,6 +354,35 @@ function buildPanel(screen, sizes, personas, shell) {
   group("Signed in as", personas)?.append(personas.who);
   group("Size", sizes);
   group("Theme", themes);
+  const docks = document.createElement("div");
+  docks.className = "seg";
+  docks.setAttribute("role", "group");
+  docks.setAttribute("aria-label", "Dock");
+  // Raised while a data-avoid element shows in the box the panel takes at the bottom of its side.
+  const stepAside = () => {
+    const at = panel.getBoundingClientRect();
+    const drop = panel.classList.contains("raised") ? root.clientHeight - at.bottom - at.top : 0;
+    panel.classList.toggle("raised", [...screen.querySelectorAll("[data-avoid]")].some((el) => {
+      const box = el.getBoundingClientRect();
+      return box.width > 0 && box.height > 0 && box.left < at.right && box.right > at.left && box.top < at.bottom + drop && box.bottom > at.top + drop;
+    }));
+  };
+  const dock = (side) => {
+    panel.classList.toggle("docked-left", side === "left");
+    press(docks, docks.children[side === "left" ? 0 : 1]);
+    stepAside();
+  };
+  ["left", "right"].forEach((side) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = labelOf(side);
+    button.addEventListener("click", () => {
+      dock(side);
+      kept.set("skeleton-dock", side);
+    });
+    docks.append(button);
+  });
+  group("Dock", docks);
   group("Requirements", reqs);
   group("Behaviour", panel.querySelector(".behaviour"));
   group("Placeholders", panel.querySelector('[data-list="placeholders"]'));
@@ -371,7 +402,15 @@ function buildPanel(screen, sizes, personas, shell) {
     kept.set("skeleton-panel", on ? "collapsed" : "open");
   });
   panel.replaceChildren(toggle, body);
-  collapse(kept.get("skeleton-panel") === "collapsed");
+  // Kept by the browser and never in the address: a link says nothing of where its reader likes the panel.
+  dock(kept.get("skeleton-dock") || (typeof PROJECT === "undefined" ? null : PROJECT.dock));
+  // The elements' own boxes are watched, so whatever shows or hides one counts: a state, a persona, a page's script.
+  new MutationObserver(stepAside).observe(screen, { subtree: true, childList: true, attributes: true });
+  new ResizeObserver(stepAside).observe(panel);
+  addEventListener("resize", stepAside);
+  addEventListener("scroll", stepAside, { capture: true, passive: true });
+  // As the theme's first value: what the browser kept, else what the window's width suggests.
+  collapse((kept.get("skeleton-panel") || (matchMedia(WIDE).matches ? "open" : "collapsed")) === "collapsed");
   // The collapsed panel still names the state on show.
   screen.addEventListener("state", (e) => {
     toggle.querySelector(".now").textContent = e.detail.label;

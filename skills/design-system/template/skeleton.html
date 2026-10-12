@@ -88,17 +88,24 @@
 
   Design prototype — one page for one screen
   - <aside data-panel> holds the screen's .states, its <ul class="behaviour"> and its
-    <ul data-list="placeholders">. skeleton.js draws the floating panel around them, with a shell's
-    switches below the states, the persona switch under "Signed in as" above that persona's name
-    and email, the size switch, the theme switch and the requirement ids.
+    <ul data-list="placeholders">. skeleton.js draws the floating panel around them, with the states
+    under their kind, a shell's switches below the states, the persona switch under "Signed in as"
+    above that persona's name and email, the size switch, the theme switch, the dock switch and the
+    requirement ids.
+  - The dock switch moves the panel between the bottom right and the bottom left. Its side, and
+    whether it is open, are the browser's: kept per browser, never in the address and never carried
+    on a link. The side it starts on is project.js's, PROJECT.dock, "left" or "right". A browser
+    that has kept nothing opens it in a window 64rem or wider, and collapsed in a narrower one.
+  - data-avoid on an element of the screen the panel must not cover, such as a toast region: while
+    it shows in the panel's corner the panel moves to the top of its side, then comes back.
   - Every state is reachable from the panel, and every control the requirements give a behaviour
     carries it: data-go, or the page's own script.
-  - Every switch in the panel has a key in the page's address: ?state=<state>, ?size=<size> (its
-    label in lower case, as phone), ?theme=<light or dark>, ?persona=<persona>, and
-    ?<switch>=<value> for each of a shell's. A switch at its default leaves its key out; the theme
-    has no default and is always there, since without it each reader gets their own. Switching
-    rewrites the address, so the address always opens the view on show. A persona project.js lacks
-    opens the screen's own.
+  - Every switch in the panel but the dock has a key in the page's address: ?state=<state>,
+    ?size=<size> (its label in lower case, as phone), ?theme=<light or dark>, ?persona=<persona>,
+    and ?<switch>=<value> for each of a shell's. A switch at its default leaves its key out; the
+    theme has no default and is always there, since without it each reader gets their own.
+    Switching rewrites the address, so the address always opens the view on show. A persona
+    project.js lacks opens the screen's own.
   - A link to another screen is an <a href> to that screen's design prototype; ?state=<state> opens
     it in that state. Followed, it carries every switch but the state, and a key the link sets wins.
   - data-over="<page>" on an element of a screen that opens over another, as a side panel, a sheet

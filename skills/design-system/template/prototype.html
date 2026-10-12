@@ -10,6 +10,10 @@
 <link rel="stylesheet" href="skeleton.css">
 <script src="project.js"></script>
 <script src="skeleton.js"></script>
+<style>
+  /* This page's toast, in the corner the panel starts in. */
+  [data-avoid] { position: fixed; right: var(--space-3); bottom: var(--space-3); margin: 0; }
+</style>
 </head>
 <body data-screen="sign-in" data-req="REQ-0.1" data-surface="web" data-route="/sign-in">
 <aside data-panel>
@@ -36,10 +40,10 @@
     </form>
     <div data-shell="app" data-when="signed-in">
       <div class="page narrow">
-        <p class="alert-success">You are signed in.</p>
         <button class="button button-secondary" type="button" data-go="default">Sign out</button>
       </div>
     </div>
+    <p class="alert-success" data-avoid data-when="signed-in">You are signed in.</p>
   </div>
 </main>
 </body>
