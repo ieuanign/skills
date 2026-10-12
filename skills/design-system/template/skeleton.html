@@ -7,13 +7,16 @@
   Files, in docs/design-system/
   - tokens.css: the tokens for a light and a dark theme, the two holding identical keys.
   - skeleton.css: the frames, the components and the page pieces. skeleton.js: the hooks.
+  - project.js: what the project defines once, as one object, PROJECT. PROJECT.personas holds each
+    persona by its identifier, in the order the switch draws them: its label, name, email and keys.
+    A page links it before skeleton.js.
   - skeleton.html, this file: what a mockup is built from. prototype.html: what a design prototype is.
-  - A page links the stylesheets and the script this file links, by relative path from its own
+  - A page links the stylesheets and the scripts this file links, by relative path from its own
     folder (from docs/design/web/, ../../design-system/skeleton.css), as it does brand/ assets, and
     loads nothing from the network but fonts. Its own <style> and <script> hold only what is that
     page's alone.
-  - Only these tokens and components are used. One a draft adds sits in that page's
-    <style data-additions> until it is moved here and onto the reference page.
+  - Only these tokens, components, personas and keys are used. A token or component a draft adds
+    sits in that page's <style data-additions> until it is moved here and onto the reference page.
 
   Screen
   - The element carrying data-screen="<name>" data-req="REQ-57.1 REQ-57.3" data-surface="<surface>":
@@ -27,6 +30,9 @@
     or SMS, drawn where it appears).
   - A web or phone screen's content sits in .viewport. Layout that changes with width is an
     @container rule, so the size switch redraws it.
+  - data-persona="<persona>" names who the screen opens as, one of project.js's; skeleton.js draws
+    the switch between them. A screen naming none, such as sign-in or an email, has no switch and
+    holds no keys.
 
   State
   - <button data-state="<name>" data-kind="<kind>"> in the screen's <div class="states">; the first
@@ -35,6 +41,8 @@
     Every error state is data-kind="error"; its data-state names the error.
   - data-when="<state> <state>" on any element of the screen: shown in those states only.
     data-when="!<state>" shows it in every state but that one.
+  - data-perm="<key> !<key>" on any element of the screen: shown only to a persona holding every
+    key listed and none marked "!". An element carrying both is shown when both allow it.
   - data-disabled-when and data-invalid-when take the same list, and disable or mark invalid.
   - data-go="<state>" on a control or a <form>: a click or a submit moves the screen to that state.
     data-then="<state>" on a state button: reached through data-go, the state moves on after a moment.
@@ -50,18 +58,23 @@
   - <footer data-footer> holds three lists, each item one line:
     <ul data-list="open-choices"> every choice the PRD did not make;
     <ul data-list="placeholders"> every [Placeholder] on the page, by its text;
-    <ul data-list="additions"> every token or component the page adds.
+    <ul data-list="additions"> every token, component, persona or key the page adds.
+  - A persona or key the draft adds sits in the page's <script data-additions>, which adds it to
+    PROJECT.personas, until it is moved into project.js.
+  - The persona switch sits in the section's .head, and leaves the address as it is.
 
   Design prototype — one page for one screen
   - <aside data-panel> holds the screen's .states, its <ul class="behaviour"> and its
-    <ul data-list="placeholders">. skeleton.js draws the floating panel around them, with the size
-    switch, the theme switch and the requirement ids.
+    <ul data-list="placeholders">. skeleton.js draws the floating panel around them, with the
+    persona switch under "Signed in as" above that persona's name and email, the size switch, the
+    theme switch and the requirement ids.
   - Every state is reachable from the panel, and every control the requirements give a behaviour
     carries it: data-go, or the page's own script.
   - Every switch in the panel has a key in the page's address: ?state=<state>, ?size=<size> (its
-    label in lower case, as phone), ?theme=<light or dark>. A switch at its default leaves its key
-    out; the theme has no default and is always there, since without it each reader gets their
-    own. Switching rewrites the address, so the address always opens the view on show.
+    label in lower case, as phone), ?theme=<light or dark>, ?persona=<persona>. A switch at its
+    default leaves its key out; the theme has no default and is always there, since without it
+    each reader gets their own. Switching rewrites the address, so the address always opens the
+    view on show. A persona project.js lacks opens the screen's own.
   - A link to another screen is an <a href> to that screen's design prototype; ?state=<state> opens
     it in that state. Followed, it carries every switch but the state, and a key the link sets wins.
 -->
@@ -72,6 +85,7 @@
 <title>Skeleton</title>
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="skeleton.css">
+<script src="project.js"></script>
 <script src="skeleton.js"></script>
 </head>
 <body>
@@ -120,7 +134,7 @@
     </div>
   </section>
 
-  <section id="claims" data-screen="claims" data-req="REQ-0.2" data-surface="ios">
+  <section id="claims" data-screen="claims" data-req="REQ-0.2" data-surface="ios" data-persona="holder">
     <div class="head">
       <h2>Claims <span class="req-chip">REQ-0.2</span></h2>
       <div class="states" role="group" aria-label="State">
@@ -136,6 +150,7 @@
             <div class="viewport">
               <div class="page">
                 <div class="card" data-when="list">Claim 0812 · waiting for photos</div>
+                <button class="button button-secondary" type="button" data-when="list" data-perm="claims.approve">Approve claim 0812</button>
                 <p data-when="empty">You have no claims yet.</p>
                 <button class="button" type="button">Report a claim</button>
               </div>
@@ -145,6 +160,7 @@
       </div>
       <ul class="behaviour">
         <li>A person with no claims is told so, with the way to report one.</li>
+        <li>Only a claims adjuster can approve a claim.</li>
       </ul>
     </div>
   </section>

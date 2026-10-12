@@ -85,6 +85,33 @@ function names(list, state) {
   return !not.includes(state) && (only.length === 0 || only.includes(state));
 }
 
+// "a !b" asks for every key listed and none marked "!".
+function holds(list, keys) {
+  return list.split(/\s+/).filter(Boolean).every((w) => (w.startsWith("!") ? !keys.includes(w.slice(1)) : keys.includes(w)));
+}
+
+// What a screen is showing: its state, its persona and the keys in effect, which a hook may set apart
+// from the persona's own.
+const views = new WeakMap();
+const view = (screen) => views.get(screen) || views.set(screen, { keys: [] }).get(screen);
+// One pass over both attributes, so neither change can show what the other hides.
+function reveal(screen) {
+  const { state, keys } = view(screen);
+  screen.querySelectorAll("[data-when], [data-perm]").forEach((el) => {
+    const { when, perm } = el.dataset;
+    el.hidden = !((when == null || state == null || names(when, state)) && (perm == null || holds(perm, keys)));
+  });
+}
+// The keys in effect on a screen; a project hook calls it when something other than the persona grants them.
+function setKeys(screen, keys) {
+  view(screen).keys = [...keys];
+  reveal(screen);
+}
+// The persona in effect on a screen, as { id, persona }; null on a screen naming none.
+function personaOf(screen) {
+  return view(screen).persona || null;
+}
+
 // A screen's states. Returns show(state, driven): driven is true when a control on the screen moved it,
 // which is what lets a data-then state move on; a state picked from its button stays.
 function wireStates(screen) {
@@ -96,7 +123,8 @@ function wireStates(screen) {
     if (!button) return false;
     clearTimeout(timer);
     buttons.forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
-    screen.querySelectorAll("[data-when]").forEach((el) => { el.hidden = !names(el.dataset.when, state); });
+    view(screen).state = state;
+    reveal(screen);
     screen.querySelectorAll("[data-disabled-when]").forEach((el) => { el.disabled = names(el.dataset.disabledWhen, state); });
     screen.querySelectorAll("[data-invalid-when]").forEach((el) => { el.setAttribute("aria-invalid", String(names(el.dataset.invalidWhen, state))); });
     if (driven && button.dataset.then) timer = setTimeout(() => show(button.dataset.then, true), 1200);
@@ -125,6 +153,42 @@ function wireOptions(screen) {
   };
   buttons.forEach((b) => b.addEventListener("click", () => show(b)));
   if (buttons.length) show(buttons[0]);
+}
+
+// The persona switch of a screen naming one of the project's; a screen naming none holds no keys.
+function wirePersonas(screen) {
+  // A page may link no project file, and its states must still run.
+  const all = typeof PROJECT === "undefined" ? {} : PROJECT.personas || {};
+  setKeys(screen, []);
+  const own = screen.dataset.persona;
+  if (own == null || !Object.hasOwn(all, own)) return null;
+  const group = document.createElement("div");
+  group.className = "seg";
+  group.setAttribute("role", "group");
+  group.setAttribute("aria-label", "Signed in as");
+  const who = document.createElement("div");
+  const buttons = {};
+  const pick = (id) => {
+    if (!Object.hasOwn(buttons, id)) return false;
+    const persona = all[id];
+    press(group, buttons[id]);
+    who.replaceChildren(...[persona.name, persona.email].map((line) => Object.assign(document.createElement("div"), { textContent: line })));
+    view(screen).persona = { id, persona };
+    setKeys(screen, persona.keys);
+    screen.dispatchEvent(new CustomEvent("persona", { detail: { id, persona } }));
+  };
+  Object.entries(all).forEach(([id, persona]) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = persona.label;
+    button.addEventListener("click", () => {
+      pick(id);
+      switched("persona", id);
+    });
+    group.append(button);
+    buttons[id] = button;
+  });
+  return Object.assign(group, { first: own, pick, who });
 }
 
 // A size is named in the address as a state is: lowercase, hyphenated.
@@ -170,7 +234,7 @@ function wireSizes(screen) {
 }
 
 // A design prototype's floating panel, drawn around the lists its <aside data-panel> holds.
-function buildPanel(screen, sizes) {
+function buildPanel(screen, sizes, personas) {
   const panel = screen.querySelector("[data-panel]");
   const body = document.createElement("div");
   body.className = "panel-body";
@@ -183,6 +247,7 @@ function buildPanel(screen, sizes) {
     heading.textContent = label;
     box.append(heading, el);
     body.append(box);
+    return box;
   };
   const themes = document.createElement("div");
   themes.className = "seg";
@@ -198,6 +263,7 @@ function buildPanel(screen, sizes) {
     reqs.append(chip);
   });
   group("State", panel.querySelector(".states"));
+  group("Signed in as", personas)?.append(personas.who);
   group("Size", sizes);
   group("Theme", themes);
   group("Requirements", reqs);
@@ -228,7 +294,9 @@ function buildPanel(screen, sizes) {
 }
 
 // A design prototype's switches, read from its address, which then names every one off its default.
-function wireAddress(show, sizes) {
+function wireAddress(show, sizes, personas) {
+  // Before the state, so its first showing already has the persona's keys.
+  if (personas) addSwitch("persona", { first: personas.first, apply: personas.pick });
   // #<state> opened a state before the query did, and links already written still use it.
   if (show) addSwitch("state", { first: show.first, apply: (name) => show(name, false), own: true }, decodeURIComponent(location.hash.slice(1)));
   if (sizes) addSwitch("size", { first: sizes.first, apply: sizes.pick });
@@ -253,11 +321,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const show = wireStates(screen);
     wireOptions(screen);
     const sizes = wireSizes(screen);
+    const personas = wirePersonas(screen);
     if (screen.querySelector("[data-panel]")) {
-      buildPanel(screen, sizes);
-      wireAddress(show, sizes);
+      buildPanel(screen, sizes, personas);
+      wireAddress(show, sizes, personas);
     } else {
       if (sizes) screen.querySelector(".head")?.append(sizes);
+      if (personas) {
+        screen.querySelector(".head")?.append(personas);
+        personas.pick(personas.first);
+      }
       if (show) show(show.first, false);
     }
   });

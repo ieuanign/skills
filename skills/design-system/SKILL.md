@@ -8,16 +8,16 @@ description: Sets up a project's design system as local HTML under docs/design-s
 The design system is three things under `docs/design-system/`, plain files a person opens in a browser:
 
 - **`reference.html`** shows every token and every component, in both themes.
-- **The skeleton** is what every mockup and design prototype is built from, and links: `tokens.css`, the tokens for a light and a dark theme; `skeleton.css`, a frame per surface and the components, named as the project's component kit names them; `skeleton.js`, the state, size and theme switches and a design prototype's floating panel; and the two pages built on them, `skeleton.html` for a mockup and `prototype.html` for a design prototype.
+- **The skeleton** is what every mockup and design prototype is built from, and links: `tokens.css`, the tokens for a light and a dark theme; `skeleton.css`, a frame per surface and the components, named as the project's component kit names them; `project.js`, the personas a screen can be seen as; `skeleton.js`, the state, persona, size and theme switches and a design prototype's floating panel; and the two pages built on them, `skeleton.html` for a mockup and `prototype.html` for a design prototype.
 - **`brand/`** holds what the client already has: a logo, colours, fonts, or a site to match as a URL in a text file. A person puts it there; you read it as it is.
 
 Your writes are those files and, in Directions, `directions.html` beside them. Variants inside the running app are `/mattpocock-skills:prototype`'s UI branch. You leave every file uncommitted, for the person to review and commit.
 
 ## The template
 
-[`template/`](template/), at `<this-skill-dir>/template/`, holds the skeleton's five files and `reference.html` under the names they are written to; every page here starts from it. The leading comment of its `skeleton.html` is the **markup contract** every mockup and design prototype follows: how a screen, its states, its frame, the footer and the panel are marked up. The contract lives in that comment alone, so that `mockup` and anything reading a page take it from the one file. Carry the comment into `skeleton.html` verbatim; change the tokens, frames and components around it. In `skeleton.js` the sizes the size switch offers and the icon sprite are the project's, and the hooks stay as they are.
+[`template/`](template/), at `<this-skill-dir>/template/`, holds the skeleton's six files and `reference.html` under the names they are written to; every page here starts from it. The leading comment of its `skeleton.html` is the **markup contract** every mockup and design prototype follows: how a screen, its states, its frame, the footer and the panel are marked up. The contract lives in that comment alone, so that `mockup` and anything reading a page take it from the one file. Carry the comment into `skeleton.html` verbatim; change the tokens, frames and components around it. The personas in `project.js` are the project's, as are the sizes the size switch offers and the icon sprite in `skeleton.js`, where the hooks stay as they are.
 
-Every page links the token file, `skeleton.css` and `skeleton.js` by relative path, as it does `brand/` assets, and loads nothing from the network but fonts.
+Every page links the token file, `skeleton.css`, `project.js` and `skeleton.js` by relative path, as it does `brand/` assets, and loads nothing from the network but fonts.
 
 ## One source for the tokens
 
@@ -30,7 +30,7 @@ Where the app has its own token file, that file is the source. If a browser load
 - **Build** — a direction has been chosen from `docs/design-system/directions.html`. Go to [Build](#build).
 - **Directions** — anything else. Go to [Directions](#directions).
 
-Done when one branch is chosen and, for Directions, the PRD's number is known.
+Done when one branch is chosen and, for Directions and Build, the PRD's number is known.
 
 ## Directions
 
@@ -41,8 +41,8 @@ Done when one branch is chosen and, for Directions, the PRD's number is known.
 
 ## Build
 
-1. **Inputs.** Take the chosen direction from `directions.html` and the changes the person asked for. Done when the direction's tokens, frames and components are known, with each change applied.
-2. **Skeleton.** Write the skeleton's five files from the template: the tokens by [One source for the tokens](#one-source-for-the-tokens), the frames and components from step 1 in `skeleton.css`, and `skeleton.html` and `prototype.html` with their example screens drawn in those components and the contract comment verbatim. Name each component as the project's component kit names it, or by the direction where there is no kit, and name the kit's path in the components comment of `skeleton.css`. Done when every token and component the direction uses is in the files.
+1. **Inputs.** Take the chosen direction from `directions.html` and the changes the person asked for, and fetch the PRD as Directions step 1 does. Done when the direction's tokens, frames and components are known, with each change applied, and the PRD's user stories are in hand.
+2. **Skeleton.** Write the skeleton's six files from the template: the tokens by [One source for the tokens](#one-source-for-the-tokens), the frames and components from step 1 in `skeleton.css`, the personas in `project.js` from the PRD's user stories — one for each `###` heading that says who the stories are for, with the keys its stories grant that another's do not — and `skeleton.html` and `prototype.html` with their example screens drawn in those components and the contract comment verbatim. Name each component as the project's component kit names it, or by the direction where there is no kit, and name the kit's path in the components comment of `skeleton.css`. Done when every token and component the direction uses, and every persona the PRD names, is in the files.
 3. **Reference page.** Write `docs/design-system/reference.html` from the template: a `data-token` row for every colour token, a `data-pair` row for every text and background pair the components use, an example of each size and space, and every component in each of its variants. Done when every token and component in the skeleton has an example.
 4. **Clear the directions.** Delete `directions.html`. Done when the folder holds the skeleton's files, `reference.html` and `brand/`.
 5. **Checklist.** Run every line of the [checklist](#checklist) and fix each fail. Done when every line passes.
@@ -50,8 +50,8 @@ Done when one branch is chosen and, for Directions, the PRD's number is known.
 
 ## Adopt
 
-1. **Review the code.** Read the token file and the component kit. List what is missing: a token without a value in one theme, a component without a state the app renders, text below 4.5:1 against a background it is used on. Done when every token and every component in the kit has been read and each gap is listed.
-2. **Skeleton and reference page** as in Build steps 2 and 3, from the code as it is: its token names and values, its component names, its gaps left as they are. Done as in those steps.
+1. **Review the code.** Read the token file and the component kit, and who the code tells apart with the keys it checks for each. List what is missing: a token without a value in one theme, a component without a state the app renders, text below 4.5:1 against a background it is used on. Done when every token and every component in the kit has been read and each gap is listed.
+2. **Skeleton and reference page** as in Build steps 2 and 3, from the code as it is: its token names and values, its component names, its personas and their keys, its gaps left as they are. Done as in those steps.
 3. **Checklist.** Run every line of the [checklist](#checklist). Fix a fail in the files you wrote; a fail that comes from the code stays, and goes in the return. Done when every line has a verdict.
 4. **Return** the files written, the list of what is missing, and the checklist result.
 
@@ -70,5 +70,5 @@ The Build and Adopt branches end on this list, and the Check branch reports on i
 - Every token and component has an example on the reference page.
 - The light and dark themes hold the same keys.
 - All text reaches 4.5:1 against the backgrounds it is used on, in both themes.
-- Every page links the one token file, `skeleton.css` and `skeleton.js`, and carries no copy of what they hold.
+- Every page links the one token file, `skeleton.css`, `project.js` and `skeleton.js`, and carries no copy of what they hold.
 - Where `tokens.css` mirrors the app's token file, the two hold the same names and values.
