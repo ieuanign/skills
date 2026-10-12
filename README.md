@@ -36,7 +36,7 @@ Then once per repo — independent, either order:
 | Skill | What it does |
 |---|---|
 | [`/dev-loop`](./skills/dev-loop/SKILL.md) | GitHub issues → pull requests: plan → implement → review → full-suite gate, one git worktree per lane, lanes in parallel |
-| [`/dev-loop-cleanup`](./skills/dev-loop-cleanup/SKILL.md) | Lists every candidate a lane left behind — worktree, local branch, scratch files — each with a recommendation and its reason, then reaps only the ones you pick |
+| [`/dev-loop-cleanup`](./skills/dev-loop-cleanup/SKILL.md) | Lists every candidate this plugin's skills left behind — worktree, local branch, scratch files, from `/dev-loop`, `/mockup` and `/infrastructure` runs — each with a recommendation and its reason, then reaps only the ones you pick, or with `auto` every one it recommends removing |
 | [`/grill-prd`](./skills/grill-prd/SKILL.md) | Interviews a brief in plain words about what people do and see — narrowing a too-big one to a single topic — until every part has a home, then calls `/to-prd` to publish it |
 | [`/to-prd`](./skills/to-prd/SKILL.md) | Writes, revises or checks a non-technical PRD issue with stable `REQ-<prd>.<n>` ids, and files the epic a too-big brief was narrowed from. Stops for no one, so an agent can call it alone |
 | [`/design-system`](./skills/design-system/SKILL.md) | Sets up a project's design system as local HTML under `docs/design-system/` — a reference page, the skeleton every mockup and design prototype is built from, and the client's `brand/`: three directions drawn from a PRD, built from the one chosen, adopted from code, or checked |

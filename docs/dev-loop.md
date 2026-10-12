@@ -190,25 +190,41 @@ This is also the answer to "the session died". Type the same command again.
 ### Cleanup
 
 `/dev-loop-cleanup` is its own skill, so reaping does not load the pipeline. It **proposes, then
-reaps**. One table lists every candidate a lane left behind, a row per branch:
+reaps**. One table lists every candidate this plugin's skills left behind, a row per branch:
 
 `Lane | PR | Worktree | Branch | Scratch | Recommend | Why`
 
-Both modes print that table and both stop at it — `/dev-loop-cleanup <issue>` gathers one lane, a bare
-`/dev-loop-cleanup` gathers every lane, and the argument decides only what you are shown. Nothing has
-happened when it prints; what you pick from it is the whole of what gets deleted.
+`/dev-loop-cleanup [auto] [<issue>]`. The scope is one argument and the mode another: an issue number
+gathers one lane, `pr-<n>` or `infrastructure-<mode>` gathers that key, and a bare run gathers
+everything. Either way the scope decides only what is shown, and nothing has happened when the table
+prints.
+
+Without `auto` the run stops at that table: what you pick from it is the whole of what gets deleted.
+With `auto` it asks nothing and reaps exactly the `remove` rows — never a `keep`, never a row the table
+does not show. The table is then the report of what was kept and why, followed by one line per reaped
+row. A removal git refuses is reported with the refusal's own output and the row kept.
+
+Beside a lane's worktree, branch and `.scratch/**/<n>-*.md` files, the candidates are:
+
+- a lane's cost log, `.scratch/dev-loop-cost/<n>.txt`, in that lane's Scratch cell;
+- `/mockup`'s branches `mockup/<N>-<slug>` and `design-fix/<N>-<slug>`, and its draft folder
+  `.scratch/mockups/<N>-<slug>/` as a row of its own;
+- `/infrastructure`'s worktree, a sibling of the checkout at `<checkout>-infrastructure-<mode>`, and its
+  branches `infrastructure/<mode>` and `infrastructure/<mode>-<k>`.
 
 `remove` is recommended only where both halves hold: the pull request is **merged**, and the worktree
 is clean — or absent, which is the ordinary case and has nothing to be dirty. The merge alone will not
 do, because it says nothing about whether the run holding that checkout has finished with it — the
-clean half is what answers that, and your pick is what authorises the deletion. Every other row is
-`keep`, with **Why** naming the half that failed.
+clean half is what answers that. A pull request **closed without merging** passes the first half only
+when its head is the local branch's tip, so no unpushed commit goes with the branch. A draft folder has
+no pull request: it is `remove` once its PRD's issue is closed. Every other row is `keep`, with **Why**
+naming what failed — including a state that could not be read, which is never taken as permission.
 
-Each row you pick is reaped in one order — worktree, then branch, then scratch files — since a branch
+Each reaped row goes in one order — worktree, then branch, then scratch files — since a branch
 checked out in a worktree is held by that checkout for as long as it stands. That first step is the
 hand-off for the worktree `/dev-loop` deliberately left standing: cleanup is where its removal is
-offered to you, once its pull request has merged. Safe to run at any time, including while another
-batch is mid-layer.
+offered to you, once its pull request has merged. Worktree removal never passes `--force`, in either
+mode. Safe to run at any time, including while another batch is mid-layer.
 
 ## Configuration
 
