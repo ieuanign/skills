@@ -17,6 +17,9 @@ const SPRITE = `
   <symbol id="i-success" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol>`;
 
 const root = document.documentElement;
+// Drawn behind another screen, a page fills its frame and writes nothing back.
+const framed = window.parent !== window;
+root.classList.toggle("framed", framed);
 // What a person last chose, where the browser lets a local page keep it.
 const kept = {
   get(key) { try { return localStorage.getItem(key); } catch { return null; } },
@@ -48,14 +51,30 @@ function switched(key, value) {
   if (!s) return;
   s.now = value;
   address();
+  document.querySelectorAll("[data-over]:has(> iframe)").forEach(drawBehind);
 }
-// The link, carrying every switch but the page's own; a key the link already sets wins.
-function carry(href) {
+// The link, carrying every switch but the page's own; a key the link already sets wins. every carries
+// a default too, for a page whose own default may differ.
+function carry(href, every = false) {
   const url = new URL(href, location.href);
   switches.forEach((s, key) => {
-    if (!s.own && s.now !== s.first && !url.searchParams.has(key)) url.searchParams.set(key, s.now);
+    if (!s.own && (every || s.now !== s.first) && !url.searchParams.has(key)) url.searchParams.set(key, s.now);
   });
   return url.href;
+}
+// The page behind, in a frame: pages opened from disk share no origin, so its address is all that
+// reaches it. A new frame each time, as moving one on would add to the window's history.
+function drawBehind(el) {
+  const src = carry(el.dataset.over, true);
+  if (el.firstElementChild?.src === src) return;
+  const frame = document.createElement("iframe");
+  frame.setAttribute("inert", "");
+  frame.src = src;
+  el.replaceChildren(frame);
+}
+// A value naming no file is a screen the draft has yet to give a page, and stands in by its name.
+function wireOver(screen) {
+  screen.querySelectorAll("[data-over]").forEach((el) => { if (/[./]/.test(el.dataset.over)) drawBehind(el); });
 }
 
 // The one place that knows what the token file keys a theme on; the reference page calls it too.
@@ -368,7 +387,7 @@ function wireAddress(show, sizes, personas, shell) {
   // #<state> opened a state before the query did, and links already written still use it.
   if (show) addSwitch("state", { first: show.first, apply: (name) => show(name, false), own: true }, decodeURIComponent(location.hash.slice(1)));
   if (sizes) addSwitch("size", { first: sizes.first, apply: sizes.pick });
-  addressed = true;
+  addressed = !framed;
   address();
   // Each click starts from the link as written, so one followed twice carries the view of the second time.
   const written = new WeakMap();
@@ -388,11 +407,11 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("[data-screen]").forEach((screen) => {
     const show = wireStates(screen);
     wireOptions(screen);
-    const sizes = wireSizes(screen);
+    const sizes = framed ? null : wireSizes(screen);
     const personas = wirePersonas(screen);
     const shell = wireShell(screen);
     if (screen.querySelector("[data-panel]")) {
-      buildPanel(screen, sizes, personas, shell);
+      if (!framed) buildPanel(screen, sizes, personas, shell);
       wireAddress(show, sizes, personas, shell);
     } else {
       if (sizes) screen.querySelector(".head")?.append(sizes);
@@ -403,6 +422,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       if (show) show(show.first, false);
     }
+    // Last, so the frame's first address already carries every switch.
+    wireOver(screen);
   });
   setTheme(theme);
   document.addEventListener("click", (e) => {

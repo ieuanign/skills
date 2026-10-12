@@ -42,6 +42,9 @@ mark[data-placeholder] { background: var(--color-surface); color: var(--color-te
 footer[data-footer] { padding-top: var(--space-5); padding-bottom: var(--space-5); color: var(--color-text-muted); }
 footer[data-footer] h2 { margin: var(--space-3) 0 var(--space-1); font-size: var(--text-sm); color: var(--color-text); }
 footer[data-footer] ul { margin: 0; padding-left: var(--space-4); }
+/* A screen new in the draft stands in, by its name, for the page behind. */
+[data-over]:not(:has(iframe)) { display: grid; place-items: start end; padding: var(--space-2); background: var(--color-surface); color: var(--color-text-muted); }
+[data-over]:not(:has(iframe))::before { content: attr(data-over); }
 
 /* ---------- the stage and its frames ---------- */
 /* A screen is drawn in .stage; a frame the size switch has set is centred in it. */
@@ -93,6 +96,16 @@ main.stage.sized > .viewport { min-height: calc(100vh - 2 * var(--space-4)); box
 [data-panel] ul { margin: 0; padding-left: var(--space-3); color: var(--color-text-muted); }
 .req-chips { display: flex; flex-wrap: wrap; gap: var(--space-1); }
 @media print { [data-panel] { display: none; } }
+/* The page behind a screen that opens over another: under the screen's content, filling its viewport. */
+.viewport:has([data-over]) { position: relative; isolation: isolate; }
+[data-over] { position: absolute; inset: 0; z-index: -1; filter: brightness(0.6); }
+[data-over] iframe { display: block; width: 100%; height: 100%; border: 0; }
+/* Drawn behind another screen, a page fills its frame: no panel, no backdrop, no bezel. */
+.framed { overflow: hidden; }
+.framed [data-panel], .framed .statusbar { display: none; }
+.framed body > main.stage { padding: 0; }
+.framed .frame-phone { width: auto; padding: 0; border-radius: 0; }
+.framed .frame-phone .screen { width: auto; height: 100vh; border-radius: 0; }
 
 /* ---------- components, named as the project's component kit names them. Kit: none yet. ---------- */
 .page { padding: var(--space-4); display: grid; gap: var(--space-3); }

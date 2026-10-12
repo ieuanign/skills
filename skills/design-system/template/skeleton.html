@@ -83,6 +83,8 @@
     project.js.
   - The persona switch and a shell's switches sit in the section's .head, and leave the address as
     it is.
+  - A draft's data-over is a path to the page behind, or the bare name of a screen new in the same
+    draft, which stands in until its path is written.
 
   Design prototype — one page for one screen
   - <aside data-panel> holds the screen's .states, its <ul class="behaviour"> and its
@@ -99,6 +101,13 @@
     opens the screen's own.
   - A link to another screen is an <a href> to that screen's design prototype; ?state=<state> opens
     it in that state. Followed, it carries every switch but the state, and a key the link sets wins.
+  - data-over="<page>" on an element of a screen that opens over another, as a side panel, a sheet
+    or a dialog with its own route does: skeleton.js draws that page's design prototype in it,
+    behind the rest of the screen, dimmed and inert, with no floating panel of its own. Its value
+    is a link as an <a href> is: it may name a state, and carries the switches the same way.
+  - data-when and data-perm choose a data-over element as they do any other: a state with nothing
+    behind hides it, and two of them under their own keys give each persona the page it is really
+    over. A page drawn inside another draws no panel and fills its frame.
 -->
 <html lang="en">
 <head>
