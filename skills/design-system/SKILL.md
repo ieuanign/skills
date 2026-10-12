@@ -1,6 +1,6 @@
 ---
 name: design-system
-description: Sets up a project's design system as local HTML under docs/design-system/ — a reference page, the skeleton every mockup and design prototype is built from, and the client's brand/ — and the index of design prototypes at docs/design/index.html. Use to draw three directions from a PRD, to build the design system from a chosen direction, to adopt a design system already in code, or to check one against its checklist.
+description: Sets up a project's design system as local HTML under docs/design-system/ — a reference page, the skeleton every mockup and design prototype is built from, and the client's brand/ — and the index of design prototypes at docs/design/index.html. Use to draw three directions from a PRD, to build the design system from a chosen direction, to adopt a design system already in code, to upgrade one whose skeleton is behind the template, or to check one against its checklist.
 ---
 
 # design-system — set up a project's design system as local HTML
@@ -11,11 +11,16 @@ The design system is three things under `docs/design-system/`, plain files a per
 - **The skeleton** is what every mockup and design prototype is built from, and links: `tokens.css`, the tokens for a light and a dark theme; `skeleton.css`, a frame per surface and the components, named as the project's component kit names them; `project.js`, the personas a screen can be seen as, the shells its signed-in screens share, the sizes the size switch offers, the icon sprite, what the token file keys a theme on and the project's own hooks; `skeleton.js`, the template's hooks, which no project edits — the state, persona, size and theme switches, the drawing of a shell around a screen, the page behind a screen that opens over another and a design prototype's floating panel; and the two pages built on them, `skeleton.html` for a mockup and `prototype.html` for a design prototype.
 - **`brand/`** holds what the client already has: a logo, colours, fonts, or a site to match as a URL in a text file. A person puts it there; you read it as it is.
 
-Your writes are those files, `docs/design/index.html` — the index of the project's design prototypes, and the one page under `docs/design/` you write — and, in Directions, `directions.html` beside them. Variants inside the running app are `/mattpocock-skills:prototype`'s UI branch. You leave every file uncommitted, for the person to review and commit.
+Your writes are those files, `docs/design/index.html` — the index of the project's design prototypes, and the one page under `docs/design/` you write — in Upgrade, the design prototypes under `docs/design/` it rewrites, and, in Directions, `directions.html` beside the skeleton. Variants inside the running app are `/mattpocock-skills:prototype`'s UI branch. You leave every file uncommitted, for the person to review and commit.
 
 ## The template
 
-[`template/`](template/), at `<this-skill-dir>/template/`, holds the skeleton's six files and `reference.html` under the names they are written to, and `index.html`, written to `docs/design/index.html`; every page here starts from it. The leading comment of its `skeleton.html` is the **markup contract** every mockup and design prototype follows: how a screen, its states, its frame, its shell, the footer, the panel and the index are marked up. The contract lives in that comment alone, so that `mockup` and anything reading a page take it from the one file. Carry the comment into `skeleton.html` verbatim; change the tokens, frames and components around it. Everything that is the project's is in `project.js` — the sizes the size switch offers, the icon sprite, what the token file keys a theme on, the personas, the shells with their items, routes, switches and markup, the side the floating panel starts on and the project's own hooks, with the template's one shell and one hook examples to replace — and `skeleton.js` is copied unchanged.
+[`template/`](template/), at `<this-skill-dir>/template/`, holds the skeleton's six files and `reference.html` under the names they are written to, and `index.html`, written to `docs/design/index.html`; every page here starts from it. The leading comment of its `skeleton.html` is the **markup contract** every mockup and design prototype follows: how a screen, its states, its frame, its shell, the footer, the panel and the index are marked up. The contract lives in that comment alone, so that `mockup` and anything reading a page take it from the one file. 
+Each file is the template's, the project's, or one written from the template around the project's content. Build, Adopt, Upgrade and Check all take the line from here:
+
+- **The template's**, carried verbatim: the contract comment of `skeleton.html`; in `skeleton.css`, the page, mockup and design prototype pieces; and `skeleton.js`, whole, which is copied unchanged.
+- **The project's**: the token names and values; in `skeleton.css`, the frames and the components; the screens around the comment in `skeleton.html`; and `project.js` whole — the sizes the size switch offers, the icon sprite, what the token file keys a theme on, the personas, the shells with their items, routes, switches and markup, the side the floating panel starts on and the project's own hooks, with the template's one shell and one hook examples to replace.
+- **Written from the template, with the project's content inside**: `prototype.html`, `reference.html` and `index.html`.
 
 Every page links the token file, `skeleton.css`, `project.js` and `skeleton.js` by relative path, as it does `brand/` assets, and loads nothing from the network but fonts.
 
@@ -27,6 +32,7 @@ Where the app has its own token file, that file is the source. If a browser load
 
 - **Check** — you were asked to check the design system. Go to [Check](#check).
 - **Adopt** — the project already has a design system in code, such as a token file and a component kit, and `docs/design-system/skeleton.html` does not exist. Go to [Adopt](#adopt).
+- **Upgrade** — `docs/design-system/skeleton.html` exists and any of the [checklist](#checklist)'s three template lines fails. Go to [Upgrade](#upgrade).
 - **Build** — a direction has been chosen from `docs/design-system/directions.html`. Go to [Build](#build).
 - **Directions** — anything else. Go to [Directions](#directions).
 
@@ -55,9 +61,19 @@ Done when one branch is chosen and, for Directions and Build, the PRD's number i
 3. **Checklist.** Run every line of the [checklist](#checklist). Fix a fail in the files you wrote; a fail that comes from the code stays, and goes in the return. Done when every line has a verdict.
 4. **Return** the files written, the list of what is missing, and the checklist result.
 
+## Upgrade
+
+Upgrade rewrites in place: it deletes no file, leaves `brand/` untouched and commits nothing. Rewriting a project's pages is its one step that can lose a person's work, and their review of the uncommitted files is the guard on it.
+
+1. **Compare.** Read the files under `docs/design-system/` against the template's, and put each difference under the one of the [checklist](#checklist)'s three template lines it fails, naming the file and what differs. Sort every page under `docs/design/`: the index; a design prototype, a page whose `<body>` is the screen; or another page. A prototype folder the project keeps elsewhere is not read. Done when every difference sits under one line and every page is sorted.
+2. **Skeleton.** By the line [The template](#the-template) draws: keep what is the project's, replace what is the template's with the template's, and write each missing file from the template with the project's tokens and components in its example screens. The tokens follow [One source for the tokens](#one-source-for-the-tokens), their names and values as they were. Whatever of the project's sits in what is the template's moves to where the project's lives — personas, a shell or a hook the project added into `project.js`; its sizes, its sprite and what it keys the dark theme on into their places in the new `skeleton.js`. The furthest case is one `skeleton.html` with its styles and script inline: its tokens come from the app's token file as Adopt step 1 reads it, or with none in the app become `tokens.css`; its frames and components go into theirs in `skeleton.css`; its script is sorted the same way; and the page is left linking the files, with the template's comment and its own screens. Done when the three template lines pass and every token, frame and component the project had is in the files as it was.
+3. **Pages**, where the contract comment differed. Write `reference.html` as Build step 3 does, from the project's tokens and components as they are. Rewrite each design prototype from `prototype.html` to the contract comment, keeping its screen, states, controls, links, requirement ids, behaviour and placeholders; a hook written in a form the comment no longer holds is rewritten in the one it does, and a value the comment requires that the page lacks is taken from the page's own name or path. Write the index as Build step 3 does, keeping each row a person added. Every other page is left as it is. Done when each rewritten design prototype passes `/mockup`'s Check, run for the PRD its `data-req` ids name.
+4. **Checklist** as Adopt step 3: fix a fail in a file you wrote; a fail that comes from the code stays, and goes in the return.
+5. **Return** what differed under each of the three lines, each file written or rewritten, what moved and where to, the pages left as they were, each value taken from a name or path, the checklist result, and that the rewritten pages wait on the person's review.
+
 ## Check
 
-**Read** `reference.html`, the skeleton's files and `docs/design/index.html`, then **report** every line of the [checklist](#checklist) as pass or fail, each fail naming the token, component, pair or page that fails it. Done when every line carries a verdict. The result is the return; the files are left as they were, so any caller can run Check with no side effects.
+**Read** the template, `reference.html`, the skeleton's files and `docs/design/index.html`, then **report** every line of the [checklist](#checklist) as pass or fail, each fail naming the token, component, pair, page or file that fails it and, for a template line, what differs. Done when every line carries a verdict. The result is the return; the files are left as they were, so any caller can run Check with no side effects.
 
 ## Contrast
 
@@ -65,7 +81,7 @@ The contrast of two colours is `(L1 + 0.05) / (L2 + 0.05)`, where `L1` is the li
 
 ## Checklist
 
-The Build and Adopt branches end on this list, and the Check branch reports on it.
+The Build, Adopt and Upgrade branches end on this list, and the Check branch reports on it.
 
 - Every token and component has an example on the reference page.
 - The light and dark themes hold the same keys.
@@ -73,3 +89,9 @@ The Build and Adopt branches end on this list, and the Check branch reports on i
 - Every page links the one token file, `skeleton.css`, `project.js` and `skeleton.js`, and carries no copy of what they hold.
 - `skeleton.js` is the template's, unchanged: it differs in nothing from the template's `skeleton.js`, and the project's sizes, sprite, theme key and hooks are in `project.js`.
 - Where `tokens.css` mirrors the app's token file, the two hold the same names and values.
+
+The three template lines, each read against `<this-skill-dir>/template/` by the line [The template](#the-template) draws:
+
+- The contract comment of `skeleton.html` is the template's, character for character.
+- What is the template's in `skeleton.js` is the template's, character for character.
+- Every file the template holds is there; the app's token file linked in place of `tokens.css` is not a missing one.
