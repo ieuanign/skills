@@ -102,7 +102,7 @@ Every page:
 
 A design prototype, also:
 
-- Every state has its button in the panel and changes something on the page, and every `data-go` and `data-then` names a state.
+- Every state has its button in the panel and changes something on the page, and every `data-go` and `data-then` names a state or a page that exists.
 - Every control the requirements give a behaviour carries it.
 - Every link to another screen opens a page that exists.
 - It carries no open choice, no open conflict, no `<style data-additions>` and no `<script data-additions>`.
