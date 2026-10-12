@@ -106,3 +106,20 @@ main.stage.sized > .viewport { min-height: calc(100vh - 2 * var(--space-4)); box
 .field-error { color: var(--color-danger); font-size: var(--text-sm); }
 .card { padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
 .alert-success { padding: var(--space-3); border-left: 4px solid var(--color-success); background: var(--color-surface); }
+/* The shell: its navigation beside the screen's content, and above it in a narrow viewport. */
+[data-shell], .shell { min-height: inherit; }
+.shell { display: grid; grid-template-columns: 13rem minmax(0, 1fr); }
+.shell-side { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-3); border-right: 1px solid var(--color-border); background: var(--color-surface); }
+.shell-nav { display: flex; flex-direction: column; gap: var(--space-1); }
+.shell-nav a { padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); color: var(--color-text-muted); }
+.shell-nav a[aria-current="page"] { background: var(--color-bg); color: var(--color-text); font-weight: 600; box-shadow: 0 0 0 1px var(--color-border); }
+.shell-person { margin-top: auto; font-size: var(--text-sm); color: var(--color-text-muted); overflow-wrap: anywhere; }
+.shell-person b { display: block; color: var(--color-text); }
+.shell-bar { display: flex; justify-content: flex-end; padding: var(--space-2) var(--space-4); border-bottom: 1px solid var(--color-border); }
+.shell-notices { display: grid; gap: var(--space-2); margin: var(--space-3) var(--space-4) 0; font-size: var(--text-sm); }
+@container (max-width: 40rem) {
+  .shell { grid-template-columns: minmax(0, 1fr); align-content: start; }
+  .shell-side { flex-direction: row; flex-wrap: wrap; align-items: center; border-right: 0; border-bottom: 1px solid var(--color-border); }
+  .shell-nav { flex-direction: row; flex-wrap: wrap; }
+  .shell-person { margin: 0 0 0 auto; }
+}
