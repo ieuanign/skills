@@ -161,6 +161,23 @@ scenario('every reply carries the thread it sits in, and separate threads stay s
   assert.deepEqual(entries.map(e => e.threadId), ['t-first', 't-first', 't-first', 't-second'])
 })
 
+scenario('a review carrying a body and inline comments reads as one body row and a row per comment', () => {
+  const entries = normalise({
+    threads: [
+      thread('t-verdict', [
+        comment('c-first', { path: 'src/b.ts', line: 7 }),
+        comment('c-second', { path: 'src/b.ts', line: 7 }),
+      ]),
+    ],
+    reviews: [review('r-verdict', { body: 'verdict' })],
+  })
+  assert.deepEqual(entries.map(e => [e.origin, e.id, e.threadId, e.path, e.line]), [
+    ['review-thread', 'c-first', 't-verdict', 'src/b.ts', 7],
+    ['review-thread', 'c-second', 't-verdict', 'src/b.ts', 7],
+    ['review-body', 'r-verdict', null, null, null],
+  ])
+})
+
 // Every metacharacter a body could carry into a shell, plus the newline that would end a command.
 // Kept as one string literal so a broken assertion prints the exact bytes that failed to survive.
 const HOSTILE = 'run `git log` first\nthen $(rm -rf /) and "quoted" \'single\' \\backslash | ; & > $HOME'
