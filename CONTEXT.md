@@ -287,7 +287,7 @@ kept in scratch: what a person looks at while the design is still being decided.
 it, each screen becomes a **design prototype** and the mockup is deleted.
 
 _Avoid_: wireframe — a mockup carries real copy and the design system's look; prototype — unqualified,
-a prototype runs inside the app.
+a prototype runs inside the running app.
 
 ## Design prototype
 
@@ -301,7 +301,7 @@ staff app and a customer site are two apps on one surface. It is listed on the i
 naming every design prototype: a section per app, and under it a row per **view** — the page as it
 opens, or the same page in a **state** or as a persona.
 
-_Avoid_: prototype — unqualified, a prototype runs inside the app; mockup — the draft a design
+_Avoid_: prototype — unqualified, a prototype runs inside the running app; mockup — the draft a design
 prototype is confirmed from.
 
 ## State
