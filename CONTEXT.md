@@ -296,6 +296,11 @@ One page per screen, kept in the repository and shared by every PRD that touches
 later PRD starts from when it changes the screen, and what tests read a screen's states and surface
 from.
 
+It is filed under **the app** it belongs to — the folder its page sits in, which a project names: a
+staff app and a customer site are two apps on one surface. It is listed on the index, the one page
+naming every design prototype: a section per app, and under it a row per **view** — the page as it
+opens, or the same page in a **state** or as a persona.
+
 _Avoid_: prototype — unqualified, a prototype runs inside the app; mockup — the draft a design
 prototype is confirmed from.
 
