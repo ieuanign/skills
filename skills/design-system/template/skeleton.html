@@ -16,6 +16,8 @@
     folder (from docs/design/web/, ../../design-system/skeleton.css), as it does brand/ assets, and
     loads nothing from the network but fonts. Its own <style> and <script> hold only what is that
     page's alone.
+  - A design prototype is docs/design/<folder>/<screen>.html, its folder the app it belongs to: one
+    folder below the index, docs/design/index.html.
   - Only these tokens, components, personas, keys and shells are used. A token or component a draft
     adds sits in that page's <style data-additions> until it is moved here and onto the reference
     page.
@@ -119,6 +121,8 @@
     under their kind, a shell's switches below the states, the persona switch under "Signed in as"
     above that persona's name and email, the size switch, the theme switch, the dock switch and the
     requirement ids.
+  - skeleton.js also draws, first in the panel, a link "All pages" to the index, ../index.html. No
+    page carries it.
   - The panel also holds the screen's design record, as a mockup's footer does: the same
     <ul data-list="conflicts">, "settled", "todo" and "choices", each optional, each item one line.
   - skeleton.js draws every data-list the panel holds, after Behaviour and in the page's order, as a
@@ -150,6 +154,21 @@
   - data-when and data-perm choose a data-over element as they do any other: a state with nothing
     behind hides it, and two of them under their own keys give each persona the page it is really
     over. A page drawn inside another draws no panel and fills its frame.
+
+  Index — docs/design/index.html, one page listing every design prototype
+  - design-system writes it; whoever adds a design prototype adds its row.
+  - <section data-folder="<folder>"> for each folder under docs/design/, an app: its <h2> the app's
+    name, then "Start at" before <a data-start href="<page>">, the screen a person reaches first.
+  - In the section's <ul class="views">, <li data-page="<folder>/<screen>.html" data-route="<route>">
+    for each view: data-page is the page's path from the index, data-route the page's own, left out
+    where the page has none.
+  - A row holds an <a href> to the view under the screen's name, the route in <code>, and one line
+    in a <span> on what the view shows.
+  - Every design prototype has a row. A second row with the same data-page opens the page in a state
+    or as a persona, by its link's ?state=<state> or ?persona=<persona>.
+  - A row is found by its data-page, never by its place or its text, so a person may put the rows
+    and the sections in any order.
+  - The index names no requirement id, in an attribute or in its text.
 -->
 <html lang="en">
 <head>
