@@ -94,6 +94,7 @@ main.stage.sized > .viewport { min-height: calc(100vh - 2 * var(--space-4)); box
 /* In the panel a screen's states are a list, one to a row. */
 [data-panel] .states { display: flex; flex-direction: column; }
 [data-panel] .states button { text-align: left; white-space: normal; }
+[data-panel] .states .kind { padding: var(--space-1) var(--space-3) 0; font-size: 0.8em; font-weight: 600; color: var(--color-text-muted); }
 [data-panel] .seg, [data-panel] .sizes { width: fit-content; }
 [data-panel] .seg button, [data-panel] .sizes button { padding: var(--space-1) var(--space-2); }
 [data-panel] ul { margin: 0; padding-left: var(--space-3); color: var(--color-text-muted); }
