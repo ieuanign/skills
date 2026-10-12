@@ -400,13 +400,20 @@ function buildPanel(screen, sizes, personas, shell) {
   group("Dock", docks);
   group("Requirements", reqs);
   group("Behaviour", panel.querySelector(".behaviour"));
-  group("Placeholders", panel.querySelector('[data-list="placeholders"]'));
+  const lists = [...panel.querySelectorAll("[data-list]")];
+  const open = lists.filter((list) => list.dataset.list === "conflicts").reduce((n, list) => n + list.children.length, 0);
+  lists.forEach((list) => group(`${list.getAttribute("aria-label") || labelOf(list.dataset.list)} (${list.children.length})`, list));
 
   const toggle = document.createElement("button");
   toggle.type = "button";
   toggle.className = "panel-toggle";
   toggle.innerHTML = `<span class="title"></span><span class="now"></span><svg class="i" aria-hidden="true"><use href="#i-chevron"/></svg>`;
   toggle.querySelector(".title").textContent = document.title;
+  if (open) {
+    const badge = Object.assign(document.createElement("span"), { className: "badge", textContent: open, title: "Open conflicts" });
+    badge.setAttribute("aria-label", `Open conflicts: ${open}`);
+    toggle.querySelector(".title").after(badge);
+  }
   const collapse = (on) => {
     panel.classList.toggle("collapsed", on);
     toggle.setAttribute("aria-expanded", String(!on));
