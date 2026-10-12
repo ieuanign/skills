@@ -402,7 +402,7 @@ function buildPanel(screen, sizes, personas, shell) {
   group("Behaviour", panel.querySelector(".behaviour"));
   const lists = [...panel.querySelectorAll("[data-list]")];
   const open = lists.filter((list) => list.dataset.list === "conflicts").reduce((n, list) => n + list.children.length, 0);
-  lists.forEach((list) => group(`${list.getAttribute("aria-label") || labelOf(list.dataset.list)} (${list.children.length})`, list));
+  lists.forEach((list) => group(`${list.getAttribute("aria-label") || labelOf(list.dataset.list || "list")} (${list.children.length})`, list));
 
   const toggle = document.createElement("button");
   toggle.type = "button";

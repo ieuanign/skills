@@ -60,7 +60,7 @@ Done when one branch is chosen and `N` is known.
 
 1. **Find the pages.** The draft folder, where it exists. Otherwise the design prototypes on the pull request's branch: note the branch you are on, `git fetch origin`, then `git switch mockup/<N>-<slug>`. Done when the pages to edit are in the working tree.
 2. **Edit** those pages, by whichever input you have:
-   - **A person's reasons** — change what each reason asks for, and nothing else. A reason naming an option keeps that option, drops the others, and moves its line from the footer's open choices to `choices`, naming the option kept. A reason that rules on an open conflict is handled as Build step 2 handles a ruling.
+   - **A person's reasons** — change what each reason asks for, and nothing else. A reason naming an option keeps that option, drops the others, and moves its line from the footer's open choices to its screen's `choices` list, placed as Build step 2 places a conflict, naming the option kept. A reason that rules on an open conflict is handled as Build step 2 handles a ruling.
    - **A revised PRD** — fetch it and read its last Revisions line. Redo only the screens whose `data-req` names a Changed or Withdrew id; place each Added id on its screen, adding a screen or state where step 1 of Build would. A Withdrew id leaves every `data-req`.
 
    Done when each reason, or each id on the Revisions line, is reflected on the pages, and the [checklist](#checklist) passes.
