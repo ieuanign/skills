@@ -23,8 +23,8 @@ const kept = {
   set(key, value) { try { localStorage.setItem(key, value); } catch {} },
 };
 
-// The switches the address names, by query key: a default leaves its key out, and own marks a switch
-// a link to another page leaves behind. Only a design prototype writes the address.
+// The switches the address names, by query key: a default leaves its key out, a switch with none is
+// always named, and own marks one a link leaves behind. Only a design prototype writes the address.
 const switches = new Map();
 const asked = new URLSearchParams(location.search);
 let addressed = false;
@@ -68,9 +68,10 @@ function setTheme(next) {
   applyTheme(root, theme);
   document.querySelectorAll("[data-theme-btn]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.themeBtn === theme)));
 }
-// Set while the head loads, so the page never paints in the other theme first.
-addSwitch("theme", { first: "light", apply: (name) => (name === "light" || name === "dark" ? setTheme(name) : false) },
-  kept.get("skeleton-theme"), matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : null);
+// Set while the head loads, so the page never paints in the other theme first. It has no default to
+// leave out: without the key each reader gets their own theme, so a link has to name it either way.
+addSwitch("theme", { first: null, apply: (name) => (name === "light" || name === "dark" ? setTheme(name) : false) },
+  kept.get("skeleton-theme"), matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
 
 function press(group, button) {
   group.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
@@ -235,13 +236,15 @@ function wireAddress(show, sizes) {
   address();
   // Each click starts from the link as written, so one followed twice carries the view of the second time.
   const written = new WeakMap();
-  document.addEventListener("click", (e) => {
+  const carried = (e) => {
     const link = e.target.closest("a[href]");
     if (!link || link.getAttribute("href").startsWith("#")) return;
     if (link.protocol !== location.protocol || link.host !== location.host) return;
     if (!written.has(link)) written.set(link, link.href);
     link.href = carry(written.get(link));
-  });
+  };
+  // A new tab opens from a middle click or the context menu, and neither of them is a click.
+  ["click", "auxclick", "contextmenu"].forEach((type) => document.addEventListener(type, carried));
 }
 
 document.addEventListener("DOMContentLoaded", () => {
