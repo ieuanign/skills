@@ -320,6 +320,8 @@ function wireSizes(screen) {
 
 // From this width a fresh browser opens the panel: the line skeleton.css draws between wide and narrow.
 const WIDE = "(min-width: 64rem)";
+// The contract's kinds, in the order the panel lists them.
+const KINDS = ["default", "error", "empty", "loading", "success", "dialog", "first-run"];
 // A design prototype's floating panel, drawn around the lists its <aside data-panel> holds.
 function buildPanel(screen, sizes, personas, shell) {
   const panel = screen.querySelector("[data-panel]");
@@ -349,7 +351,18 @@ function buildPanel(screen, sizes, personas, shell) {
     chip.textContent = id;
     reqs.append(chip);
   });
-  group("State", panel.querySelector(".states"));
+  const states = panel.querySelector(".states");
+  // Drawn here only: wireStates has already read the page's order, whose first button is the default state.
+  const stateButtons = [...(states?.children || [])];
+  [...new Set([...KINDS, ...stateButtons.map((b) => b.dataset.kind)])].forEach((kind) => {
+    const own = stateButtons.filter((b) => b.dataset.kind === kind);
+    if (!own.length) return;
+    const label = document.createElement("div");
+    label.className = "kind";
+    label.textContent = KINDS.includes(kind) ? labelOf(kind) : kind;
+    states.append(label, ...own);
+  });
+  group("State", states);
   shell.forEach((el) => group(el.getAttribute("aria-label"), el));
   group("Signed in as", personas)?.append(personas.who);
   group("Size", sizes);
