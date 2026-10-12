@@ -65,6 +65,12 @@
   - data-disabled-when and data-invalid-when take the same list, and disable or mark invalid.
   - data-go="<state>" on a control or a <form>: a click or a submit moves the screen to that state.
     data-then="<state>" on a state button: reached through data-go, the state moves on after a moment.
+  - Either may name a page in place of a state: a link to another screen's design prototype, as
+    data-go="home.html" or data-then="../web/orders.html?state=empty". A value with .html in it,
+    alone or before a ? or a #, is a page; any other is a state. The page opens as a followed
+    <a href> does, carrying the same switches.
+  - data-go on a checkbox: ticked, the screen moves to that state; cleared, it returns to the state
+    it left.
 
   Copy
   - Real copy. A fact the PRD lacks is <mark data-placeholder>[What is missing]</mark>.

@@ -133,13 +133,16 @@ function personaOf(screen) {
   return view(screen).persona || null;
 }
 
-// A screen's states. Returns show(state, driven): driven is true when a control on the screen moved it,
-// which is what lets a data-then state move on; a state picked from its button stays.
+// A target naming a file is a page; a mistyped state must stay a state no button answers to.
+const PAGE = /\.html([?#]|$)/;
+// A screen's states. Returns show(target, driven): only a control on the screen drives it, so a state
+// picked from its button stays, and a page the address names is never opened.
 function wireStates(screen) {
   const buttons = [...screen.querySelectorAll("[data-state]")];
   if (!buttons.length) return null;
   let timer;
   const show = (state, driven) => {
+    if (driven && PAGE.test(state)) return void (location.href = carry(state));
     const button = buttons.find((b) => b.dataset.state === state);
     if (!button) return false;
     clearTimeout(timer);
@@ -154,7 +157,16 @@ function wireStates(screen) {
   buttons.forEach((b) => b.addEventListener("click", () => show(b.dataset.state, false)));
   screen.addEventListener("click", (e) => {
     const go = e.target.closest("[data-go]:not(form)");
-    if (go) show(go.dataset.go, true);
+    // A checkbox answers on change alone, where it already knows which way it went.
+    if (go && go.type !== "checkbox") show(go.dataset.go, true);
+  });
+  const left = new WeakMap();
+  screen.addEventListener("change", (e) => {
+    const box = e.target.closest("input[type=checkbox][data-go]");
+    if (!box) return;
+    if (!box.checked) return show(left.get(box), false);
+    left.set(box, view(screen).state);
+    show(box.dataset.go, true);
   });
   screen.addEventListener("submit", (e) => {
     e.preventDefault();
