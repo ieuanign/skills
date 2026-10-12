@@ -8,6 +8,7 @@
 <title>Reference</title>
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="skeleton.css">
+<script src="project.js"></script>
 <script src="skeleton.js"></script>
 <style>
 /* This page's layout only. */
@@ -154,6 +155,7 @@ code { font-family: var(--font-mono); }
       <div class="card"><h3>States</h3><div class="states" role="group" aria-label="State"><button type="button" aria-pressed="true">Waiting</button><button type="button" data-kind="error">Wrong code</button></div></div>
       <div class="card"><h3>Open choice</h3><div class="options" role="group" aria-label="Option"><button type="button" aria-pressed="true">One field</button><button type="button">Six boxes</button></div></div>
       <div class="card"><h3>Placeholder</h3><p style="margin:0">The code works for <mark data-placeholder>[Code lifetime]</mark>.</p></div>
+      <div class="card" data-screen="persona" data-persona="holder"><h3>Persona and key</h3><div class="head"></div><p style="margin:0" data-perm="claims.approve">Shown to the claims adjuster, who holds <code>claims.approve</code>.</p><p style="margin:0" data-perm="!claims.approve">The policy holder does not hold <code>claims.approve</code>.</p></div>
       <div class="card"><h3>Behaviour</h3><ul class="behaviour"><li>6 digits, valid 5 minutes, 5 attempts.</li><li>Resend after 60 s, at most 3 times.</li></ul></div>
     </div>
   </section>
