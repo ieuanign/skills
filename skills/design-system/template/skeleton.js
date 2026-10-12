@@ -357,6 +357,8 @@ function buildPanel(screen, sizes, personas, shell) {
   [...new Set([...KINDS, ...stateButtons.map((b) => b.dataset.kind)])].forEach((kind) => {
     const own = stateButtons.filter((b) => b.dataset.kind === kind);
     if (!own.length) return;
+    // A button naming no kind keeps its place at the end, under no label.
+    if (kind == null) return states.append(...own);
     const label = document.createElement("div");
     label.className = "kind";
     label.textContent = KINDS.includes(kind) ? labelOf(kind) : kind;
