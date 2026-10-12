@@ -1,0 +1,51 @@
+<!doctype html>
+<!-- INDEX — every design prototype of the project, a section per app and a row per view. Its markup
+     is the Index block of the contract, the leading comment of ../design-system/skeleton.html. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design prototypes</title>
+<link rel="stylesheet" href="../design-system/tokens.css">
+<link rel="stylesheet" href="../design-system/skeleton.css">
+<script src="../design-system/project.js"></script>
+<script src="../design-system/skeleton.js"></script>
+<style>
+/* This page's layout only. */
+section[data-folder] { padding: var(--space-5) 0 var(--space-2); }
+section[data-folder] > h2 { margin: 0; font-size: var(--text-lg); }
+section[data-folder] > p { margin: var(--space-1) 0 var(--space-3); color: var(--color-text-muted); }
+section[data-folder] a { color: var(--color-text); }
+.views { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--color-border); }
+.views li { display: grid; grid-template-columns: 14rem 14rem minmax(0, 1fr); gap: var(--space-1) var(--space-3); padding: var(--space-2) 0; border-bottom: 1px solid var(--color-border); }
+.views code { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--color-text-muted); overflow-wrap: anywhere; }
+.views span { color: var(--color-text-muted); }
+@media (max-width: 48rem) { .views li { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body>
+<header class="top wrap">
+  <div class="eyebrow">Design</div>
+  <h1>Design prototypes</h1>
+  <p class="lede">Every design prototype, under the app it belongs to. A row opens one view of a screen.</p>
+</header>
+
+<div class="bar">
+  <div class="wrap">
+    <div class="spacer"></div>
+    <div class="seg" role="group" aria-label="Theme"><button type="button" data-theme-btn="light">Light</button><button type="button" data-theme-btn="dark">Dark</button></div>
+  </div>
+</div>
+
+<main class="wrap">
+  <!-- An example of the contract; the index holds a section for each folder that exists, and no other. -->
+  <section data-folder="web">
+    <h2>Web</h2>
+    <p>Start at <a data-start href="web/sign-in.html">Sign in</a></p>
+    <ul class="views">
+      <li data-page="web/sign-in.html" data-route="/sign-in"><a href="web/sign-in.html">Sign in</a><code>/sign-in</code><span>Signing in, with the tries left after a wrong password.</span></li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>
