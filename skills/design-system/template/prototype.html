@@ -11,7 +11,7 @@
 <script src="project.js"></script>
 <script src="skeleton.js"></script>
 </head>
-<body data-screen="sign-in" data-req="REQ-0.1" data-surface="web">
+<body data-screen="sign-in" data-req="REQ-0.1" data-surface="web" data-route="/sign-in">
 <aside data-panel>
   <div class="states" role="group" aria-label="State">
     <button type="button" data-state="default" data-kind="default">Default</button>
@@ -34,9 +34,11 @@
       <div class="field"><label for="si-password">Password</label><input id="si-password" type="password" data-invalid-when="wrong-password" data-disabled-when="signing-in"></div>
       <button class="button" type="submit" data-disabled-when="signing-in"><span data-when="!signing-in">Sign in</span><span data-when="signing-in">Signing you in…</span></button>
     </form>
-    <div class="page narrow" data-when="signed-in">
-      <p class="alert-success">You are signed in.</p>
-      <button class="button button-secondary" type="button" data-go="default">Sign out</button>
+    <div data-shell="app" data-when="signed-in">
+      <div class="page narrow">
+        <p class="alert-success">You are signed in.</p>
+        <button class="button button-secondary" type="button" data-go="default">Sign out</button>
+      </div>
     </div>
   </div>
 </main>

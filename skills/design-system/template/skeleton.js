@@ -193,6 +193,67 @@ function wirePersonas(screen) {
   return Object.assign(group, { first: own, pick, who });
 }
 
+// A switch's value as its button reads: "not-found" is "Not found".
+const labelOf = (value) => (value[0].toUpperCase() + value.slice(1)).replace(/-/g, " ");
+// The item whose route is the screen's, or else the longest one the screen's sits under.
+function markCurrent(frame, route) {
+  let current = null;
+  frame.querySelectorAll("[data-route]").forEach((item) => {
+    const at = item.dataset.route;
+    // "/" sits above every route, so it is current only at itself.
+    const on = route === at || (at !== "/" && route.startsWith(`${at}/`));
+    if (on && (!current || at.length > current.dataset.route.length)) current = item;
+  });
+  current?.setAttribute("aria-current", "page");
+}
+// The shell a screen names, drawn by the project around what the page wrote there. Returns its switches.
+function wireShell(screen) {
+  const el = screen.querySelector("[data-shell]");
+  const shell = el && typeof PROJECT !== "undefined" && (PROJECT.shells || {})[el.dataset.shell];
+  if (!shell) return [];
+  // Moved into each frame, never written again, so what is wired to these nodes stays wired.
+  const content = [...el.childNodes];
+  const route = screen.dataset.route || "";
+  const now = {};
+  const draw = () => {
+    const frame = document.createElement("template");
+    frame.innerHTML = shell.draw({ persona: personaOf(screen)?.persona || null, route, switches: { ...now } });
+    markCurrent(frame.content, route);
+    frame.content.querySelector("[data-shell-slot]")?.append(...content);
+    el.replaceChildren(frame.content);
+  };
+  const groups = Object.entries(shell.switches || {}).map(([key, values]) => {
+    const group = document.createElement("div");
+    group.className = "seg";
+    group.setAttribute("role", "group");
+    group.setAttribute("aria-label", labelOf(key));
+    const buttons = {};
+    const pick = (value) => {
+      if (!Object.hasOwn(buttons, value)) return false;
+      now[key] = value;
+      press(group, buttons[value]);
+      draw();
+    };
+    values.forEach((value) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = labelOf(value);
+      button.addEventListener("click", () => {
+        pick(value);
+        switched(key, value);
+      });
+      group.append(button);
+      buttons[value] = button;
+    });
+    now[key] = values[0];
+    press(group, buttons[values[0]]);
+    return Object.assign(group, { key, first: values[0], pick });
+  });
+  screen.addEventListener("persona", draw);
+  draw();
+  return groups;
+}
+
 // A size is named in the address as a state is: lowercase, hyphenated.
 const sizeName = (label) => label.toLowerCase().replace(/\s+/g, "-");
 // The size switch of a web or phone screen: sets its frame's width, and shrinks the frame to its stage.
@@ -236,7 +297,7 @@ function wireSizes(screen) {
 }
 
 // A design prototype's floating panel, drawn around the lists its <aside data-panel> holds.
-function buildPanel(screen, sizes, personas) {
+function buildPanel(screen, sizes, personas, shell) {
   const panel = screen.querySelector("[data-panel]");
   const body = document.createElement("div");
   body.className = "panel-body";
@@ -265,6 +326,7 @@ function buildPanel(screen, sizes, personas) {
     reqs.append(chip);
   });
   group("State", panel.querySelector(".states"));
+  shell.forEach((el) => group(el.getAttribute("aria-label"), el));
   group("Signed in as", personas)?.append(personas.who);
   group("Size", sizes);
   group("Theme", themes);
@@ -296,9 +358,10 @@ function buildPanel(screen, sizes, personas) {
 }
 
 // A design prototype's switches, read from its address, which then names every one off its default.
-function wireAddress(show, sizes, personas) {
+function wireAddress(show, sizes, personas, shell) {
   // Before the state, so its first showing already has the persona's keys.
   if (personas) addSwitch("persona", { first: personas.first, apply: personas.pick });
+  shell.forEach((el) => addSwitch(el.key, { first: el.first, apply: el.pick }));
   // #<state> opened a state before the query did, and links already written still use it.
   if (show) addSwitch("state", { first: show.first, apply: (name) => show(name, false), own: true }, decodeURIComponent(location.hash.slice(1)));
   if (sizes) addSwitch("size", { first: sizes.first, apply: sizes.pick });
@@ -324,11 +387,13 @@ document.addEventListener("DOMContentLoaded", () => {
     wireOptions(screen);
     const sizes = wireSizes(screen);
     const personas = wirePersonas(screen);
+    const shell = wireShell(screen);
     if (screen.querySelector("[data-panel]")) {
-      buildPanel(screen, sizes, personas);
-      wireAddress(show, sizes, personas);
+      buildPanel(screen, sizes, personas, shell);
+      wireAddress(show, sizes, personas, shell);
     } else {
       if (sizes) screen.querySelector(".head")?.append(sizes);
+      screen.querySelector(".head")?.append(...shell);
       if (personas) {
         screen.querySelector(".head")?.append(personas);
         personas.pick(personas.first);

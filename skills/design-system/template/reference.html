@@ -47,7 +47,7 @@ code { font-family: var(--font-mono); }
 
 <div class="bar">
   <div class="wrap">
-    <nav class="jump" aria-label="Sections"><a href="#tokens">Colour</a><a href="#contrast">Contrast</a><a href="#shape">Shape</a><a href="#type">Type</a><a href="#space">Space</a><a href="#icons">Icons</a><a href="#components">Components</a><a href="#frames">Frames</a><a href="#page">Page</a></nav>
+    <nav class="jump" aria-label="Sections"><a href="#tokens">Colour</a><a href="#contrast">Contrast</a><a href="#shape">Shape</a><a href="#type">Type</a><a href="#space">Space</a><a href="#icons">Icons</a><a href="#components">Components</a><a href="#frames">Frames</a><a href="#shell">Shell</a><a href="#page">Page</a></nav>
     <div class="spacer"></div>
     <div class="seg" role="group" aria-label="Theme"><button type="button" data-theme-btn="light">Light</button><button type="button" data-theme-btn="dark">Dark</button></div>
   </div>
@@ -144,6 +144,22 @@ code { font-family: var(--font-mono); }
       </div>
       <div class="frame-notification"><div><b>Claims</b><br>Claim 0812 is waiting for your photos.</div></div>
       <div class="a4"><div class="frame-page"><h2>Repair order</h2><p>An A4 page, 210 × 297 mm with 20 mm margins.</p></div></div>
+    </div>
+  </section>
+
+  <section class="block" id="shell">
+    <div class="eyebrow">Shell</div><h2>The app's frame</h2>
+    <p>Drawn here by the shell in <code>project.js</code>, as on every screen that names it. This screen's route is <code>/claims/0812</code>, which makes Claims the current item.</p>
+    <div data-screen="shell" data-surface="web" data-route="/claims/0812" data-persona="holder">
+      <div class="head"></div>
+      <div class="stage">
+        <div class="frame-browser">
+          <div class="chrome"><i></i><i></i><i></i><span class="url">example.com/claims/0812</span></div>
+          <div class="viewport">
+            <div data-shell="app"><div class="page"><div class="card">Claim 0812 · waiting for photos</div></div></div>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
