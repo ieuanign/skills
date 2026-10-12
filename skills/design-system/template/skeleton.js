@@ -219,10 +219,13 @@ function wireShell(screen) {
     const frame = document.createElement("template");
     frame.innerHTML = shell.draw({ persona: personaOf(screen)?.persona || null, route, switches: { ...now } });
     markCurrent(frame.content, route);
-    frame.content.querySelector("[data-shell-slot]")?.append(...content);
+    // A shell that marks no place still shows the screen: its content follows the frame.
+    (frame.content.querySelector("[data-shell-slot]") || frame.content).append(...content);
     el.replaceChildren(frame.content);
   };
-  const groups = Object.entries(shell.switches || {}).map(([key, values]) => {
+  // A shell's switch named as one of the skeleton's own would take that switch's key in the address.
+  const mine = Object.entries(shell.switches || {}).filter(([key]) => !["state", "size", "theme", "persona"].includes(key));
+  const groups = mine.map(([key, values]) => {
     const group = document.createElement("div");
     group.className = "seg";
     group.setAttribute("role", "group");
