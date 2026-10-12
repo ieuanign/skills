@@ -71,6 +71,20 @@
     <a href> does, carrying the same switches.
   - data-go on a checkbox: ticked, the screen moves to that state; cleared, it returns to the state
     it left.
+  - data-value-when and data-checked-when take the list data-disabled-when does: a field shows its
+    value attribute, and a box is ticked, in the states listed; in every other the field is empty and
+    the box clear.
+  - data-countdown="<seconds>" data-wait="Resend code in {t}" on a button: disabled when the page
+    opens, it shows data-wait with {t} the time left, as 0:30. At 0 it shows its own text and can be
+    clicked, which starts it again. A state changes neither; data-disabled-when still disables it.
+  - data-filter-scope on an element around a list: inside it <button data-filter="<key>=<value>">
+    shows only the data-row elements carrying data-<key>="<value>". One filter holds at a time, a
+    second click on it clears it, and a state change clears them all. A row shows only where its
+    data-when and data-perm allow it too.
+  - <span data-count> inside a filter button holds the rows it would show in the state on show;
+    data-hide-empty on the button hides it at 0.
+  - data-rowlink on a row or a card holding an <a href>: a click anywhere in it but on a control
+    follows its first link, so the page is named once and the link stays the keyboard's way in.
 
   Copy
   - Real copy. A fact the PRD lacks is <mark data-placeholder>[What is missing]</mark>.
