@@ -12,10 +12,12 @@
 <script src="../design-system/skeleton.js"></script>
 <style>
 /* This page's layout only. */
-section[data-folder] { padding: var(--space-5) 0 var(--space-2); }
-section[data-folder] > h2 { margin: 0; font-size: var(--text-lg); }
+section[data-folder], section[data-unfolded] { padding: var(--space-5) 0 var(--space-2); }
+section[data-folder] > h2, section[data-unfolded] > h2 { margin: 0; font-size: var(--text-lg); }
 section[data-folder] > p { margin: var(--space-1) 0 var(--space-3); color: var(--color-text-muted); }
-section[data-folder] a { color: var(--color-text); }
+section[data-folder] a, section[data-unfolded] a { color: var(--color-text); }
+section[data-unfolded] > ul { margin: var(--space-3) 0 0; padding: 0; list-style: none; }
+section[data-unfolded] li { padding: var(--space-1) 0; }
 .views { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--color-border); }
 .views li { display: grid; grid-template-columns: 14rem 14rem minmax(0, 1fr); gap: var(--space-1) var(--space-3); padding: var(--space-2) 0; border-bottom: 1px solid var(--color-border); }
 .views code { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--color-text-muted); overflow-wrap: anywhere; }
@@ -44,6 +46,13 @@ section[data-folder] a { color: var(--color-text); }
     <p>Start at <a data-start href="web/sign-in.html">Sign in</a></p>
     <ul class="views">
       <li data-page="web/sign-in.html" data-route="/sign-in"><a href="web/sign-in.html">Sign in</a><code>/sign-in</code><span>Signing in, with the tries left after a wrong password.</span></li>
+    </ul>
+  </section>
+  <!-- An example of the contract; the index holds this section only while a page is not folded yet. -->
+  <section data-unfolded>
+    <h2>Not folded yet</h2>
+    <ul>
+      <li><a href="orders.html">orders.html</a></li>
     </ul>
   </section>
 </main>
