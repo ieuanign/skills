@@ -38,8 +38,9 @@
   Screen
   - The element carrying data-screen="<name>" data-req="REQ-57.1 REQ-57.3" data-surface="<surface>":
     each <section> of a mockup, and the <body> of a design prototype, which is one screen.
-  - data-req holds every requirement id the screen covers, space-separated. A mockup also shows each
-    as a <span class="req-chip"> in the section's <h2>; a design prototype's panel draws them.
+  - data-req holds every requirement id the screen covers, space-separated, and is empty, as
+    data-req="", where no PRD names the screen. A mockup also shows each as a
+    <span class="req-chip"> in the section's <h2>; a design prototype's panel draws them.
   - data-surface is exactly one of: web, ios, android, email, pdf, notification.
   - The screen is drawn in its .stage, in its surface's frame: web -> .frame-browser in a mockup and
     the bare .viewport in a design prototype; ios, android -> .frame-phone; email -> .frame-email
@@ -189,6 +190,10 @@
     or as a persona, by its link's ?state=<state> or ?persona=<persona>.
   - A row is found by its data-page, never by its place or its text, so a person may put the rows
     and the sections in any order.
+  - <section data-unfolded> holds the pages not folded yet, under its own <h2>: each <li> of its
+    <ul> an <a href> to one page where it still is, by its path from the index. It is found by
+    data-unfolded, never by its place or its text, and is absent when it would be empty.
+  - A page it lists is not a design prototype and has no row.
   - The index names no requirement id, in an attribute or in its text.
 -->
 <html lang="en">
