@@ -115,9 +115,8 @@ main.stage.sized > .viewport { min-height: calc(100vh - 2 * var(--space-4)); box
 .framed .frame-phone { width: auto; padding: 0; border-radius: 0; }
 .framed .frame-phone .screen { width: auto; height: 100vh; border-radius: 0; }
 
-/* ---------- components, named as the project's component kit names them. Kit: none yet. ---------- */
-.page { padding: var(--space-4); display: grid; gap: var(--space-3); }
-.page.narrow { max-width: 24rem; margin: 0 auto; }
+/* ---------- components, named as each surface's kit names them. Kits, a repo path or none yet —
+   web: none yet. ios, android: none yet. email: none yet. pdf: none yet. notification: none yet. ---------- */
 .button { font: inherit; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-primary); background: var(--color-primary); color: var(--color-on-primary); cursor: pointer; }
 .button:disabled { opacity: 0.6; cursor: default; }
 .button-secondary { background: var(--color-bg); color: var(--color-primary); }
@@ -144,3 +143,16 @@ main.stage.sized > .viewport { min-height: calc(100vh - 2 * var(--space-4)); box
   .shell-nav { flex-direction: row; flex-wrap: wrap; }
   .shell-person { margin: 0 0 0 auto; }
 }
+/* email: a link drawn as a button. */
+.frame-email .button { display: inline-block; padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); text-decoration: none; }
+
+/* ---------- layouts: how the pages a project shares are arranged, each named as the code names it ---------- */
+.page { padding: var(--space-4); display: grid; gap: var(--space-3); }
+.page.narrow { max-width: 24rem; margin: 0 auto; }
+/* A page's title, and its actions beside it. */
+.page-header { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-3); align-items: center; }
+.page-header h1 { margin: 0 auto 0 0; font-size: var(--text-lg); }
+.page-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+/* A list under its toolbar: what searches and filters it, and what acts on it. */
+.list { display: grid; gap: var(--space-3); }
+.list-toolbar { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
