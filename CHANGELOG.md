@@ -1,5 +1,68 @@
 # ieuanign-skills
 
+## 0.31.0
+
+### Minor Changes
+
+- [#375](https://github.com/ieuanign/skills/pull/375) [`79d3f05`](https://github.com/ieuanign/skills/commit/79d3f05eade0cf1873d072cc25e3dc26b95cd33b) Thanks [@ieuanign](https://github.com/ieuanign)! - mockup: a draft is drawn from the reference page, and everything it adds is listed, where a page's own `<style>` or an inline `style` could redraw anything without counting as an addition.
+
+  - Build reads `reference.html` and `skeleton.css` for each surface the screens use, then looks each pattern up by the screen's surface: that surface's design prototypes first, then its kit at the path the components comment names.
+  - Every screen carries a `sources` list in the design record: one line per pattern, naming the path where it is already built, from the repository root. Confirm carries it into the design prototype's panel with `settled`, `todo` and `choices`, and the panel draws it as its own section.
+  - `<style data-additions>` is the one way a draft adds. Every rule in it is on the footer's additions list, and an addition is new, never a restyle: a rule whose selector `skeleton.css` already defines is a conflict.
+  - A page has no inline `style` but a custom property carrying a value a component takes, and a design prototype has no `<style>` at all.
+  - The template's `prototype.html` follows it: its toast's rule moves into `skeleton.css` as `.toast`, and its panel carries a `sources` list.
+
+  The skill's checklist fails a class defined neither in `skeleton.css` nor in the page's `<style data-additions>`, a `sources` line naming a path that does not exist, an inline `style` that is no custom property, a `<style>` that is not `<style data-additions>`, a rule of `<style data-additions>` missing from the additions list or written on a selector `skeleton.css` defines, and any `<style>` on a design prototype.
+
+  **For a project already set up:** copy the contract comment from the template's `skeleton.html` into the project's. A design prototype with a `<style>` of its own moves its rules into `skeleton.css`, with an example on `reference.html`, and drops the block. A page gets its `sources` list the next time a PRD's Confirm writes it; no check fails a design prototype from before this change for carrying none.
+
+- [#376](https://github.com/ieuanign/skills/pull/376) [`d11f7c6`](https://github.com/ieuanign/skills/commit/d11f7c61810f7748f6c2e7e8dc7b6f6c1766f692) Thanks [@ieuanign](https://github.com/ieuanign)! - design-system: Adopt reads a prototype folder the project keeps — one page per screen, sharing a stylesheet and a script, at a path the person names — where it read a design system from code alone.
+
+  - Adopt is picked for a prototype folder as it is for a token file and a component kit, while `docs/design-system/skeleton.html` does not exist. Upgrade still does not read one.
+  - Review reads every page in the folder, the stylesheet and the script they share, and each page's own `<style>`, beside the code. A token or component of the folder that differs from the app's token file or kit is listed as missing.
+  - The shared script is sorted hook by hook, a hook being one behaviour the script gives the pages. Each is one the skeleton has, noted with the skeleton's attribute for it as the contract comment names it, or one the skeleton lacks, which becomes a project hook. None is dropped.
+  - The shared stylesheet's components and layouts go into `skeleton.css` under the frame of each surface they draw, and the rules of a page's own `<style>` join them.
+  - Each project hook goes into `PROJECT.hooks` in `project.js`, written as the contract comment's hook rule has it. The personas go into `PROJECT.personas` and the shell into `PROJECT.shells`, item for item and route for route. Nothing of the folder goes into `skeleton.js`.
+  - The tokens follow One source for the tokens: the app's token file where it has one, otherwise the custom properties of the folder's stylesheet, name for name and value for value.
+  - The folder's pages are left where they are: none is rewritten, moved or copied under `docs/design/`, and the index gets no row for one.
+
+  Adopt's return lists every hook of the script with where it went — the skeleton's attribute for it, or its name in `project.js` — beside the files written, the list of what is missing and the checklist result.
+
+- [#377](https://github.com/ieuanign/skills/pull/377) [`4c92ded`](https://github.com/ieuanign/skills/commit/4c92dede61c381a280a19c5c6f38beba66978181) Thanks [@ieuanign](https://github.com/ieuanign)! - design-system: a new branch, **Fold**, for a project whose screens already exist as pages that are not design prototypes. It is picked when a person asks for pages to be folded in: a prototype folder's pages, or pages under `docs/design/` that are not design prototypes, such as one page per PRD. It needs `docs/design-system/prototype.html` and `docs/design/index.html`, and where either is missing it writes nothing and names the branch that writes it.
+
+  Fold rewrites each page asked for into design prototypes built from `prototype.html` to the contract comment, one per screen, so a page of several screens is split. Each keeps every state, control and link, and its notes go to the panel. A hook the skeleton has is written as the skeleton's attribute, a rule of the page's own `<style>` moves into `skeleton.css` with an example on `reference.html`, and a value the comment requires that the page lacks is taken from the page's own name or path and listed in the return. Requirement ids are found on the page, never made up: a page naming none gets an empty `data-req`.
+
+  A screen that already has a design prototype is never written over. The differences are recorded as a `conflicts` item on that design prototype, naming both sides and their paths, and the old page is left as it was. Fold rules on no conflict.
+
+  Fold deletes an old page only once the design prototype written from it passes `mockup`'s Check, after pointing every link to it at the new page. A fail it cannot fix leaves the old page as it was and takes its design prototype and row back out. It deletes nothing else — not a prototype folder's stylesheet or script, not `brand/` — rewrites no token and commits nothing: every file, the deletions among them, waits on the person's review.
+
+  The index gains a list of the pages not folded yet, under its own heading, each linking the page where it still is. The contract comment's Index block marks it up, and it is absent when empty. Fold takes one batch, the folder or the list a person named, and that list is the record of what remains. Build, Adopt and Upgrade write it too, for each page under `docs/design/` that is neither the index nor a design prototype.
+
+  mockup: Build and Check tell a design prototype from any other page under `docs/design/`. A page not folded yet marks no screen existing, is neither read nor folded by Build, and needs no row on the index. Check takes a design prototype's PRDs from its `data-req` ids, so it needs no `N`; with an empty `data-req` it reads no PRD, and each line that reads one passes.
+
+  **For a project already set up:** the contract comment changed, so run `/design-system` and it picks Upgrade, which brings the Index block in; then ask it to fold, naming the folder or the pages. Review the uncommitted files, the deletions among them, before committing them.
+
+- [#374](https://github.com/ieuanign/skills/pull/374) [`59e958f`](https://github.com/ieuanign/skills/commit/59e958f6cba66d1d9fb4c0fa676ebd765c4a81ae) Thanks [@ieuanign](https://github.com/ieuanign)! - design-system: the skeleton holds each surface's own components and the layouts pages share, where it held one kit, the web's, and no layout.
+
+  - `skeleton.css` heads its components with a kits comment: one entry per surface, in the contract's names, each the kit's repo path or `none yet`.
+  - A surface's own components sit under its frame, after the web's, which stay bare. The template ships the email's button, `.frame-email .button`: a link drawn as a button, with the email's padding and radius.
+  - A layouts part follows the components, each layout a class. `.page` and `.page.narrow` move there unchanged, joined by a page header with its actions (`.page-header`, `.page-actions`) and a list under its toolbar (`.list`, `.list-toolbar`).
+  - `reference.html` has a section per surface the skeleton frames — Web, Phone, Email, PDF, Notification — each drawing the surface's frame with its components inside, in place of one Components section and a Frames section. A Layouts section draws each layout with its regions labelled.
+
+  Adopt reads each surface's kit — the web kit, the mobile app's, the email templates, the PDF templates — and the app's pages for the arrangements two or more share, and lists as a gap a value, in code that cannot read the token file, that equals no token. Build takes each surface's components and the layouts from the chosen direction.
+
+  The skill's checklist fails a surface whose kit is named with no components drawn inside its frame on the reference page, and a layout with no example there.
+
+  **For a project already set up:** the contract comment in `skeleton.html` changed, so `/design-system` picks Upgrade. Each surface's components, the kit paths and the layouts are read from the code as Adopt steps 1 and 2 read them. Pages already drawn need no edit.
+
+### Patch Changes
+
+- [#379](https://github.com/ieuanign/skills/pull/379) [`a80b376`](https://github.com/ieuanign/skills/commit/a80b3761d72f7258147df9fadefb3497aa9c9acc) Thanks [@ieuanign](https://github.com/ieuanign)! - design-system and mockup: the same rules, arranged for a shorter read. Nothing either skill writes changes.
+
+  design-system: each branch but Check now lives in its own file under `branches/`, read only when that branch is picked, and what the skeleton, the reference page and the index hold once written is in `writing.md`, which Build, Adopt and Upgrade read with their own file. `SKILL.md` keeps what every branch needs, and says outright to read the contract comment before writing or checking a page: what the design system is, the template and its line, One source for the tokens, Pick the branch, Check, Contrast and the checklist. A run reads about half of what it did. A hook, a design prototype and a prototype folder are each defined once, at the top, and "the components comment" is the one name for the comment in `skeleton.css` that names each surface's kit.
+
+  mockup: Build's Inventory and Patterns steps, Confirm's Transform step and Check are set out as lists, and a step in another branch is referred to by its name, never its number.
+
 ## 0.30.0
 
 ### Minor Changes
