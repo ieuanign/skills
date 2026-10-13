@@ -1,6 +1,7 @@
 <!doctype html>
-<!-- REFERENCE — every token and component of the skeleton, in both themes. A colour token is one
-     data-token row and a text-and-background pair one data-pair row; the script fills in their values. -->
+<!-- REFERENCE — every token of the skeleton, each surface's components inside its frame and every
+     layout with its regions labelled, in both themes. A colour token is one data-token row and a
+     text-and-background pair one data-pair row; the script fills in their values. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -36,6 +37,13 @@ code { font-family: var(--font-mono); }
 .icons .i { font-size: 1.25rem; color: var(--color-text); }
 .a4 { height: 9.5rem; overflow: hidden; }
 .a4 .frame-page { zoom: 0.3; max-width: none; }
+#phone .screen { height: 28rem; }
+section.block > .frame-browser + h3 { margin-top: var(--space-4); }
+/* A layout's region, named above it; the outermost, which its frame would clip, inside its padding. */
+.region { position: relative; outline: 1px dashed var(--color-text-muted); outline-offset: -1px; }
+.region > .region-name { position: absolute; top: 0; left: 0; padding: 0 var(--space-1); font-size: var(--text-sm); line-height: 1; color: var(--color-text-muted); }
+.region .region > .region-name { top: auto; bottom: 100%; }
+.region .region .region > .region-name { left: auto; right: 0; }
 .behind { height: 16rem; display: grid; place-items: center; padding: var(--space-3); }
 .ref-grid + [data-screen] { margin-top: var(--space-4); }
 </style>
@@ -44,12 +52,12 @@ code { font-family: var(--font-mono); }
 <header class="top wrap">
   <div class="eyebrow">Design system</div>
   <h1>Reference</h1>
-  <p class="lede">Every token and component of the skeleton, in both themes. The colour and contrast tables read their values from the tokens this page links.</p>
+  <p class="lede">Every token of the skeleton, each surface's components inside its frame and every layout with its regions labelled, in both themes. The colour and contrast tables read their values from the tokens this page links.</p>
 </header>
 
 <div class="bar">
   <div class="wrap">
-    <nav class="jump" aria-label="Sections"><a href="#tokens">Colour</a><a href="#contrast">Contrast</a><a href="#shape">Shape</a><a href="#type">Type</a><a href="#space">Space</a><a href="#icons">Icons</a><a href="#components">Components</a><a href="#frames">Frames</a><a href="#shell">Shell</a><a href="#page">Page</a></nav>
+    <nav class="jump" aria-label="Sections"><a href="#tokens">Colour</a><a href="#contrast">Contrast</a><a href="#shape">Shape</a><a href="#type">Type</a><a href="#space">Space</a><a href="#icons">Icons</a><a href="#web">Web</a><a href="#phone">Phone</a><a href="#email">Email</a><a href="#pdf">PDF</a><a href="#notification">Notification</a><a href="#layouts">Layouts</a><a href="#shell">Shell</a><a href="#page">Page</a></nav>
     <div class="spacer"></div>
     <div class="seg" role="group" aria-label="Theme"><button type="button" data-theme-btn="light">Light</button><button type="button" data-theme-btn="dark">Dark</button></div>
   </div>
@@ -123,29 +131,101 @@ code { font-family: var(--font-mono); }
     <div class="icons" data-icons></div>
   </section>
 
-  <section class="block" id="components">
-    <div class="eyebrow">Components</div><h2>Each in its variants</h2>
-    <div class="ref-grid">
-      <div class="card"><h3>Button</h3><div><button class="button" type="button">Sign in</button> <button class="button button-secondary" type="button">Cancel</button> <button class="button" type="button" disabled>Signing you in…</button></div></div>
-      <div class="card"><h3>Field</h3>
-        <div class="field"><label for="ref-email">Email</label><input id="ref-email" type="email"></div>
-        <div class="field"><label for="ref-password">Password</label><input id="ref-password" type="password" aria-invalid="true"><span class="field-error">That password is not right.</span></div>
+  <section class="block" id="web">
+    <div class="eyebrow">Surface · web</div><h2>Web</h2>
+    <p>Each component in its variants, inside <code>.frame-browser</code>. The frame is drawn on <a href="skeleton.html">the skeleton</a> at each size the size switch offers.</p>
+    <div class="frame-browser">
+      <div class="chrome"><i></i><i></i><i></i><span class="url">example.com/claims</span></div>
+      <div class="viewport">
+        <div class="page">
+          <div class="ref-grid">
+            <div class="card"><h3>Button</h3><div><button class="button" type="button">Sign in</button> <button class="button button-secondary" type="button">Cancel</button> <button class="button" type="button" disabled>Signing you in…</button></div></div>
+            <div class="card"><h3>Field</h3>
+              <div class="field"><label for="ref-email">Email</label><input id="ref-email" type="email"></div>
+              <div class="field"><label for="ref-password">Password</label><input id="ref-password" type="password" aria-invalid="true"><span class="field-error">That password is not right.</span></div>
+            </div>
+            <div class="card"><h3>Card</h3><div class="card" style="background:var(--color-bg)">Claim 0812 · waiting for photos</div></div>
+            <div class="card"><h3>Alert</h3><p class="alert-success" style="margin:0;background:var(--color-bg)">You are signed in.</p></div>
+          </div>
+        </div>
       </div>
-      <div class="card"><h3>Card</h3><div class="card" style="background:var(--color-bg)">Claim 0812 · waiting for photos</div></div>
-      <div class="card"><h3>Alert</h3><p class="alert-success" style="margin:0;background:var(--color-bg)">You are signed in.</p></div>
     </div>
   </section>
 
-  <section class="block" id="frames">
-    <div class="eyebrow">Surfaces</div><h2>Frames</h2>
-    <p><code>.frame-browser</code> and <code>.frame-phone</code> are drawn on <a href="skeleton.html">the skeleton</a>, at each size the size switch offers.</p>
-    <div class="ref-grid" style="grid-template-columns:repeat(auto-fill, minmax(22rem, 1fr))">
-      <div class="frame-email">
-        <dl class="mailhead"><dd class="subj">Your sign-in code</dd><dt>From</dt><dd>no-reply@example.com</dd><dt>To</dt><dd>rina@example.com</dd></dl>
-        <div class="mailbody">Enter 481 532 on the page you have open.</div>
+  <section class="block" id="phone">
+    <div class="eyebrow">Surface · ios, android</div><h2>Phone</h2>
+    <p>The phone has no components of its own, so <code>.frame-phone</code> draws the web's. The frame is drawn on <a href="skeleton.html">the skeleton</a> at each size the size switch offers.</p>
+    <div class="frame-phone">
+      <div class="screen">
+        <div class="statusbar"><span>9:41</span><span>100%</span></div>
+        <div class="viewport">
+          <div class="page">
+            <div class="card">Claim 0812 · waiting for photos</div>
+            <div class="field"><label for="ref-phone-note">Note for the workshop</label><input id="ref-phone-note" type="text"></div>
+            <button class="button" type="button">Send photos</button>
+            <button class="button button-secondary" type="button">Not now</button>
+          </div>
+        </div>
       </div>
-      <div class="frame-notification"><div><b>Claims</b><br>Claim 0812 is waiting for your photos.</div></div>
-      <div class="a4"><div class="frame-page"><h2>Repair order</h2><p>An A4 page, 210 × 297 mm with 20 mm margins.</p></div></div>
+    </div>
+  </section>
+
+  <section class="block" id="email">
+    <div class="eyebrow">Surface · email</div><h2>Email</h2>
+    <p>The email's own button, a link drawn as a button, inside <code>.frame-email</code>.</p>
+    <div class="frame-email">
+      <dl class="mailhead"><dd class="subj">Your sign-in code</dd><dt>From</dt><dd>no-reply@example.com</dd><dt>To</dt><dd>rina@example.com</dd></dl>
+      <div class="mailbody">
+        <p style="margin-top:0">Enter 481 532 on the page you have open, or open your claim from here.</p>
+        <a class="button" href="#email">Open claim 0812</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="pdf">
+    <div class="eyebrow">Surface · pdf</div><h2>PDF</h2>
+    <p>No components of its own. <code>.frame-page</code>, drawn small.</p>
+    <div class="a4"><div class="frame-page"><h2>Repair order</h2><p>An A4 page, 210 × 297 mm with 20 mm margins.</p></div></div>
+  </section>
+
+  <section class="block" id="notification">
+    <div class="eyebrow">Surface · notification</div><h2>Notification</h2>
+    <p>No components of its own. <code>.frame-notification</code>.</p>
+    <div class="frame-notification"><div><b>Claims</b><br>Claim 0812 is waiting for your photos.</div></div>
+  </section>
+
+  <section class="block" id="layouts">
+    <div class="eyebrow">Layouts</div><h2>How a page is arranged</h2>
+    <p>Each layout in the web's frame, every region outlined and named by its class.</p>
+    <h3>A page, its header and a list</h3>
+    <div class="frame-browser">
+      <div class="chrome"><i></i><i></i><i></i><span class="url">example.com/claims</span></div>
+      <div class="viewport">
+        <div class="page region"><code class="region-name">.page</code>
+          <div class="page-header region"><code class="region-name">.page-header</code>
+            <h1>Claims</h1>
+            <div class="page-actions region"><code class="region-name">.page-actions</code><button class="button button-secondary" type="button">Export</button><button class="button" type="button">New claim</button></div>
+          </div>
+          <div class="list region"><code class="region-name">.list</code>
+            <div class="list-toolbar region"><code class="region-name">.list-toolbar</code>
+              <div class="field"><input type="search" aria-label="Search claims" placeholder="Search claims"></div>
+              <button class="button button-secondary" type="button">Remind all</button>
+            </div>
+            <div class="card">Claim 0812 · waiting for photos</div>
+            <div class="card">Claim 0815 · waiting for a quote</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <h3>A form's column</h3>
+    <div class="frame-browser">
+      <div class="chrome"><i></i><i></i><i></i><span class="url">example.com/sign-in</span></div>
+      <div class="viewport">
+        <div class="page narrow region"><code class="region-name">.page.narrow</code>
+          <div class="field"><label for="ref-layout-email">Email</label><input id="ref-layout-email" type="email"></div>
+          <button class="button" type="button">Send me a code</button>
+        </div>
+      </div>
     </div>
   </section>
 
