@@ -10,10 +10,6 @@
 <link rel="stylesheet" href="skeleton.css">
 <script src="project.js"></script>
 <script src="skeleton.js"></script>
-<style>
-  /* This page's toast, in the corner the panel starts in. */
-  [data-avoid] { position: fixed; right: var(--space-3); bottom: var(--space-3); margin: 0; }
-</style>
 </head>
 <body data-screen="sign-in" data-req="REQ-0.1" data-surface="web" data-route="/sign-in">
 <aside data-panel>
@@ -27,6 +23,10 @@
     <li>A wrong password shows how many tries are left.</li>
   </ul>
   <ul data-list="placeholders"><li>[Attempts left]</li></ul>
+  <ul data-list="sources">
+    <li>The email and password form: docs/design/web/reset-password.html</li>
+    <li>The success alert: src/components/Alert.tsx</li>
+  </ul>
   <ul data-list="settled"><li>2026-01-12: a wrong password counts the tries left, as REQ-0.1 has it; the sign-in form showed none.</li></ul>
   <ul data-list="choices"><li>The tries left sit above the email field, where the eye starts.</li></ul>
 </aside>
@@ -45,7 +45,7 @@
         <button class="button button-secondary" type="button" data-go="default">Sign out</button>
       </div>
     </div>
-    <p class="alert-success" data-avoid data-when="signed-in">You are signed in.</p>
+    <p class="alert-success toast" data-avoid data-when="signed-in">You are signed in.</p>
   </div>
 </main>
 </body>

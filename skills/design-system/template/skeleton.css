@@ -85,6 +85,8 @@ main.stage.sized > .viewport { min-height: calc(100vh - 2 * var(--space-4)); box
 [data-panel].docked-left { right: auto; left: var(--space-3); }
 /* Stepped aside for a data-avoid element showing in its corner. */
 [data-panel].raised { top: var(--space-3); bottom: auto; }
+/* A toast sits in the corner the panel starts in, so it carries data-avoid. */
+.toast { position: fixed; right: var(--space-3); bottom: var(--space-3); margin: 0; }
 [data-panel].collapsed { width: auto; }
 [data-panel].collapsed .panel-body { display: none; }
 .panel-toggle { display: flex; gap: var(--space-2); align-items: center; width: 100%; padding: var(--space-2) var(--space-3); border: 0; background: transparent; color: inherit; font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
