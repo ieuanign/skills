@@ -24,13 +24,16 @@
   - skeleton.html, this file: what a mockup is built from. prototype.html: what a design prototype is.
   - A page links the stylesheets and the scripts this file links, by relative path from its own
     folder (from docs/design/web/, ../../design-system/skeleton.css), as it does brand/ assets, and
-    loads nothing from the network but fonts. Its own <style> and <script> hold only what is that
-    page's alone.
+    loads nothing from the network but fonts. Its own <script> holds only what is that page's alone.
+    It carries no <style> but a draft's <style data-additions>, and no style attribute but one
+    setting a custom property whose value a component takes, as --progress: 45%.
   - A design prototype is docs/design/<folder>/<screen>.html, its folder the app it belongs to: one
     folder below the index, docs/design/index.html.
   - Only these tokens, components, personas, keys and shells are used. A token or component a draft
     adds sits in that page's <style data-additions> until it is moved here and onto the reference
-    page.
+    page. Every rule of <style data-additions> is on the footer's additions list. An addition is
+    new, never a restyle: a rule whose selector skeleton.css already defines is a conflict, on the
+    conflicts list.
 
   Screen
   - The element carrying data-screen="<name>" data-req="REQ-57.1 REQ-57.3" data-surface="<surface>":
@@ -109,9 +112,14 @@
   - <footer data-footer> holds three lists, each item one line:
     <ul data-list="open-choices"> every choice the PRD did not make;
     <ul data-list="placeholders"> every [Placeholder] on the page, by its text;
-    <ul data-list="additions"> every token, component, persona, key or navigation item the page adds.
-  - It may hold four more, the screen's design record, each optional, an item naming its screen where
-    the page holds more than one:
+    <ul data-list="additions"> every rule of <style data-additions>, and every persona, key or
+    navigation item of <script data-additions>.
+  - It holds the screen's design record too, an item naming its screen where the page holds more
+    than one. On every screen:
+    <ul data-list="sources"> one line per pattern, naming the path where it is already built: a
+    design prototype's, or a component's in code, from the repository root, as
+    docs/design/web/orders.html or src/components/Button.tsx.
+    And four more, each optional:
     <ul data-list="conflicts"> every conflict still open: both sides and their paths;
     <ul data-list="settled"> every conflict ruled on: the date, as 2026-01-12, and the ruling;
     <ul data-list="todo" aria-label="Code to change"> the code a ruling leaves to change, and the
@@ -135,7 +143,9 @@
     page at docs/design/<folder>/ and on no other: a draft and prototype.html sit elsewhere. No page
     carries it.
   - The panel also holds the screen's design record, as a mockup's footer does: the same
-    <ul data-list="conflicts">, "settled", "todo" and "choices", each optional, each item one line.
+    <ul data-list="sources">, "conflicts", "settled", "todo" and "choices", each optional, each item
+    one line.
+  - A design prototype carries no <style>: whatever it draws is skeleton.css's.
   - skeleton.js draws every data-list the panel holds, after Behaviour and in the page's order, as a
     section headed by the list's name and its count, as "Settled (1)": these lists, the
     placeholders and any list a project adds alike. A list that is empty or absent draws nothing.
@@ -276,6 +286,11 @@
   <ul data-list="placeholders"><li>[Attempts left]</li></ul>
   <h2>Additions</h2>
   <ul data-list="additions"></ul>
+  <h2>Sources</h2>
+  <ul data-list="sources">
+    <li>Sign in, the email and password form: docs/design/web/reset-password.html</li>
+    <li>Claims, the card: mobile/components/Card.tsx</li>
+  </ul>
   <h2>Conflicts</h2>
   <ul data-list="conflicts"></ul>
   <h2>Settled</h2>
