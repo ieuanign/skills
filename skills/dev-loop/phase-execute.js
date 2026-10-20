@@ -222,7 +222,7 @@ function suitePrompt(sub) {
 // The suite gate's shape. The command is reviewer-composed, so it is fenced into the prompt verbatim
 // and never spliced into a shell string here.
 function checkPrompt(sub, check) {
-  return `Run one command that settles an acceptance criterion and report what it did. Nothing else: fix nothing, commit nothing, modify no file, and leave nothing running when you return.\ncd ${sub.worktree} (branch ${sub.branch}) and run exactly the command between the markers, as one shell command line:\n<<<<CHECK\n${check}\nCHECK>>>>\nReturn state 'passed' when it exits 0, 'failed' when it does not, and 'not-run' when it cannot run at all — never 'passed' for a command you did not actually run. Start output with \`exit <status>\`, then the command's output, trimmed to its end if it is long.`
+  return `Run one command that settles an acceptance criterion and report what it did. You are report-only: the worktree stays exactly as you found it, and anything the command started is stopped before you return.\ncd ${sub.worktree} (branch ${sub.branch}) and run exactly the command between the markers, as one shell command line:\n<<<<CHECK\n${check}\nCHECK>>>>\nReturn state 'passed' only when you ran it and it exited 0, 'failed' when it ran and exited non-zero, and 'not-run' when it could not run at all. Start output with \`exit <status>\`, then the command's output, trimmed to its end if it is long.`
 }
 const tail = s => String(s || '').trim().slice(-400)
 

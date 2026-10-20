@@ -28,5 +28,5 @@ based on a branch that is gone.
 **A branch that is not part of a stack rebases normally.** This rule is about chains; a single branch
 off the default branch has nothing above it to strand.
 
-**`/dev-loop` never rebases and never force-pushes.** It pushes each branch exactly once and opens the
-pull requests already chained. Everything above is about what *you* do to those branches afterwards.
+**`/dev-loop` never rebases and never force-pushes.** It only ever pushes forward — a fix lands as a new
+commit on top — and opens the pull requests already chained. Everything above is about what *you* do to those branches afterwards.

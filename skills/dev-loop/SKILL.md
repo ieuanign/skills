@@ -30,7 +30,7 @@ Then per LAYER — **a layer is horizontal and a stack is vertical**, and the pi
 
 4. **Act 2 — Provisioning** (`acts/act-2.md`): per sub-lane of the layer — worktree from its base, `.worktreeinclude` copies, Setup command.
 5. **Act 3 — Phase B: execute** (`acts/act-3.md`): the layer through `phase-execute.js`; its layer-invariant material — the argument contract and the result shapes — is its own file, `acts/act-3-contract.md`, read once at the run's FIRST Act 3; each result carries what Gate 2 disposes of; between layers, the finished lanes' Gate 2 first, then authorization to proceed.
-6. **Gate 2 — push & PR** (`acts/gate-2.md`): per layer, every sub-lane it finished — push, pull request, the CI step, the worktree invariant, **⟨notify⟩ lane conclusion**; its layer-invariant material is its own file, `acts/gate-2-reference.md`, read once at the run's FIRST Gate 2, and so is the CI step's, `acts/gate-2-ci.md`; stack linking once at the batch's LAST Gate 2, whose contract is its own file, `acts/gate-2-linking.md`, read at that one boundary.
+6. **Gate 2 — push & PR** (`acts/gate-2.md`): per layer, every sub-lane it finished — push, pull request, the CI step, the worktree invariant, **⟨notify⟩ lane conclusion**; its layer-invariant material is its own file, `acts/gate-2-reference.md`, read once at the run's FIRST Gate 2; the CI step's, `acts/gate-2-ci.md`, read only where the profile's **CI wait** is `wait`; stack linking once at the batch's LAST Gate 2, whose contract is its own file, `acts/gate-2-linking.md`, read at that one boundary.
 
 Last, once per run:
 
