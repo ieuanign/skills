@@ -1,5 +1,13 @@
 # ieuanign-skills
 
+## 0.32.0
+
+### Minor Changes
+
+- [`e6dab6a`](https://github.com/ieuanign/skills/commit/e6dab6aac50f59dd8bb09b048a03a6f5d4612a84) Thanks [@ieuanign](https://github.com/ieuanign)! - dev-loop: an unattended run settles what it can before it drafts. A `partial` criterion now carries the reviewer's `check` — one command whose exit status settles it — and the lane runs it after review: exit 0 is `met`, anything else `not-met`, and only a criterion a person must settle stays `partial`. Where a repository opts in with the new `docs/agents/dev-loop.md` key **CI wait** — `wait`, against the default `none`, which waits for nothing — Gate 2 then waits for the GitHub Actions runs its push started: a red run the change caused goes through a debugger and writer fix cycle of at most 3 rounds, pushed forward and never forced; one it did not cause ends the sub-lane. Under `unattended` the pull request flips between draft and ready where CI changed the answer, and the worktree, closing message and label all follow CI. The pull request body gains a **CI** section beneath **Suite**.
+
+- [`36582da`](https://github.com/ieuanign/skills/commit/36582dae33d7472a49905b158eb1e242ee554617) Thanks [@ieuanign](https://github.com/ieuanign)! - qa-review: the `test(e2e):` pull request runs every end-to-end test on the branch, not only the PRD's own, and the verdict records the run's duration. An older test that fails twice is run alone at the trunk fork point — failing there too it is `fails on <trunk> too` and fails nothing — or else bisected up the stack to the lowest pull request whose head fails it, which answers for it as `not-met` (`not-met — assigned to #<n>` on the e2e pull request) or, where the older case and this PRD's requirement cannot both hold, as a `conflicts` line that fails the status and faults the test cases or the PRD. A retired case's test still on the branch is `not-met`, and a diff that changes or deletes another older case's test is `not-met` on the pull request whose diff does it.
+
 ## 0.31.0
 
 ### Minor Changes
