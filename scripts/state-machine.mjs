@@ -694,6 +694,159 @@ scenario('a partial criterion with no check dispatches nothing and drafts; only 
   assert.equal(s.terminal.pr, 'draft')
 })
 
+// --- the ci stage -----------------------------------------------------------
+
+// The host's round trip: Phase B's sub-result goes back verbatim as `record`, beside the CI result
+// Gate 2 read. A later call passes the PREVIOUS ci call's record, so round state travels on it.
+const recordAfter = async (script, over = {}, laneOpts = {}) =>
+  only((await runPhase(argsFor([lane(1, laneOpts)], over), script)).result).subResults[0]
+const ciArgs = (record, ci, over = {}, laneOpts = {}) => argsFor([{
+  ...lane(1, laneOpts),
+  subLanes: [{ ...subLane(1), record: JSON.parse(JSON.stringify(record)), ci }],
+}], { stage: 'ci', ...over })
+const ciGreen = { state: 'passed', runs: [{ id: 11, workflow: 'check', conclusion: 'success', failingJobs: [] }] }
+const ciRed = jobs => ({ state: 'failed', runs: [{ id: 12, workflow: 'check', conclusion: 'failure', failingJobs: jobs }] })
+const ciNotRun = { state: 'not-run', runs: [] }
+const cleanB = { 'write:#1:c1': committed(), 'review:#1': approved, 'suite:#1': suitePassed }
+
+scenario('a green CI settles a suite criterion the gate could not, readies the pull request, and dispatches nothing', async () => {
+  const before = await recordAfter({
+    'write:#1:c1': committed(),
+    'review:#1': reviewWith(approved, verdicts(['suite', '`npm test` passes'])),
+  }, { suiteCommand: 'none' }, { issueBody: ISSUE_BODY })
+  assert.equal(before.terminal.pr, 'draft')
+  const { result, labels } = await runPhase(ciArgs(before, ciGreen, { suiteCommand: 'none' }, { issueBody: ISSUE_BODY }), {})
+  assert.deepEqual(labels, [])
+  const s = only(result).subResults[0]
+  assert.equal(s.ending, null)
+  assert.equal(s.next, 'done')
+  assert.deepEqual(s.terminal, { pr: 'ready', reasons: [] })
+})
+
+scenario('a CI that did not run leaves the terminal state as it was, and dispatches nothing', async () => {
+  const before = await recordAfter({
+    'write:#1:c1': committed(),
+    'review:#1': reviewWith(approved, verdicts(['suite', '`npm test` passes'])),
+  }, { suiteCommand: 'none' }, { issueBody: ISSUE_BODY })
+  const { result, labels } = await runPhase(ciArgs(before, ciNotRun, { suiteCommand: 'none' }, { issueBody: ISSUE_BODY }), {})
+  assert.deepEqual(labels, [])
+  const s = only(result).subResults[0]
+  assert.equal(s.next, 'done')
+  assert.deepEqual(s.terminal, before.terminal)
+})
+
+scenario('a red CI the debugger hands to the writer is fixed, and the host is told to push', async () => {
+  const before = await recordAfter(cleanB)
+  const { result, labels } = await runPhase(ciArgs(before, ciRed(['lint'])), {
+    'cidebug:#1:r1': toWriter,
+    'cifix:#1:r1': committed({ commits: ['def5678 fix(x): #1 - the lint error'] }),
+  })
+  assert.deepEqual(labels, ['cidebug:#1:r1', 'cifix:#1:r1'])
+  const l = only(result)
+  assert.equal(l.ending, null)
+  const s = l.subResults[0]
+  assert.equal(s.ending, null)
+  assert.equal(s.next, 'push')
+  assert.equal(s.terminal.pr, 'draft')
+  assert.ok(s.terminal.reasons.some(r => /CI run is red: check \/ lint/.test(r)), 'a red CI is a reason of its own')
+})
+
+scenario('a red CI the debugger calls a flake is rerun, with nothing to fix', async () => {
+  const before = await recordAfter(cleanB)
+  const { result, labels } = await runPhase(ciArgs(before, ciRed(['e2e'])), {
+    'cidebug:#1:r1': { rootCause: 'a runner timed out', owner: 'retry' },
+  })
+  assert.deepEqual(labels, ['cidebug:#1:r1'])
+  const s = only(result).subResults[0]
+  assert.equal(s.ending, null)
+  assert.equal(s.next, 'rerun')
+})
+
+scenario('a red CI the change did not cause halts and drafts, saying so', async () => {
+  const before = await recordAfter(cleanB)
+  const { result, labels } = await runPhase(ciArgs(before, ciRed(['deploy'])), {
+    'cidebug:#1:r1': { rootCause: 'the deploy secret is missing', owner: 'user' },
+  })
+  assert.deepEqual(labels, ['cidebug:#1:r1'])
+  const s = only(result).subResults[0]
+  assert.equal(s.ending.category, 'HALT')
+  assert.match(s.ending.reason, /a red run the change did not cause/)
+  assert.equal(s.next, 'done')
+  assert.equal(s.terminal.pr, 'draft')
+})
+
+scenario('a second red CI round with no previously unseen failing job halts before the debugger', async () => {
+  const before = await recordAfter(cleanB)
+  const first = await runPhase(ciArgs(before, ciRed(['lint', 'test'])), {
+    'cidebug:#1:r1': toWriter,
+    'cifix:#1:r1': committed(),
+  })
+  const { result, labels } = await runPhase(ciArgs(only(first.result).subResults[0], ciRed(['test'])), {})
+  assert.deepEqual(labels, [])
+  const s = only(result).subResults[0]
+  assert.equal(s.ending.category, 'HALT')
+  assert.match(s.ending.reason, /2 rounds brought no previously unseen failing job/)
+  assert.equal(s.next, 'done')
+  assert.deepEqual(s.attempts.map(a => a.stage), ['CI', 'CI'])
+})
+
+scenario('the CI fix cycle stops at its 3-round ceiling when every round brings a new failing job', async () => {
+  let record = await recordAfter(cleanB)
+  for (let round = 1; round <= 2; round++) {
+    const { result } = await runPhase(ciArgs(record, ciRed([`job ${round}`])), {
+      [`cidebug:#1:r${round}`]: toWriter,
+      [`cifix:#1:r${round}`]: committed(),
+    })
+    record = only(result).subResults[0]
+    assert.equal(record.next, 'push', `round ${round}`)
+  }
+  const { result, labels } = await runPhase(ciArgs(record, ciRed(['job 3'])), {})
+  assert.deepEqual(labels, [])
+  const s = only(result).subResults[0]
+  assert.equal(s.ending.category, 'HALT')
+  assert.match(s.ending.reason, /the 3-round ceiling/)
+})
+
+scenario('a CI debugger or CI writer that returned nothing is FAILED, worded as returned nothing', async () => {
+  for (const [stage, script] of [
+    ['the CI debugger', { 'cidebug:#1:r1': null }],
+    ['a CI-fix writer', { 'cidebug:#1:r1': toWriter, 'cifix:#1:r1': null }],
+  ]) {
+    const { result } = await runPhase(ciArgs(await recordAfter(cleanB), ciRed(['lint'])), script)
+    const s = only(result).subResults[0]
+    assert.equal(s.ending.category, 'FAILED', stage)
+    assert.match(s.ending.reason, EMPTY_RETURN, stage)
+    assert.equal(s.next, 'done', stage)
+  }
+})
+
+scenario('an ending in the ci stage dispatches the notifier under unattended', async () => {
+  const before = await recordAfter(cleanB, unattended())
+  const { result, labels } = await runPhase(ciArgs(before, ciRed(['deploy']), unattended()), {
+    'cidebug:#1:r1': { rootCause: 'the deploy secret is missing', owner: 'user' },
+    'notify:#1': { label: 'applied', comment: 'posted', message: 'sent', detail: 'awaiting-human' },
+  })
+  assert.deepEqual(labels, ['cidebug:#1:r1', 'notify:#1'])
+  const l = only(result)
+  assert.equal(l.ending.category, 'HALT')
+  assert.equal(l.notified, true)
+})
+
+scenario('a sub-lane Phase B already ended is never fixed or re-notified in the ci stage', async () => {
+  const before = await recordAfter({
+    'write:#1:c1': committed(),
+    'review:#1': changes([FINDING]),
+    'fix:#1:r1': committed(),
+    'review:#1:r1': changes([FINDING]),
+  })
+  assert.equal(before.ending.category, 'HALT')
+  const { result, labels } = await runPhase(ciArgs(before, ciRed(['lint']), unattended()), {})
+  assert.deepEqual(labels, [])
+  const s = only(result).subResults[0]
+  assert.equal(s.next, 'done')
+  assert.equal(s.terminal.pr, 'draft')
+})
+
 // --- the runner -------------------------------------------------------------
 
 let failed = 0
