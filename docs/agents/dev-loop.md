@@ -46,12 +46,17 @@ Closes #<n>.                       <!-- first sub-lane only; later ones referenc
 <passed | failed + failing test identifiers | not run + why>
 
 ## CI
-<passed | failed + failing jobs | not run + why>
+<passed | failed + failing jobs | not run + why | not waited for>
 
 Run handle: <the run's own transcript identifier>   <!-- ended sub-lanes only; omitted when absent -->
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
+
+## CI wait
+
+`none` — the changes are tested by hand before merging, and this repository's only workflow runs on
+pushes to `main`, so nothing would run on a branch to wait for.
 
 ## Constraints
 
