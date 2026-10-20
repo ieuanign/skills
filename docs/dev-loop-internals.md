@@ -464,7 +464,8 @@ having none. `failed` is the red path.
 **A red run is a failure, not a finding**, exactly as a red suite is, and routes through the debugger:
 
 - `code-writer` → writer Mode 2 commits a fix in the worktree; `next: push` — the host pushes it
-  forward, waits again and calls again. Under `gated` that push is a Gate 2 question.
+  forward, waits again and calls again. Under `gated` that push is a Gate 2 question; declined, the
+  CI step ends with the fix unpushed and the worktree kept.
 - `retry` → `next: rerun` — the host reruns the failed jobs, nothing to fix.
 - `replan` or `user` → **HALT**: a red run the change did not cause — a missing secret, a runner
   outage, a check already red on the base.
@@ -582,8 +583,8 @@ consequently no case in which forcing is the fix, and no ceiling, ending or abse
 it.
 
 A rejected push stops that sub-lane's conclusion where it stands — the first push opens no pull
-request, a CI fix push ends the CI step — with the worktree
-**kept**, git's own message reported verbatim, and the ending reported **FAILED** — the pipeline's own
+request, a CI fix push ends the CI step — with the worktree **kept**, git's own message reported
+verbatim, and the ending reported **FAILED** — the pipeline's own
 assumption broke, which is a break and not a verdict about the code. In a repository whose habit is to
 rebase, the commonest real cause is **a human having rebased or amended inside the lane's worktree
 while it ran**. The pipeline cannot know whether the remote history or the rewritten local one is the
@@ -730,12 +731,12 @@ line of ledger prose the merger may skim.
 **A `suite` criterion is settled by the gate's state or CI's, never by prose.** Only `passed` settles
 it; a `not-run` leaves it unsettled, so a repository with neither a full-suite command nor a workflow
 drafts on one every time. Both are read because both run the repository's suite, and a red CI drafts
-in its own right, so the two never contradict.
+in its own right, so the two never contradict. The rejected alternative read a `partial` verdict's
+evidence for "only the suite is missing" — but contract keys are the contract, never the prose around
+them, and a reworded evidence line would silently flip a draft to ready.
 
 **A `partial` that reaches this table is one the criterion check could not settle** — a person is
-needed, or the check did not run. One it settled arrives as `met` or `not-met`. The rejected alternative read a `partial` verdict's evidence for "only the suite is missing" —
-but contract keys are the contract, never the prose around them, and a reworded evidence line would
-silently flip a draft to ready.
+needed, or the check did not run. One it settled arrives as `met` or `not-met`.
 
 A draft is the honest signal that the pipeline could not finish its own job, and **one rule covers every
 exhaustion path** — same signal, same handling, one branch in the implementation. A human
