@@ -434,8 +434,15 @@ One run, no retry: a check is not a loop, and a flaky one leaves the criterion a
 ## The CI step — bound: 3 rounds, and 2 rounds without a previously unseen failing job
 
 A sub-lane used to end — message, label, worktree — before its pull request's own GitHub Actions run
-had finished, so a ready pull request could turn red with nobody watching. So Gate 2 now waits for
-that run, and the sub-lane ends only once CI has settled its final draft-or-ready state.
+had finished, so a ready pull request could turn red with nobody watching. So Gate 2 can wait for
+that run, and the sub-lane then ends only once CI has settled its final draft-or-ready state.
+
+**Opt-in, through the profile's CI wait.** `docs/agents/dev-loop.md`'s **CI wait** is `wait` or
+`none`, and `none` is the default: Gate 2 skips the step, the pull request ends as Phase B left it, and
+its **CI** element reads `not waited for`. Waiting holds every sub-lane for its runs' wall-clock and may
+push more commits, and a team that tests a change itself before merging gets nothing from paying that.
+Before the suite gate and the criterion check existed, the lane had no local evidence and CI was the only
+check; now it has both, so CI is a second opinion a repository asks for rather than a default.
 
 **The host waits; the script decides.** A workflow script has no shell, so waiting is Gate 2's Bash:
 list the runs, watch each, read conclusions and failing jobs. Every route, bound and ending lives in
@@ -774,8 +781,8 @@ last pull request's state was considered and rejected on exactly those two count
 
 Lanes run in **parallel**. Within a lane, sub-lanes are **sequential**. Within a sub-lane: plan
 commits sequential → review loop → criterion check → suite gate → commit-breakdown check, then the
-lane conclusion, where Gate 2 pushes, opens the pull request and runs the CI step before it removes
-anything.
+lane conclusion, where Gate 2 pushes, opens the pull request and — where the profile's **CI wait** is
+`wait` — runs the CI step before it removes anything.
 
 ### Touchpoint overlap — three outcomes, and only one of them is a dependency
 

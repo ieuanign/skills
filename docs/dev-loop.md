@@ -160,8 +160,8 @@ approval should be the second one you type.
 **Suppression removes the questions, not the work.** Every step of both gates still runs; each question
 resolves to its unattended answer. Lanes with a `READY` plan proceed; a dependent lane is stacked
 rather than deferred; each sub-lane pushes and opens the pull request its terminal state names — ready,
-draft, or none — then waits for that pull request's CI and flips it between draft and ready where CI
-changed the answer.
+draft, or none — and, where the profile's **CI wait** is `wait`, waits for that pull request's CI and
+flips it between draft and ready where CI changed the answer. The default, `none`, waits for nothing.
 
 **And it never interviews you.** The one-time preconditions are not gates, so suppression is not what
 governs them; they resolve on a rule of their own. A key with a documented default takes it for that
@@ -241,7 +241,7 @@ There is one rule, and it decides where a new value goes without a debate:
 
 Your repository's own answers live in two files, split by what a fact describes rather than by who
 reads it. `docs/agents/dev-loop.md` holds this pipeline's own artifacts — **Branch template**, **PR
-title format**, **PR body template**, **Constraints**. `docs/agents/worktree.md` holds what any skill
+title format**, **PR body template**, **CI wait**, **Constraints**. `docs/agents/worktree.md` holds what any skill
 provisioning a worktree needs, this pipeline or not — **Setup command**, **Full-suite command**, **Fix
 cycles** — so a second skill provisioning one reads those three without reading a profile named for a
 pipeline it is not. Each key lives in exactly one of the two and is looked up there alone: one the
