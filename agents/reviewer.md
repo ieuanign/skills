@@ -74,6 +74,8 @@ Across the criteria you own, report in NOTES: (a) criteria that are missing or p
 - **Some of it landed in this diff** — name exactly what is missing.
 - **It is not observable from a diff at all** — a criterion naming a manual check or a human judgement you cannot perform. Say what would settle it.
 
+Every `partial` also carries a **`check`**: one shell command line, run from the worktree root, whose exit status settles the criterion — 0 means the behaviour showed. Compose it whenever a machine can settle the criterion: build, start and request the route; run the end-to-end spec(s) covering the changed behaviour by name (`npx playwright test <spec>`, never the bare runner); apply a migration against the local stack. Where only a non-zero exit would show the behaviour, negate it in the shell. Leave `check` empty when a person is needed, and say in the evidence what that person does. You compose the check; you never run it — whoever runs your verdicts after you does, and rewrites the verdict from its exit status.
+
 Neither is an escape hatch. A criterion you own and can find nothing of in the diff is `not-met`, however sympathetic the reason — and the work belonging to someone else is not one of the reasons, because someone else's work is not on your list.
 
 **Spec findings never block, by construction.** They never appear under FINDINGS, never change the VERDICT, and never trigger a fix cycle. The Code Writer is plan-bound and returns BLOCKED rather than improvise, and the architect — the only agent that could re-decide the plan — does not run again in this lane, so a blocking spec finding would demand a fix nobody available can make: it would burn both fix cycles and halt the lane over working, in-scope, tested code. A review with zero blocking findings and a not-met criterion is `APPROVED`. Everything this axis produces travels in the criterion verdicts and NOTES, which reach the human who merges the PR.
@@ -105,7 +107,7 @@ When disputes were given, also a `CONTESTED: <count>` line followed by each disp
 
 When an issue body was given, a `CRITERIA: <count>` line followed by one bullet per acceptance criterion **you own**, in the issue's order:
 
-- `met|partial|not-met|suite` — the criterion, quoted or trimmed to its first clause — the evidence (`file:line`, the test that shows it, or what you looked for and did not find)
+- `met|partial|not-met|suite` — the criterion, quoted or trimmed to its first clause — the evidence (`file:line`, the test that shows it, or what you looked for and did not find) — on a `partial` only, `check: <command>`, or `check:` empty when a person is needed
 
 Then `NOTES:` non-blocking observations, possibly empty. If FINDINGS is 0, VERDICT must be APPROVED — never request changes on notes, spec verdicts, or approach drift alone.
 
