@@ -1,6 +1,6 @@
 # Gate 2 — stack linking (once per BATCH, at its LAST Gate 2)
 
-Gate 2's step 5. It fires ONCE per batch — at the batch's LAST Gate 2, and this file is read there, never at an earlier layer's. A batch whose sub-lanes stack finishes by telling GitHub they form a stack. Linking is **additive** — the base chaining, the bodies and the stacked note are unchanged — and six rules keep it that way:
+Gate 2's step 6. It fires ONCE per batch — at the batch's LAST Gate 2, and this file is read there, never at an earlier layer's. A batch whose sub-lanes stack finishes by telling GitHub they form a stack. Linking is **additive** — the base chaining, the bodies and the stacked note are unchanged — and six rules keep it that way:
 
 - **Fires at the very end of the batch**, once every sub-lane of every lane has pushed and opened its pull request — never per layer.
 - **One call per chain, not one per batch.** Walk the base relation and link each **maximal chain**; a chain of **fewer than two** pull requests is not a stack and is skipped.
@@ -21,4 +21,4 @@ Take each sub-lane's PR number as Gate 2's step 2 kept it — the number, not th
 <this-skill-dir>/stack-link.sh <pr-number> <pr-number> [...]
 ```
 
-A batch with no stacking is every chain of length one, and the script makes no call for any of them — so the ordinary run calls nothing and says nothing. Report the script's one `STACK:` line per chain as it comes: `linked` records the stack, `skipped` is the machine having no extension and is not a problem to raise, and `failed` is reported with its message and then left alone. **A `failed` is never fatal and never retried.** Pass pull request numbers only; the script refuses a branch name and never sends the ready-for-review flag, either of which would let this step overwrite what Gate 2's steps 1–4 decided.
+A batch with no stacking is every chain of length one, and the script makes no call for any of them — so the ordinary run calls nothing and says nothing. Report the script's one `STACK:` line per chain as it comes: `linked` records the stack, `skipped` is the machine having no extension and is not a problem to raise, and `failed` is reported with its message and then left alone. **A `failed` is never fatal and never retried.** Pass pull request numbers only; the script refuses a branch name and never sends the ready-for-review flag, either of which would let this step overwrite what Gate 2's steps 1–5 decided.

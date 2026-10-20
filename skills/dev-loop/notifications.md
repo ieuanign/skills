@@ -13,11 +13,11 @@ This file is the single source of truth for what an unattended run writes to the
 | in-progress label added | before planning | host |
 | message: started (`start`) | before planning | host |
 | plan comment | after planning | host |
-| halt or failed: label swap + ending comment | mid-lane | notifier |
-| message: ending (`halt` or `failed`), with its one-line reason | mid-lane | notifier |
+| halt or failed: label swap + ending comment | mid-lane, or in the `ci` stage after push | notifier |
+| message: ending (`halt` or `failed`), with its one-line reason | mid-lane, or in the `ci` stage after push | notifier |
 | crash: label swap **and ending comment** for a lane that threw | when the script returns | host |
-| completion: label removed, PR opened | after the script | host |
-| message: completion (`draft` or `ready`), with the PR link | after the script | host |
+| completion: label removed, PR opened | after the CI step | host |
+| message: completion (`draft` or `ready`), with the PR link | after the CI step | host |
 
 The scoping rule that produced the Writer column, recorded so it is never re-derived: **the notifier owns only what the host cannot see.** The host is blind while a phase script runs — a workflow script has no shell — so a mid-lane event has no other writer, and everything at a host boundary is a host command.
 
