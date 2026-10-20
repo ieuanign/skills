@@ -5,6 +5,7 @@ export const meta = {
   phases: [
     { title: 'Implement', detail: 'code-writer per plan commit, sequential within a lane' },
     { title: 'Review', detail: 'reviewer + fix cycles (capped)' },
+    { title: 'Check', detail: "a partial criterion's settling command, judged by exit status", model: 'haiku' },
     { title: 'Suite', detail: "the repo's full suite, once per sub-lane", model: 'haiku' },
     { title: 'Notify', detail: "an ended lane's label, comment and message — unattended only", model: 'haiku' },
   ],
@@ -89,7 +90,7 @@ const ROLE_OF = { HALT: 'awaiting-human', FAILED: 'failed' }
 // The lane-and-stage marker every prompt leads with, so a transcript identifies its lane and stage
 // without parsing prompt prose. Inert to the agent; only the cost report reads it. Written out in
 // full here, in phase-plan.js and in cost-report.mjs — a script imports nothing; check compares.
-const STAGE = { PLAN: 'plan', WRITE: 'write', REVIEW: 'review', SUITE: 'suite', NOTIFY: 'notify' }
+const STAGE = { PLAN: 'plan', WRITE: 'write', REVIEW: 'review', CHECK: 'check', SUITE: 'suite', CI: 'ci', NOTIFY: 'notify' }
 const mark = (issue, stage) => `[dev-loop lane=${issue} stage=${stage}]\n`
 
 // The return contracts, as JSON schemas the runner validates each dispatch against. All agent returns
@@ -126,6 +127,7 @@ const REVIEW_SCHEMA = {
           criterion: { type: 'string', description: 'the criterion, quoted or trimmed to its first clause' },
           verdict: { type: 'string', enum: ['met', 'partial', 'not-met', 'suite'] },
           evidence: { type: 'string', description: 'file:line, the test that shows it, or what you looked for and did not find' },
+          check: { type: 'string', description: 'partial only: one shell command line, run from the worktree root, whose exit status settles the criterion — empty when a person is needed' },
         },
         required: ['criterion', 'verdict', 'evidence'],
       },
@@ -206,6 +208,13 @@ function specClause(lane, sub) {
 function suitePrompt(sub) {
   return `Run this repository's full test suite once and report what it did. Nothing else: fix nothing, commit nothing, modify no file.\ncd ${sub.worktree} (branch ${sub.branch}) and run exactly this command:\n${suiteCommand}\nReturn state 'passed' when it exits 0, 'failed' when it does not, and 'not-run' when the command cannot run at all (no such script, no such runner) — never 'passed' for a suite you did not actually run. When it failed, put every failing test in failing using the runner's own identifier for it (file path plus test name), and the command's output in output.`
 }
+
+// The suite gate's shape. The command is reviewer-composed, so it is fenced into the prompt verbatim
+// and never spliced into a shell string here.
+function checkPrompt(sub, check) {
+  return `Run one command that settles an acceptance criterion and report what it did. Nothing else: fix nothing, commit nothing, modify no file, and leave nothing running when you return.\ncd ${sub.worktree} (branch ${sub.branch}) and run exactly the command between the markers, as one shell command line:\n<<<<CHECK\n${check}\nCHECK>>>>\nReturn state 'passed' when it exits 0, 'failed' when it does not, and 'not-run' when it cannot run at all — never 'passed' for a command you did not actually run. Start output with \`exit <status>\`, then the command's output, trimmed to its end if it is long.`
+}
+const tail = s => String(s || '').trim().slice(-400)
 
 // The give-up path's abandoned work: evidence, not work. Listed so the human sees it, never counted
 // — counting it would report `1 planned, 2 made` for a sub-lane that made one. A commit line is
@@ -498,7 +507,23 @@ const runLane = async (lane, subResults) => {
       log(`#${lane.issue}: fix cycle ${cycles} committed${disputes.length ? ` (${disputes.length} disputed)` : ''}, re-reviewing`)
     }
 
-    // 3. Suite gate — the repo's own full suite, once per sub-lane, after the findings settle.
+    // 3. Criterion checks — a partial the reviewer could name a command for is settled by running it.
+    for (const [i, v] of rec.criterionVerdicts.entries()) {
+      const check = String(v.check || '').trim()
+      if (v.verdict !== 'partial' || !check) continue
+      const ran = await agent(mark(lane.issue, STAGE.CHECK) + checkPrompt(sub, check), {
+        label: `check:${tag}:${i + 1}`, phase: 'Check', model: 'haiku', effort: 'low', schema: SUITE_SCHEMA,
+      })
+      if (!ran) return failed(rec, returnedNothing(`the check runner on criterion ${i + 1} (${v.criterion})`))
+      const settled = {
+        passed: { verdict: 'met', evidence: `\`${check}\` exited 0 — ${tail(ran.output)}` },
+        failed: { verdict: 'not-met', evidence: `\`${check}\` failed — ${ran.output || 'no output'}` },
+      }[ran.state] || { evidence: `${v.evidence} — its check \`${check}\` did not run: ${ran.output || 'no reason given'}` }
+      rec.criterionVerdicts[i] = { ...v, ...settled }
+      log(`#${lane.issue}: ${sub.branch} criterion ${i + 1} check ${ran.state}`)
+    }
+
+    // 4. Suite gate — the repo's own full suite, once per sub-lane, after the findings settle.
     // Nothing about this stage is special: the same question labels its endings as every other's.
     if (!suiteConfigured) {
       // A declared 'none' is answered, not unanswered — so no agent is spent to run nothing.
@@ -570,7 +595,7 @@ const runLane = async (lane, subResults) => {
       }
     }
 
-    // 4. Commit-breakdown check — plain list diff, reported and never blocking
+    // 5. Commit-breakdown check — plain list diff, reported and never blocking
     log(`#${lane.issue}: ${sub.branch} done (${rec.plannedCommits} planned, ${rec.madeCommits} made)`)
   }
 

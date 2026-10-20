@@ -28,7 +28,7 @@ export const TARGET_TOKENS = 608_000
 // The stage vocabulary, shared with phase-plan.js and phase-execute.js, which each carry their own
 // copy — a phase script imports nothing, being compiled as one function over the runner's globals.
 // Add a stage in one and add it in all three. Order is the fallback for ties in the split.
-export const STAGES = ['plan', 'write', 'review', 'suite', 'notify']
+export const STAGES = ['plan', 'write', 'review', 'check', 'suite', 'ci', 'notify']
 
 // Where a marker naming a stage this list does not know lands. Named rather than dropped: a stage
 // silently discarded would make the split's percentages describe a smaller run than the total does.
