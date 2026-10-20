@@ -97,9 +97,11 @@ Six acts, in order.
 4. **Act 2 — provisioning.** A worktree per sub-lane of the current layer, plus the gitignored files
    your `.worktreeinclude` names, plus your Setup command.
 5. **Act 3 — Phase B.** Per lane: a writer per plan commit, a debugger when one fails, a reviewer over
-   the sub-lane's range, fix cycles, then your full suite. Every loop bounded.
-6. **Gate 2 — push and pull request.** Per layer, per sub-lane: push, open the pull request, remove
-   the worktree, close the lane. Then, once per batch, record the stack on GitHub.
+   the sub-lane's range, fix cycles, the command settling each criterion the diff could not show, then
+   your full suite. Every loop bounded.
+6. **Gate 2 — push and pull request.** Per layer, per sub-lane: push, open the pull request, wait for
+   its GitHub Actions runs — fixing a red one the change caused, pushed forward — then remove the
+   worktree and close the lane. Then, once per batch, record the stack on GitHub.
 
 An unattended run adds a seventh: **Act 4**, a per-lane cost log under `.scratch/dev-loop-cost/`.
 
@@ -158,7 +160,8 @@ approval should be the second one you type.
 **Suppression removes the questions, not the work.** Every step of both gates still runs; each question
 resolves to its unattended answer. Lanes with a `READY` plan proceed; a dependent lane is stacked
 rather than deferred; each sub-lane pushes and opens the pull request its terminal state names — ready,
-draft, or none.
+draft, or none — then waits for that pull request's CI and flips it between draft and ready where CI
+changed the answer.
 
 **And it never interviews you.** The one-time preconditions are not gates, so suppression is not what
 governs them; they resolve on a rule of their own. A key with a documented default takes it for that
@@ -284,9 +287,10 @@ the entry however it is written, and the probe path need not exist.
 **A lane opened a draft pull request and I do not know why.**
 
 Look at the top of the body. A draft carries a **Why this is a draft** line per trigger that fired, and
-there are exactly four: open reviewer findings after the fix-cycle bound, a red suite at the gate's
-ceiling, an acceptance criterion the sub-lane owns that is `partial` or `not-met` (or `suite` with the
-suite failed or not run), or the sub-lane ending mid-pipeline. The sections below it carry the detail.
+there are exactly five: open reviewer findings after the fix-cycle bound, a red suite at the gate's
+ceiling, a red CI run on the pull request, an acceptance criterion the sub-lane owns that is `partial`
+or `not-met` (or `suite` with neither the suite nor CI passed), or the sub-lane ending mid-pipeline. A
+`partial` there is one no command could settle — a person is needed — or one whose check did not run. The sections below it carry the detail.
 A draft is the honest signal that the pipeline could not finish its own job.
 
 **A lane finished and its issue still shows unticked checkboxes.**
