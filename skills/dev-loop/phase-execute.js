@@ -7,6 +7,7 @@ export const meta = {
     { title: 'Review', detail: 'reviewer + fix cycles (capped)' },
     { title: 'Check', detail: "a partial criterion's settling command, judged by exit status", model: 'haiku' },
     { title: 'Suite', detail: "the repo's full suite, once per sub-lane", model: 'haiku' },
+    { title: 'CI', detail: "a red pull-request run's debug and fix rounds, at most 3" },
     { title: 'Notify', detail: "an ended lane's label, comment and message — unattended only", model: 'haiku' },
   ],
 }
@@ -21,8 +22,13 @@ export const meta = {
 //   suiteCommand: string,          // 'none' or absent ⇒ every suite is not-run
 //   skillDir: string,              // absolute path to this skill's folder; absent ⇒ no notifier is dispatched
 //   agentNamespace: string,        // the roster's registry namespace; absent ⇒ bare names
-//   runHandle: string              // this run's transcript id; absent ⇒ the notifier writes no line
+//   runHandle: string,             // this run's transcript id; absent ⇒ the notifier writes no line
+//   stage: 'ci'                    // absent ⇒ Phase B; 'ci' ⇒ each sub-lane also carries record + ci, below
 // }
+
+// stage 'ci': each sub-lane carries `record`, its previous sub-result verbatim, and `ci`: {state:
+// 'passed'|'failed'|'not-run', runs: [{id, workflow, conclusion, failingJobs}]} for the pushed sha.
+// Each returned sub-result adds next: 'push'|'rerun'|'done', and its `ci` carries the round state.
 
 // subLanes is the CURRENT layer's only and worktree is absolute. issueBody is the issue verbatim and
 // WHOLE, never sliced — absent ⇒ the reviewer runs no spec axis. ownedCriteria is the criteria this
@@ -63,8 +69,8 @@ const NO_PROGRESS_THRESHOLD = Number.isInteger(input.fixCycleThreshold) && input
 // the suite gate's: a review cycle dispatches two costly agents where a suite round is one call.
 const REVIEW_CEILING = 5
 
-// Passed in, never re-derived. Nothing here branches on it yet — the notifier and the unattended
-// conclusion will. Anything but 'unattended' is gated, so an unknown mode never suppresses a gate.
+// Passed in, never re-derived. Anything but 'unattended' is gated, so an unknown mode never
+// suppresses a gate.
 const MODE = input.mode === 'unattended' ? 'unattended' : 'gated'
 
 // Configuration, never discovery: a discovered command that needs infrastructure this pipeline
@@ -72,6 +78,10 @@ const MODE = input.mode === 'unattended' ? 'unattended' : 'gated'
 const suiteCommand = String(input.suiteCommand || '').trim()
 const suiteConfigured = Boolean(suiteCommand) && suiteCommand.toLowerCase() !== 'none'
 const SUITE_CEILING = 8
+
+const CI_STAGE = input.stage === 'ci'
+// Lower than the suite's: every CI round costs a push and a full run's minutes.
+const CI_CEILING = 3
 
 // The notifier's two paths. Both live in this skill's folder, which a workflow script cannot see
 // from the inside — so the host passes it, and with nothing passed nothing is dispatched.
@@ -216,6 +226,9 @@ function checkPrompt(sub, check) {
 }
 const tail = s => String(s || '').trim().slice(-400)
 
+// A failing job's identity across rounds: its workflow and job name, never the run id a rerun changes.
+const ciFailing = ci => (ci.runs || []).flatMap(r => (r.failingJobs || []).map(j => `${r.workflow} / ${j}`))
+
 // The give-up path's abandoned work: evidence, not work. Listed so the human sees it, never counted
 // — counting it would report `1 planned, 2 made` for a sub-lane that made one. A commit line is
 // free text, so the sha and whatever separator the writer chose are stripped before the prefix.
@@ -267,7 +280,7 @@ const halt = (rec, reason, payload) => end(rec, 'HALT', reason, payload)
 const failed = (rec, reason, payload) => end(rec, 'FAILED', reason, payload)
 
 // The terminal-state table: what a sub-lane's ending makes of its pull request. The ready predicate
-// is written out as the full four-way conjunction rather than reduced — the reduction is correct
+// is written out as the full five-way conjunction rather than reduced — the reduction is correct
 // today and silently wrong the moment a red suite can pass without ending the sub-lane.
 function terminalState(rec) {
   const reasons = []
@@ -278,11 +291,15 @@ function terminalState(rec) {
   if (rec.suite.state === 'failed') {
     reasons.push(`the repository's full suite is red: ${rec.suite.failing.join(', ') || 'see the suite output'}`)
   }
+  const ci = rec.ci || { state: 'not-run' }
+  if (ci.state === 'failed') {
+    reasons.push(`the pull request's CI run is red: ${ciFailing(ci).join(', ') || 'see the run'}`)
+  }
   // Empty when no issue body was passed, so a run with no issue is vacuously met — which is
   // exactly what the PR-comment input needs, and why it costs no code of its own.
   // Branched on the enum alone, never on evidence prose saying only the suite is missing: the keys
-  // are the contract. Only a passed gate settles `suite` — not-run is never passed.
-  const settled = v => v.verdict === 'met' || (v.verdict === 'suite' && rec.suite.state === 'passed')
+  // are the contract. Only a passed gate or CI run settles `suite` — not-run is never passed.
+  const settled = v => v.verdict === 'met' || (v.verdict === 'suite' && (rec.suite.state === 'passed' || ci.state === 'passed'))
   const unmet = rec.criterionVerdicts.filter(v => !settled(v))
   const gate = rec.suite.state === 'failed' ? 'the suite gate failed' : `the suite gate did not run: ${rec.suite.output}`
   if (unmet.length) {
@@ -633,17 +650,78 @@ const runLane = async (lane, subResults) => {
   return { issue: lane.issue, mode: MODE, ending: rollUp ? { ...rollUp.ending } : null, crashed: false, notified: false, subResults }
 }
 
+// One red CI result, routed as the suite gate routes a red suite. Returns 'push' or 'rerun' for the
+// host to carry out; anything else is 'done'. The script never pushes or reruns anything itself.
+const settleCi = async (lane, sub, rec) => {
+  // An ended sub-lane is already the human's: its CI result is recorded, never fixed.
+  if (rec.ending || rec.ci.state !== 'failed') return
+  const tag = `#${lane.issue}${sub.area ? ':' + sub.area : ''}`
+  const ci = rec.ci
+  ci.round++
+  const failing = ciFailing(ci)
+  const fresh = failing.filter(j => !ci.seen.includes(j))
+  ci.seen.push(...fresh)
+  ci.stale = fresh.length ? 1 : ci.stale + 1
+  const redReason = `CI red on ${sub.branch} — ${failing.length} failing job(s): ${failing.join(', ')}`
+  const attempt = attemptOf(rec, 'CI', `${redReason} (round ${ci.round} of at most ${CI_CEILING})`)
+  if (ci.stale >= 2) return halt(rec, `${redReason} — 2 rounds brought no previously unseen failing job`)
+  if (ci.round >= CI_CEILING) return halt(rec, `${redReason} — the ${CI_CEILING}-round ceiling`)
+
+  const red = ci.runs.filter(r => r.conclusion !== 'success').map(r => r.id).join(', ')
+  const diag = await agent(
+    mark(lane.issue, STAGE.CI) +
+    `The pull request's GitHub Actions run is red on branch ${sub.branch}, for the commit this pipeline pushed. This is CI round ${ci.round} of at most ${CI_CEILING} for this sub-lane.\nThe runs for that commit: ${JSON.stringify(ci.runs)}\nRead each red run's failing log with \`gh run view <id> --log-failed\` (run id(s): ${red}), reproduce inside the checkout at ${sub.worktree} where you can, and diagnose. A red run the change did not cause — a missing secret, a runner outage, a check already red on the base — routes to user; a flake routes to retry. When owner=code-writer, phrase the handoff as a finding (file:line — defect — failure scenario).`,
+    { agentType: roleAgent('debugger'), label: `cidebug:${tag}:r${ci.round}`, phase: 'CI', schema: DEBUG_SCHEMA }
+  )
+  if (!diag) return failed(rec, `${returnedNothing(`the debugger on a red CI run on ${sub.branch}`)}; ${redReason}`)
+  attempt.debugger = `${diag.owner}: ${diag.rootCause}`
+  if (diag.owner === 'code-writer') {
+    const fix = await agent(
+      mark(lane.issue, STAGE.CI) +
+      writerPrompt(lane, sub, `Mode 2 — the pull request's CI run is red and a debugger diagnosed it. Fix it and commit as fix(<scope>): #${lane.issue} - ... . CI round ${ci.round}.\nDiagnosis: ${diag.rootCause}\nFinding: ${diag.finding || '(see diagnosis)'}\nFailing jobs: ${failing.join(', ')}`),
+      { agentType: writerType, label: `cifix:${tag}:r${ci.round}`, phase: 'CI', schema: WRITER_SCHEMA }
+    )
+    attempt.outcome = `the fix returned ${fix ? fix.result : 'nothing'}`
+    if (fix) absorb(rec, fix) // whatever it landed is on the branch, committed or not
+    if (!fix) return failed(rec, `${returnedNothing(`CI fix round ${ci.round}'s writer`)}; ${redReason}`)
+    if (fix.result !== 'COMMITTED') return (fix.result === 'BLOCKED' ? halt : failed)(rec, `CI fix round ${ci.round} returned ${fix.result} — ${redReason}`)
+    return 'push'
+  }
+  if (diag.owner === 'retry') {
+    attempt.outcome = 'a rerun of the failed jobs, with nothing to fix'
+    return 'rerun'
+  }
+  return halt(rec, `debugger routed a red CI run to ${diag.owner} — a red run the change did not cause: ${diag.rootCause} — ${redReason}`, { diag })
+}
+
+const runCiLane = async (lane, subResults) => {
+  for (const sub of lane.subLanes) {
+    // terminal and next are this call's to recompute; everything else is carried forward untouched.
+    const { terminal, next, ...prior } = sub.record
+    const was = prior.ci || {}
+    const rec = { ...prior, ci: { state: sub.ci.state, runs: sub.ci.runs || [], round: was.round || 0, seen: was.seen || [], stale: was.stale || 0 } }
+    subResults.push(rec)
+    rec.next = (await settleCi(lane, sub, rec)) || 'done'
+    rec.terminal = terminalState(rec)
+  }
+  const ended = subResults.filter(r => r.ending)
+  const rollUp = ended.find(r => r.ending.category === 'FAILED') || ended[0]
+  return { issue: lane.issue, mode: MODE, ending: rollUp ? { ...rollUp.ending } : null, crashed: false, notified: false, subResults }
+}
+
 // One catch for every ending site: a throw rejects the call rather than resolving it to nothing,
 // which would lose the whole lane. It becomes a FAILED ending naming the issue and carrying the
 // error, with partial sub-results beside it. Also the one place an ending-time dispatch hooks in.
 const laneThunk = lane => async () => {
   const subResults = []
   try {
-    const result = await runLane(lane, subResults)
+    const result = await (CI_STAGE ? runCiLane : runLane)(lane, subResults)
+    // An ending the ci stage was handed was already reported by the call that made it.
+    const reported = CI_STAGE && lane.subLanes.some(sub => sub.record && sub.record.ending)
     // Here and at no ending site above: one dispatch per lane, because the label is per issue, and
     // it fires as THIS lane returns rather than waiting on a sibling. Once per RUN, not per layer —
     // a lane spanning layers reaches this script again, and would otherwise comment twice.
-    if (result.ending && !lane.notified) result.notified = await notify(lane, result.ending)
+    if (result.ending && !lane.notified && !reported) result.notified = await notify(lane, result.ending)
     else if (lane.notified) result.notified = true
     return result
   } catch (err) {
@@ -654,6 +732,7 @@ const laneThunk = lane => async () => {
     for (const rec of subResults) {
       if (rec.terminal) continue
       if (!rec.ending) failed(rec, reason)
+      if (CI_STAGE) rec.next = 'done'
       rec.terminal = terminalState(rec)
     }
     log(`#${lane.issue}: the lane threw — returning it attributed rather than losing it`)
