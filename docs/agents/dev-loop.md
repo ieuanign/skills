@@ -55,8 +55,7 @@ Run handle: <the run's own transcript identifier>   <!-- ended sub-lanes only; o
 
 ## CI wait
 
-`none` — the changes are tested by hand before merging, and this repository's only workflow runs on
-pushes to `main`, so nothing would run on a branch to wait for.
+`none` — changes are tested by hand before merging.
 
 ## Constraints
 

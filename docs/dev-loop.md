@@ -99,9 +99,9 @@ Six acts, in order.
 5. **Act 3 — Phase B.** Per lane: a writer per plan commit, a debugger when one fails, a reviewer over
    the sub-lane's range, fix cycles, the command settling each criterion the diff could not show, then
    your full suite. Every loop bounded.
-6. **Gate 2 — push and pull request.** Per layer, per sub-lane: push, open the pull request, wait for
-   its GitHub Actions runs — fixing a red one the change caused, pushed forward — then remove the
-   worktree and close the lane. Then, once per batch, record the stack on GitHub.
+6. **Gate 2 — push and pull request.** Per layer, per sub-lane: push, open the pull request — and,
+   where the profile's **CI wait** is `wait`, wait for its GitHub Actions runs, fixing a red one the
+   change caused — then remove the worktree and close the lane. Then, once per batch, record the stack on GitHub.
 
 An unattended run adds a seventh: **Act 4**, a per-lane cost log under `.scratch/dev-loop-cost/`.
 
@@ -290,7 +290,8 @@ Look at the top of the body. A draft carries a **Why this is a draft** line per 
 there are exactly five: open reviewer findings after the fix-cycle bound, a red suite at the gate's
 ceiling, a red CI run on the pull request, an acceptance criterion the sub-lane owns that is `partial`
 or `not-met` (or `suite` with neither the suite nor CI passed), or the sub-lane ending mid-pipeline. A
-`partial` there is one no command could settle — a person is needed — or one whose check did not run. The sections below it carry the detail.
+`partial` there is one no command could settle — a person is needed — or one whose check did not run.
+The sections below it carry the detail.
 A draft is the honest signal that the pipeline could not finish its own job.
 
 **A lane finished and its issue still shows unticked checkboxes.**
