@@ -36,7 +36,7 @@ Closes #<n>.                       <!-- first sub-lane only; later ones referenc
 <n> planned, <m> made
 
 ## Acceptance criteria
-- <met|partial|not-met|suite> — <criterion> — <evidence>      <!-- verbatim from the reviewer; omit the section when it returned none -->
+- <met|partial|not-met|suite> — <criterion> — <evidence>      <!-- verbatim from the reviewer, or from the check that settled a partial; omit the section when it returned none -->
 
 ## Review findings
 <count> fixed, <count> won't-fix (each with the writer's reason). Reviewer NOTES verbatim.
@@ -44,6 +44,9 @@ Closes #<n>.                       <!-- first sub-lane only; later ones referenc
 
 ## Suite
 <passed | failed + failing test identifiers | not run + why>
+
+## CI
+<passed | failed + failing jobs | not run + why>
 
 Run handle: <the run's own transcript identifier>   <!-- ended sub-lanes only; omitted when absent -->
 

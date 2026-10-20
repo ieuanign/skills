@@ -79,15 +79,17 @@ What each stage is handed, what it is permitted to read, and what it hands back.
 | architect | issue number (plus a project slug and any gate answers) | the full sweep: context map → area context → the area's `CLAUDE.md` files → the decision records governing the area → the affected code and its manifests | `STATUS`, `PLAN`, summary bullets, open questions |
 | writer | plan path, commit ordinal and message, worktree, branch | the plan, the area's `CLAUDE.md` files, the touched module's manifests, the touchpoint files | `RESULT`, `COMMITS`, `VERIFIED`, `DEVIATIONS`, `DISPUTED`, `DIRTY`, `WORKTREE`, `FAILING` |
 | reviewer | branch, base, plan path, the issue body verbatim and whole, the acceptance criteria its sub-lane owns, the writer's disputes | the plan, the diff of the touched files, the area's `CLAUDE.md` files, the repository's documented coding standards | `VERDICT`, `FINDINGS`, `CONTESTED`, `CRITERIA`, `NOTES` |
-| debugger | the writer's return, worktree, branch | its own failure reproduction, the touched code | `ROOT-CAUSE`, `OWNER`, `CONFIDENCE`, `REPRODUCED`, a finding |
+| debugger | the writer's return — or a red suite's output, or a red CI run's ids — worktree, branch | its own failure reproduction (for CI, `gh run view <id> --log-failed`), the touched code | `ROOT-CAUSE`, `OWNER`, `CONFIDENCE`, `REPRODUCED`, a finding |
+| check runner | one `partial` verdict's `check` command, worktree, branch | nothing — it runs that one command and reads its exit status | `STATE`, `FAILING`, `OUTPUT` |
 | suite gate | the repository profile's full-suite command, worktree, branch | nothing — it runs that one command and reads its output | `STATE`, `FAILING`, `OUTPUT` |
 
 **The pipeline passes references rather than content wherever a reference is enough**, so the run
 spend lives in the reads — which is why they are part of the contract rather than left to each agent's
 discretion.
 
-**The suite gate is the one stage that reads nothing.** That is what makes it the cheapest stage in
-the pipeline, and it is why its round ceiling can be 8 where the review loop's is 5.
+**The suite gate and the check runner are the stages that read nothing.** That is what makes them the
+cheapest stages in the pipeline, and it is why the suite's round ceiling can be 8 where the review
+loop's is 5.
 
 **The architect alone sweeps the context documents and decision records.** Neither the writer nor the
 reviewer opens them. So the plan's Hard constraints section is the only channel by which anything
@@ -110,11 +112,14 @@ Agents end with machine-readable leading lines; the phase scripts enforce the eq
 - **reviewer** — `VERDICT: APPROVED|CHANGES_REQUESTED|ERROR` + `FINDINGS` (each
   `file:line — defect — failure scenario — suggested fix`) + `CONTESTED` + `CRITERIA` (one
   `met|partial|not-met|suite` verdict per acceptance criterion **the sub-lane owns**, in the issue's
-  order, each with its evidence) + `NOTES`. **Zero findings ⇒ APPROVED**, whatever the criterion verdicts say.
+  order, each with its evidence; a `partial` also carries `check`, one command line whose exit status
+  settles it, empty when a person is needed) + `NOTES`. **Zero findings ⇒ APPROVED**, whatever the
+  criterion verdicts say.
 - **debugger** — `ROOT-CAUSE` + `OWNER: code-writer|replan|user|retry` + `CONFIDENCE` + `REPRODUCED`;
   when `OWNER=code-writer`, a finding in the reviewer's finding shape.
 - **suite gate** — `STATE: passed|failed|not-run` + `FAILING` (the runner's own identifier per failing
   test) + `OUTPUT`.
+- **check runner** — the suite gate's contract, `STATE` read from the command's exit status.
 
 ### `OWNER` carries two kinds of value
 
@@ -299,14 +304,18 @@ means the plan lost something the issue asked for, and the only agent that could
 the architect, which does not run again in this lane. **A review with zero findings and a not-met
 criterion is `APPROVED`.**
 
-The last review's verdicts are the sub-lane's. They land in the findings ledger, and — under
+The last review's verdicts are the sub-lane's, once the criterion check below has settled every
+`partial` it can. They land in the findings ledger, and — under
 `unattended` — in the terminal-state table, which is the one place a criterion verdict decides
 anything at all. Which criteria a sub-lane owns is a fact the plan states and the host applies, never
 a judgement the reviewer makes at review time.
 
 A `suite` verdict is the reviewer handing a criterion to the suite gate: everything the diff can show
 is verified, and only the repository's full suite passing remains — which the reviewer never runs and
-the gate runs after it. The terminal-state table settles it from the gate's result.
+the gate runs after it. The terminal-state table settles it from the gate's result, or CI's.
+
+A `partial` with a `check` is the reviewer handing a criterion to the **criterion check** the same way:
+the diff cannot show it, a command can, and the reviewer names that command without running it.
 
 ---
 
@@ -390,6 +399,95 @@ finishes with the suite red and says so, carrying the failing test identifiers a
 
 ---
 
+## The criterion check — bound: one run per `partial`
+
+A `partial` used to say what would settle the criterion and stop there. Nobody ran it, so under
+`unattended` a pull request drafted on a criterion a machine could have settled in a minute. So the
+reviewer now names the settling command as a contract key, `check`, and the lane runs it.
+
+**The reviewer composes it; the pipeline runs it.** The reviewer reads diffs and never runs a suite,
+and composing the command is the judgement it is there for: build, start and request the route; the
+end-to-end specs covering the changed behaviour, named — never the bare runner, which is the suite's
+job; a migration against the local stack. Where a person is needed, `check` is empty and the evidence
+says what the person does.
+
+**Position: after the review loop approves, before the suite gate.** The review's fix cycles change
+the code the check exercises, so running it earlier would settle a verdict about code that is gone. A
+sub-lane the review loop ended runs no check, by the no-later-stage rule.
+
+**The runner is the suite gate's shape** — a plain subagent with no agent type, at `haiku`/`low`, the
+suite's return schema, label `check:<tag>:<n>` with `n` the verdict's position — for the same reason
+the suite gate has no definition: it runs a quoted command and has no judgement to constrain. The
+command is agent-composed, so it is fenced into the prompt verbatim and **never composed into a shell
+string by the script**.
+
+**Settled by exit status, never by prose.** `passed` ⇒ `met`, `failed` ⇒ `not-met`, each carrying the
+command and its output as evidence; `not-run` ⇒ the verdict stays `partial` with why. Exit 0 is the
+only success, so a criterion only a non-zero exit would show is negated in the shell by the reviewer.
+A `not-met` here is still a spec verdict: it drafts, and never starts a fix cycle or ends the lane. A
+runner that returned nothing ends the sub-lane **FAILED**, like every other such return.
+
+One run, no retry: a check is not a loop, and a flaky one leaves the criterion as unsettled as it was.
+
+---
+
+## The CI step — bound: 3 rounds, and 2 rounds without a previously unseen failing job
+
+A sub-lane used to end — message, label, worktree — before its pull request's own GitHub Actions run
+had finished, so a ready pull request could turn red with nobody watching. So Gate 2 now waits for
+that run, and the sub-lane ends only once CI has settled its final draft-or-ready state.
+
+**The host waits; the script decides.** A workflow script has no shell, so waiting is Gate 2's Bash:
+list the runs, watch each, read conclusions and failing jobs. Every route, bound and ending lives in
+the `ci` stage of `phase-execute.js`, which returns `next` — `push`, `rerun` or `done` — and the host
+does exactly that. The round state rides on the returned record, which the host passes back verbatim,
+as it does `notified`. Splitting it the other way would put a cycle cap in prose the host re-reads.
+
+**Only the runs the push started.** `gh run list --branch <branch> --commit <sha>`, never `gh pr
+checks` and never commit statuses: those carry checks this push did not start, so a status from
+elsewhere could hold or redden a lane that caused nothing. A run trails the push that triggers it, so
+the host re-lists for up to a minute before concluding there is none. There is no wait ceiling — a
+run takes as long as it takes. A run needing a person's approval (`action_required`) is `not-run`.
+
+**Three states, and only one dispatches.** `passed` and `not-run` dispatch nothing and only recompute
+the terminal state: `passed` settles a `suite` criterion as the suite gate passing does, and `not-run`
+settles nothing and drafts nothing by itself — a repository with no workflows is not penalised for
+having none. `failed` is the red path.
+
+**A red run is a failure, not a finding**, exactly as a red suite is, and routes through the debugger:
+
+- `code-writer` → writer Mode 2 commits a fix in the worktree; `next: push` — the host pushes it
+  forward, waits again and calls again. Under `gated` that push is a Gate 2 question.
+- `retry` → `next: rerun` — the host reruns the failed jobs, nothing to fix.
+- `replan` or `user` → **HALT**: a red run the change did not cause — a missing secret, a runner
+  outage, a check already red on the base.
+
+**The bound mirrors the suite gate's, lower.** A failing job's identity is its workflow and job name,
+never the run id a rerun changes; two rounds with no previously unseen failing job, or the **3**-round
+ceiling, ends the sub-lane **HALT**, both checked before the round's debugger is dispatched. Lower than
+the suite's 8 because every round costs a push and a full run's minutes. Every red round is an
+attempt-log entry with stage `CI`. A debugger or writer that returned nothing ends it **FAILED**; a
+writer returning `BLOCKED` ends it **HALT**.
+
+**An ended sub-lane's CI is recorded, never fixed.** It is already the human's, and its draft already
+says so; the red run joins its reasons.
+
+**Open, then flip.** Under `unattended` a pull request opens in the state the pre-CI terminal state
+names, and once CI is done the host flips it where the final state differs, re-rendering the body only
+when something in it changed. Always opening a draft and flipping after was rejected: it renders every
+body twice where this renders a second time only when CI changed something. Only pull requests this
+run created are flipped — the append-only rule. Under `gated` the CI result is reported and no pull
+request changes.
+
+**Removal, the closing message and the label follow it**, so each describes the state CI settled. An
+ending in the `ci` stage dispatches the notifier as Phase B does; an ending handed in from an earlier
+call was already reported and is not reported again.
+
+**Accepted cost, recorded rather than solved**: a CI fix lands after review, as a suite fix does, so it
+is never reviewed.
+
+---
+
 ## The commit-breakdown check
 
 At the end of a sub-lane the host compares two lists it already holds: the plan's commit ordinals,
@@ -465,17 +563,19 @@ never built on a base the human has not vetted.
 
 ### Push
 
-A sub-lane's branch reaches the remote **exactly once**, at its layer's Gate 2, guarded on the branch
-being ahead of its base as read from git. **Per-commit push is not implementable, and is not to be
-re-proposed**: the whole commit loop runs inside one workflow call, a workflow script has no shell,
-and no stage in the pipeline consumes an intermediate push anyway.
+A sub-lane's branch first reaches the remote at its layer's Gate 2, guarded on the branch being ahead
+of its base as read from git. **Only ever forward after that**: the CI step's fix is a new commit on
+top, pushed as a fast-forward, never a rewrite. **Per-commit push is not implementable, and is not to
+be re-proposed**: the whole commit loop runs inside one workflow call, a workflow script has no shell,
+and no stage in the pipeline consumes an intermediate push anyway — CI reads only the pushed tip.
 
 **Never a force-push.** Fix cycles append commits and a resumed lane derives its already-done commits
 from the git log, so every push the pipeline makes is a fast-forward by construction. There is
 consequently no case in which forcing is the fix, and no ceiling, ending or absent human that unlocks
 it.
 
-A rejected push stops that sub-lane's conclusion where it stands: no pull request, the worktree
+A rejected push stops that sub-lane's conclusion where it stands — the first push opens no pull
+request, a CI fix push ends the CI step — with the worktree
 **kept**, git's own message reported verbatim, and the ending reported **FAILED** — the pipeline's own
 assumption broke, which is a break and not a verdict about the code. In a repository whose habit is to
 rebase, the commonest real cause is **a human having rebased or amended inside the lane's worktree
@@ -581,7 +681,7 @@ the sub-lane does, never as a deliverable something later expects to find.
 ### The terminal-state table
 
 Under supervision a human at Gate 2 decides what a sub-lane's ending means. Remove that human and
-nothing decides it — a sub-lane with open findings, a red suite or an unmet criterion would open
+nothing decides it — a sub-lane with open findings, a red suite, a red CI run or an unmet criterion would open
 exactly the pull request a clean one opens. This table decides it instead, and it is read under
 **unattended** only.
 
@@ -591,21 +691,23 @@ exactly the pull request a clean one opens. This table decides it instead, and i
 | Suite not-run, no open findings, all owned criteria met | yes | **ready**, the ledger recording not-run |
 | Open findings after the fix-cycle bound | yes | **draft** + the ledger |
 | Suite still red at the gate's ceiling | yes | **draft** + the ledger |
+| The pull request's CI run is red | yes | **draft** + the CI result |
 | Any acceptance criterion the sub-lane **owns** is `partial` or `not-met` | yes | **draft** + the verdicts |
-| An owned criterion is `suite` and the suite failed or did not run | yes | **draft** + the verdicts + the suite result |
+| An owned criterion is `suite` and neither the suite gate nor CI passed | yes | **draft** + the verdicts + the suite and CI results |
 | Ended `HALT` or `FAILED`, with commits | yes | **draft** + the ledger + the attempt log |
 | Ended with nothing landed | no — nothing is ahead of the base | **none**; the explanation is commented on the issue |
 
 **The ready predicate is one expression**: the sub-lane **concluded clean**, and its **findings are
-resolved**, and the **suite passed or did not run**, and **every acceptance criterion the sub-lane
-owns is met** — `met`, or `suite` with the suite passed. Anything else drafts.
+resolved**, and the **suite passed or did not run**, and **CI passed or did not run**, and **every
+acceptance criterion the sub-lane owns is met** — `met`, or `suite` with the suite gate or CI passed.
+Anything else drafts.
 
 The predicate does no filtering and gained no clause when criterion ownership arrived: it sees only
 the criteria the sub-lane owns because those are the only ones its reviewer was ever asked about. A
 sub-lane that did its whole job cleanly therefore opens a **ready** pull request even where the issue
 was split.
 
-It is written as that four-way conjunction and **not reduced** to the shortest expression equivalent
+It is written as that five-way conjunction and **not reduced** to the shortest expression equivalent
 to it today. An ending currently implies the middle two, so the reduction would be correct now and
 silently wrong later: a change that let a red suite through without ending the sub-lane would start
 producing ready pull requests, with no line to have got wrong.
@@ -618,19 +720,23 @@ demonstrably done" defaults to draft — exactly as the findings ledger and the 
 behave. A half-implemented criterion presenting as a ready pull request would reduce the signal to one
 line of ledger prose the merger may skim.
 
-**A `suite` criterion is settled by the gate's state, never by prose.** Only `passed` settles it; a
-`not-run` suite leaves it unsettled, so a repository with no full-suite command drafts on one every
-time. The rejected alternative read a `partial` verdict's evidence for "only the suite is missing" —
+**A `suite` criterion is settled by the gate's state or CI's, never by prose.** Only `passed` settles
+it; a `not-run` leaves it unsettled, so a repository with neither a full-suite command nor a workflow
+drafts on one every time. Both are read because both run the repository's suite, and a red CI drafts
+in its own right, so the two never contradict.
+
+**A `partial` that reaches this table is one the criterion check could not settle** — a person is
+needed, or the check did not run. One it settled arrives as `met` or `not-met`. The rejected alternative read a `partial` verdict's evidence for "only the suite is missing" —
 but contract keys are the contract, never the prose around them, and a reworded evidence line would
 silently flip a draft to ready.
 
-A draft is the honest signal that the pipeline could not finish its own job, and **one rule covers all
-four exhaustion paths** — same signal, same handling, one branch in the implementation. A human
+A draft is the honest signal that the pipeline could not finish its own job, and **one rule covers every
+exhaustion path** — same signal, same handling, one branch in the implementation. A human
 landing on a draft can see which trigger fired without opening anything else, because the body already
-carries the findings ledger, the suite result, the per-criterion verdicts, and an ended sub-lane's
+carries the findings ledger, the suite and CI results, the per-criterion verdicts, and an ended sub-lane's
 explanation and attempt log.
 
-**Work that exists stays reviewable.** Open findings, a red suite, or an ending mid-pipeline all open
+**Work that exists stays reviewable.** Open findings, a red suite or CI run, or an ending mid-pipeline all open
 a draft rather than stranding the branch. Work that does not exist opens nothing — the last row, and a
 narrow case: the give-up path commits abandoned work as a `wip:` commit, so an ended sub-lane almost
 always has something ahead of its base. Only a sub-lane whose writer stopped before changing a file
@@ -647,7 +753,7 @@ because only an ended sub-lane can propose the last row and an ended sub-lane is
 ## The findings ledger
 
 The **attempt log** records everything the pipeline did *after* something first went wrong, in order:
-each debug+fix attempt, each retry, each review fix cycle, each suite round, carrying what triggered
+each debug+fix attempt, each retry, each review fix cycle, each suite round, each CI round, carrying what triggered
 it, what the debugger said, and how it ended. Stages that worked are already in the commit list and
 the ledger's other categories; repeating them buries the one entry that matters. It is recorded on
 **every** sub-lane and rendered only on one that ended, so the loops append without branching.
@@ -667,7 +773,9 @@ last pull request's state was considered and rejected on exactly those two count
 ## Sequencing
 
 Lanes run in **parallel**. Within a lane, sub-lanes are **sequential**. Within a sub-lane: plan
-commits sequential → review loop → suite gate → commit-breakdown check, then the lane conclusion.
+commits sequential → review loop → criterion check → suite gate → commit-breakdown check, then the
+lane conclusion, where Gate 2 pushes, opens the pull request and runs the CI step before it removes
+anything.
 
 ### Touchpoint overlap — three outcomes, and only one of them is a dependency
 
