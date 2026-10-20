@@ -338,6 +338,14 @@ then every `high`-priority test not already selected.
 
 The run of every end-to-end test. What a run is when no one asked for **smoke**.
 
+## Older test
+
+On a **PRD**'s `test(e2e):` pull request, a test titled with a **test case** that is neither that
+PRD's nor one of its bugs'. A retired one is a test whose case the PRD's test cases list under
+`Retires:`.
+
+_Avoid_: regression test, old test.
+
 ## Delivery policy
 
 The file `docs/delivery-policy.md` in a consuming repository, saying how its code is branched, merged,
