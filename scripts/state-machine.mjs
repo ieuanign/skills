@@ -473,6 +473,7 @@ scenario('every stage that returned nothing says so, and none of them claims the
     ['the suite gate', { ...settled, 'suite:#1': null }],
     ['the suite debugger', { ...settled, 'suite:#1': red, 'suitedebug:#1:r1': null }],
     ['a suite-fix writer', { ...settled, 'suite:#1': red, 'suitedebug:#1:r1': toWriter, 'suitefix:#1:r1': null }],
+    ['the check runner', { ...settled, 'review:#1': reviewWith(approved, [withCheck('partial', 'c', 'npm test')]), 'check:#1:1': null }],
   ]
   for (const [stage, script] of cases) {
     const { result } = await runPhase(argsFor([lane(1)]), script)
@@ -629,6 +630,68 @@ scenario('a suite criterion on a sub-lane ended before the gate drafts with the 
   const criterion = s.terminal.reasons.find(r => /suite: `npm test` passes/.test(r))
   assert.ok(criterion, 'a reason names the unsettled criterion')
   assert.match(criterion, /ended before the suite gate ran/)
+})
+
+// --- a partial criterion's check --------------------------------------------
+
+const withCheck = (verdict, criterion, check) => ({ criterion, verdict, evidence: 'not visible in the diff', check })
+const CHECK_CMD = 'npx playwright test e2e/empty-body.spec.ts'
+const checked = state => ({ state, failing: [], output: state === 'not-run' ? 'no such runner' : 'exit 1\n1 failed' })
+
+scenario("a partial criterion whose check passed is met, run between the review and the suite", async () => {
+  const { result, labels } = await runPhase(argsFor([lane(1, { issueBody: ISSUE_BODY })]), {
+    'write:#1:c1': committed(),
+    'review:#1': reviewWith(approved, [withCheck('partial', 'the parser accepts an empty body', CHECK_CMD)]),
+    'check:#1:1': { state: 'passed', failing: [], output: '1 passed' },
+    'suite:#1': suitePassed,
+  })
+  assert.deepEqual(labels, ['write:#1:c1', 'review:#1', 'check:#1:1', 'suite:#1'])
+  const s = only(result).subResults[0]
+  assert.equal(s.criterionVerdicts[0].verdict, 'met')
+  assert.deepEqual(s.terminal, { pr: 'ready', reasons: [] })
+})
+
+scenario('a partial criterion whose check failed is not-met, and drafts naming it', async () => {
+  const { result } = await runPhase(argsFor([lane(1, { issueBody: ISSUE_BODY })]), {
+    'write:#1:c1': committed(),
+    'review:#1': reviewWith(approved, [withCheck('partial', 'the parser accepts an empty body', CHECK_CMD)]),
+    'check:#1:1': checked('failed'),
+    'suite:#1': suitePassed,
+  })
+  const s = only(result).subResults[0]
+  assert.equal(s.criterionVerdicts[0].verdict, 'not-met')
+  assert.equal(s.terminal.pr, 'draft')
+  assert.match(s.terminal.reasons[0], /not-met: the parser accepts an empty body/)
+})
+
+scenario('a partial criterion whose check did not run stays partial and drafts', async () => {
+  const { result } = await runPhase(argsFor([lane(1, { issueBody: ISSUE_BODY })]), {
+    'write:#1:c1': committed(),
+    'review:#1': reviewWith(approved, [withCheck('partial', 'the parser accepts an empty body', CHECK_CMD)]),
+    'check:#1:1': checked('not-run'),
+    'suite:#1': suitePassed,
+  })
+  const s = only(result).subResults[0]
+  assert.equal(s.criterionVerdicts[0].verdict, 'partial')
+  assert.equal(s.terminal.pr, 'draft')
+  assert.match(s.terminal.reasons[0], /partial: the parser accepts an empty body/)
+})
+
+scenario('a partial criterion with no check dispatches nothing and drafts; only partials run theirs', async () => {
+  const { result, labels } = await runPhase(argsFor([lane(1, { issueBody: ISSUE_BODY })]), {
+    'write:#1:c1': committed(),
+    'review:#1': reviewWith(approved, [
+      withCheck('partial', 'the parser accepts an empty body', ''),
+      withCheck('not-met', '`npm test` passes', CHECK_CMD),
+      withCheck('partial', 'a third criterion', CHECK_CMD),
+    ]),
+    'check:#1:3': { state: 'passed', failing: [], output: '' },
+    'suite:#1': suitePassed,
+  })
+  assert.deepEqual(labels, ['write:#1:c1', 'review:#1', 'check:#1:3', 'suite:#1'])
+  const s = only(result).subResults[0]
+  assert.deepEqual(s.criterionVerdicts.map(v => v.verdict), ['partial', 'not-met', 'met'])
+  assert.equal(s.terminal.pr, 'draft')
 })
 
 // --- the runner -------------------------------------------------------------

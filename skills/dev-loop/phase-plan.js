@@ -35,7 +35,7 @@ const agentType = roleAgent('architecture-engineer')
 // The lane-and-stage marker every prompt leads with, so a transcript identifies its lane and stage
 // without parsing prompt prose. Inert to the agent; only the cost report reads it. Written out in
 // full here, in phase-execute.js and in cost-report.mjs — a script imports nothing; check compares.
-const STAGE = { PLAN: 'plan', WRITE: 'write', REVIEW: 'review', SUITE: 'suite', NOTIFY: 'notify' }
+const STAGE = { PLAN: 'plan', WRITE: 'write', REVIEW: 'review', CHECK: 'check', SUITE: 'suite', CI: 'ci', NOTIFY: 'notify' }
 const mark = (issue, stage) => `[dev-loop lane=${issue} stage=${stage}]\n`
 
 // One shape for both ways an architect can fail to produce a plan. A requested issue is never
