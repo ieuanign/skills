@@ -29,6 +29,10 @@ pull requests it writes; what any skill provisioning a worktree reads is `docs/a
 <the agreed body shape — its own `##` lines belong in here, which is what keeps them content>
 ```
 
+## CI wait
+
+`<wait or none>`
+
 ## Constraints
 
 <the repository's cautions, one per line — or `None recorded.` when there are none>

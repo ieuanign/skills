@@ -321,8 +321,8 @@ an unattended run reads them from a fresh checkout that carries nothing else.
 
 ## Part 5 — the pipeline profile
 
-Four keys in `docs/agents/dev-loop.md` describe the artifacts `/dev-loop` writes: **Branch template**,
-**PR title format**, **PR body template** and **Constraints**. None of them refuses a run — three take
+Five keys in `docs/agents/dev-loop.md` describe the artifacts `/dev-loop` writes: **Branch template**,
+**PR title format**, **PR body template**, **CI wait** and **Constraints**. None of them refuses a run — four take
 a documented default for the run that needed them, reported and persisted nowhere, and nothing asks
 for Constraints at all — so a repository that only ever runs `auto` is never asked for one and gets no
 file, defaulting run after run with nothing on disk to edit. This part is the shortcut for writing it.
@@ -335,7 +335,7 @@ Placement is the uninstall test again: the profile is meaningless without the pl
 ### 1. Check what is there
 
 **`docs/agents/dev-loop.md`** — which of `## Branch template`, `## PR title format`,
-`## PR body template` and `## Constraints` already carry a non-blank line. A file already there is the
+`## PR body template`, `## CI wait` and `## Constraints` already carry a non-blank line. A file already there is the
 ordinary case, not an edge one: a gated run persists the branch template into it at Act 0. Each key
 resolves against its own heading with no fallback, so report them one at a time: an answered key is
 left byte-for-byte alone and never re-asked, and the file is never regenerated.
@@ -353,6 +353,9 @@ One ask per **missing** key, each confirmed before anything is written.
   elements must survive it — the statement, never the list, which is Gate 2's and has grown
   repeatedly. Declining takes **no follow-up question**: one line saying it stays the first Gate 2's
   to ask, and the section is not written.
+- **CI wait** — offer the documented default `none` and the alternative `wait`, saying what `wait`
+  costs: every sub-lane holds until its pull request's GitHub Actions runs finish, and a red run the
+  change caused goes through a fix cycle before the lane ends.
 - **Constraints** — free-form repository cautions, which `/dev-loop` honors when it decides lanes
   versus layers at Gate 1 and when it provisions ("the backend tests share one database — never run
   two backend lanes concurrently"). Nothing to default: offer the heading, and take **none** as a real

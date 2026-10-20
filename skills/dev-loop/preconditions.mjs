@@ -43,6 +43,7 @@ const CALLERS = {
       [PIPELINE, 'Branch template', '`feat/{issue}`, sub-lanes `feat/{issue}-{area}`'],
       [PIPELINE, 'PR title format', '`<type>(<scope>): #<issue> - <title>`'],
       [PIPELINE, 'PR body template', 'the core elements alone, in the order Gate 2 lists them'],
+      [PIPELINE, 'CI wait', "`none` — no sub-lane waits for its pull request's CI"],
       [WORKTREE, 'Fix cycles', '`2`'],
     ],
   },

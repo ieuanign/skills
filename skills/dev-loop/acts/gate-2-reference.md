@@ -28,7 +28,7 @@ Gate 2's invariant material — the parts that cannot vary between layers. Read 
 | **reviewer NOTES** | non-blocking observations, verbatim |
 | **review trajectory** | on a sub-lane whose review loop ended on either of its bounds: one entry per round saying whether it brought previously-unseen findings or repeated prior ones. Recorded on every sub-lane and rendered only where a bound ended one, like the attempt log. It answers what a bare count leaves open — *was this loop converging?* — before anyone opens the diff |
 | **suite** | the gate's state: `passed`, `failed` with its failing test identifiers, or `not run` with why it did not. Never `passed` for a suite that did not run |
-| **CI** | the CI step's state: `passed`, `failed` with its failing jobs, or `not run` with why. Never `passed` for runs that did not finish |
+| **CI** | the CI step's state: `passed`, `failed` with its failing jobs, or `not run` with why — `not waited for` where the profile's **CI wait** skipped the step. Never `passed` for runs that did not finish |
 | **attempt log** | everything the pipeline did *after* something first went wrong, in order: each debug+fix attempt, retry, review fix cycle, suite round and CI round, carrying what triggered it, what the debugger said, and how it ended. Stages that worked are already in the commit list and the categories above, and repeating them buries the one entry that matters. Recorded on every sub-lane and rendered only on one that ended, so the loops append without branching |
 
 ## The pull request body — step 2's `--body`
