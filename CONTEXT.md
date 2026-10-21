@@ -346,6 +346,13 @@ PRD's nor one of its bugs'. A retired one is a test whose case the PRD's test ca
 
 _Avoid_: regression test, old test.
 
+## End-to-end scope
+
+Which end-to-end tests a **PRD**'s `test(e2e):` pull request runs, set in `docs/agents/qa.md`: `all`,
+every one on the branch, the default; or `prd`, only the PRD's own and its bugs', in a repository
+whose CI runs every end-to-end test on each pull request and holds the merge on it, leaving the
+**older tests** to that CI job.
+
 ## Delivery policy
 
 The file `docs/delivery-policy.md` in a consuming repository, saying how its code is branched, merged,
