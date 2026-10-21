@@ -76,10 +76,10 @@ PRD: #57 · Design: <the design prototypes' paths on the default branch, their p
 ```
 
 - **The counts** cover the cases of every part.
-- **The table** has one row per case in its part, in id order, taken only from the case's heading and `Requirement:` line. A negative case's Priority is `—`.
-- **The Assumptions fold**, and Retires stays open. Keep the blank line after `<summary>`, or GitHub leaves the list unrendered. Assumptions and Retires read `None` when empty, the `<summary>` then counting `(0)`.
-- **The cases** follow the `---` in id order, each in its full [shape](#a-test-case), the one every reader parses; the table only summarises them.
-- **A continuation comment** carries only its heading, a table of its own cases, the `---` and those cases. Every part's table counts toward the 65,536-character limit, about 100 characters a case.
+- **The table** has one row per case in its part, taken only from the case's heading and `Requirement:` line. A negative case's Priority is `—`.
+- **The `<details>`** needs the blank line after `<summary>`, or GitHub leaves the Assumptions unrendered. Assumptions and Retires read `None` when empty, the `<summary>` then counting `(0)`.
+- **The cases** keep id order and their full [shape](#a-test-case), the one every reader parses; the table only summarises them.
+- **A continuation comment** carries only its heading, a table of its own cases, the `---` and those cases. Every part's table counts toward the limit, about 100 characters a case.
 
 ## Read
 
@@ -121,7 +121,7 @@ Done when the PRD, its epic where named, the design prototypes or their absence,
    - **A person's reasons** — change what each reason asks for, and nothing else.
    - **A revised PRD** — read its last Revisions line and redo only the cases of those ids. A Changed id's cases are rewritten, keeping their ids. An Added id gets new cases. A Withdrew id's cases leave the list, each as a Retires line. A requirement that cannot pass or fail stops the skill as in Write step 1.
 
-   A new case takes the next `n` after the highest `TC-N.n` anywhere in the comments, Retires included. The table and the counts follow every case changed, added or retired; the `<summary>`'s count follows the Assumptions. Done when each reason, or each id on the Revisions line, is reflected, and every count matches.
+   A new case takes the next `n` after the highest `TC-N.n` anywhere in the comments, Retires included. The tables and every count follow each edit, and a comment in an older layout moves to [the current one](#the-comment). Done when each reason, or each id on the Revisions line, is reflected and every count matches.
 3. **Checklist** as in Write step 7. Done when every line passes.
 4. **Publish in place.** `gh api -X PATCH repos/{owner}/{repo}/issues/comments/<id> -F body=@- <<'EOF'` for each part that changed; a part the edit pushes past the limit continues in a new comment. Done when every changed part is published.
 5. **Return** each comment's URL, what changed per reason or id, and the checklist result.
