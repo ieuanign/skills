@@ -59,8 +59,12 @@ absent) is **not observed** with its reason, and its rules become gaps.
    Done when each of the three is read or not observed.
 3. **Workflows.** Every file in `.github/workflows/`: the command a `pull_request` workflow runs, deploy
    jobs with their triggers (a trunk push, a `workflow_dispatch` taking a commit), end-to-end steps, tag
-   and release steps, and variables passed through by a shared prefix. Done when every workflow file is
-   read.
+   and release steps, and variables passed through by a shared prefix. A deploy job's `runs-on` gives
+   `runner`: `self-hosted` among its labels → `self-hosted`, its `runner_label` the one label that is
+   neither that nor an operating-system or architecture label (`linux`, `windows`, `macOS`, `x64`,
+   `ARM`, `ARM64`), none or several leaving `runner_label` a gap; a GitHub-hosted image (`ubuntu-*`,
+   `windows-*`, `macos-*`) → `github-hosted`; anything else (a custom label alone, a runner group, an
+   expression) → a gap. Done when every workflow file is read.
 4. **Environments.** `gh api repos/{owner}/{repo}/environments`, then
    `gh api repos/{owner}/{repo}/environments/<name>/variables` for each. Done when each environment's
    name and variable names are known or not observed.
@@ -75,8 +79,8 @@ absent) is **not observed** with its reason, and its rules become gaps.
    Done when `branching.derived_files` has a value or is a gap.
 8. **Sort every rule.** Take every rule the schema requires, for each service and environment observed;
    with none observed, the service and environment names are themselves gaps. A rule under an opt-in
-   (`previews.domain`) counts only when that opt-in is observed on or fixed on. Put each in the first
-   place that fits:
+   (`previews.domain`) counts only when that opt-in is observed on or fixed on, and `runner_label` only
+   when `runner` is observed or fixed `self-hosted`. Put each in the first place that fits:
    - a fixed rule the repository breaks → a question of its own, mark `required`;
    - observed → question 1, mark `client`;
    - a fixed rule the repository meets, or one nothing in the repository bears on → question 1, mark

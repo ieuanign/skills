@@ -46,6 +46,9 @@ With no environment observed, recommend two: `staging` and `production`.
   question carries no value: the owner names the provider.
 - `environments.<name>.deployed_by` — `"trunk-push"` for staging: every push to the trunk deploys it.
   `"named-commit"` for production: it deploys a commit a person names.
+- `environments.<name>.runner` — `"github-hosted"`; `"self-hosted"` where the environment is reachable
+  only from the owner's own network: a host on `127.0.0.1`, a private network, a home lab. Once
+  `"self-hosted"`, `runner_label` is the environment's name.
 - `environments.<name>.health_check_url` — the service's existing health endpoint on the environment's
   domain.
 - `environments.<name>.monitoring` — `"added"`; `"own"` where the owner already runs monitoring this
