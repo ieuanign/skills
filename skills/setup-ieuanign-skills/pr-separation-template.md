@@ -17,6 +17,10 @@ the one below:
 
 A later pull request may assume the one below it has landed. One that cannot is not in this chain.
 
+The order places new tests, not updates to existing ones: a change that breaks an existing test
+carries that test's update in the pull request that breaks it, whatever area the test sits in, so
+every pull request's CI stays green.
+
 ## Size
 
 Split any pull request that would exceed **<~45>** changed files.
