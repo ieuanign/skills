@@ -11,13 +11,12 @@
 `infra-diagnose` request, `report-<comment id>-<n>` for an `infra-report` one, else a few words naming
 the change; lower-cased, each run of characters outside `a-z0-9` becomes `-`.
 
-**Data-holding**, **destroys data**, **Targets** and a target's **credentials** are as
-`<this-skill-dir>/terms.md` defines them; read it with this act.
+**Data-holding**, **destroys data**, **Targets**, a target's **credentials**, **Resume** and **the undo
+section** are as `<this-skill-dir>/terms.md` defines them; read it with this act.
 
 ## Steps
 
-1. **Resume.** `gh pr list --state open --limit 1000 --json url,headRefName --jq '.[] | select(.headRefName | startswith("<BRANCH_PREFIX>")) | .url'`.
-   Done when none is open, or its link is returned as the result with nothing else written.
+1. **Resume.** Done when none is open, or its link is returned.
 2. **The request.** A suggestion block that is absent: return a refusal naming the comment and `<n>`.
    Done when the change to make and its origin are in hand.
 3. **Branch.** `git fetch origin`. `<WORKTREE>` left by an earlier run: when
@@ -49,14 +48,7 @@ the change; lower-cased, each run of characters outside `a-z0-9` becomes `-`.
    `git log`; `git -C <WORKTREE> clean -fdx`, so a later run of `<slug>` can reuse `<WORKTREE>`;
    `git -C <WORKTREE> push -u origin <BRANCH>`, once. Then `gh pr create --base <TRUNK> --head <BRANCH>
    --title "<title>" --body-file -`, the body holding the origin, the request, each target's plan
-   text output in a fenced block, and last:
-
-   ```
-   ## Undo
-
-   Revert this pull request, then apply from the trunk.
-   ```
-
+   text output in a fenced block, and last the undo section.
    Done when the pull request's link is in hand.
 9. **Return.** `rm -rf <PLANS>`, then return the pull request's link, each target planned, and
    `<WORKTREE>`. Done when all of it is returned.

@@ -2,7 +2,8 @@
 
 One pull request delivers all three; no environment is built.
 
-**Credential files** are as `<this-skill-dir>/terms.md` defines them; read it with this act.
+**Credential files**, **Resume** and **the undo section** are as `<this-skill-dir>/terms.md` defines
+them; read it with this act.
 
 ## The deliverables
 
@@ -27,8 +28,7 @@ Any other is **changed**: written anew to meet its contract.
 
 ## Steps
 
-1. **Resume.** `gh pr list --state open --limit 1000 --json url,headRefName --jq '.[] | select(.headRefName | startswith("<BRANCH_PREFIX>")) | .url'`.
-   Done when none is open, or its link is returned as the result with nothing else written.
+1. **Resume.** Done when none is open, or its link is returned.
 2. **Render.** `git fetch origin`, then decide each deliverable against `origin/<TRUNK>`, reading the
    trunk's files with `git show origin/<TRUNK>:<path>` and modes with `git ls-tree origin/<TRUNK> <path>`.
    Done when every deliverable is kept, or changed with its new content in hand.
@@ -51,8 +51,8 @@ Any other is **changed**: written anew to meet its contract.
    kept.
 6. **Push and open.** `git -C <WORKTREE> push -u origin <BRANCH>`, once. Then `gh pr create --base <TRUNK>
    --head <BRANCH> --title "<title>" --body-file -`, the body naming each changed deliverable and, for
-   branch rules as code, that they take effect when they are applied from `<TRUNK>` after the merge.
-   Done when the pull request's link is in hand.
+   branch rules as code, that they take effect when they are applied from `<TRUNK>` after the merge,
+   and last the undo section. Done when the pull request's link is in hand.
 7. **The issue**, after step 5 only. `gh issue create --title "<title>" --body-file -`, the body naming
    the pull request, each script with the command that runs it and who runs it, and that this mode is
    run again once the issue is closed. Done when the issue's link is in hand.
