@@ -33,8 +33,9 @@ and you stop.
   merges, never from a branch.
 - **GitHub is append-only.** Create issues, comments and pull requests; leave every human-written body
   and label as it is.
-- Every `gh` command runs inside the checkout with no `--repo`; `gh api` paths use `{owner}/{repo}`;
-  every body goes in with `--body-file -` from a quoted heredoc.
+- Every `gh` command runs inside the checkout with no `--repo`, so a wizard script reads the
+  repository's name before any `cd`; `gh api` paths use `{owner}/{repo}`; every body goes in with
+  `--body-file -` from a quoted heredoc.
 
 ## The modes
 
