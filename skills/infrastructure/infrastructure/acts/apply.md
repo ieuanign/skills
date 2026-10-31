@@ -34,6 +34,12 @@ none is named. `<mode>` is `apply-<pr's number>`; `<WORKTREE>` here is a detache
    targets already applied. Otherwise apply that target's saved plan. A failed apply, or a fresh
    plan of it still showing a change: return a refusal holding its output, with the targets already
    applied. Done when a fresh plan of every target shows no change.
-8. **Return.** `git -C <WORKTREE> clean -fdx`; `git worktree remove <WORKTREE>`, then return `<head>`
-   and each target applied.
+8. **Deploy.** Per environment `<environment>` applied where no Deployment of
+   `gh api --paginate 'repos/{owner}/{repo}/deployments?environment=<environment>'` has a `success` in
+   `gh api repos/{owner}/{repo}/deployments/<id>/statuses` — a first environment, which the merge's
+   run could not deploy before its hosts existed: `gh workflow run deployment.yml -f
+   environment=<environment> -f commit=<head>`, then `gh run watch` on the run it started. A failed
+   run is returned as such, never refused or retried. Done when every such run has concluded.
+9. **Return.** `git -C <WORKTREE> clean -fdx`; `git worktree remove <WORKTREE>`, then return `<head>`,
+   each target applied, and each deploy's conclusion and link.
    Done when `<WORKTREE>` is gone and all of it is returned. Worktree removal never passes --force.
