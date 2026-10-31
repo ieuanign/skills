@@ -60,11 +60,10 @@ absent) is **not observed** with its reason, and its rules become gaps.
 3. **Workflows.** Every file in `.github/workflows/`: the command a `pull_request` workflow runs, deploy
    jobs with their triggers (a trunk push, a `workflow_dispatch` taking a commit), end-to-end steps, tag
    and release steps, and variables passed through by a shared prefix. A deploy job's `runs-on` gives
-   `runner`: `self-hosted` among its labels → `self-hosted`, its `runner_label` the one label that is
-   neither that nor an operating-system or architecture label (`linux`, `windows`, `macOS`, `x64`,
-   `ARM`, `ARM64`), none or several leaving `runner_label` a gap; a GitHub-hosted image (`ubuntu-*`,
-   `windows-*`, `macos-*`) → `github-hosted`; anything else (a custom label alone, a runner group, an
-   expression) → a gap. Done when every workflow file is read.
+   `runner`: `self-hosted` among its labels → `self-hosted`, with `runner_label` its one label beyond
+   that and the operating-system and architecture labels, none or several leaving `runner_label` a gap;
+   a GitHub-hosted image label such as `ubuntu-latest` → `github-hosted`; anything else, an expression
+   included, → a gap. Done when every workflow file is read.
 4. **Environments.** `gh api repos/{owner}/{repo}/environments`, then
    `gh api repos/{owner}/{repo}/environments/<name>/variables` for each. Done when each environment's
    name and variable names are known or not observed.
