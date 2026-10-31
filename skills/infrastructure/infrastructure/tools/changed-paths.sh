@@ -2,9 +2,8 @@
 # infrastructure tool changed-paths.sh, version 2
 set -euo pipefail
 
-# Prints one service name per line: each service with a file changed under its paths since
-# <environment>'s last successful Deployment, or every service when it has none or a changed file
-# matches a given <glob>.
+# One service per line: each with a file changed under its paths since <environment>'s last
+# successful Deployment; every service when it has none or a changed file matches a <glob>.
 
 POLICY="docs/delivery-policy.md"
 
