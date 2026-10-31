@@ -96,17 +96,19 @@ names only; code takes each credential from its tool's own environment variable 
 6. **The person's part**, when any of these is missing: the provider credential, the DNS credential
    while records are to be set, `<GITHUB_CREDENTIAL>`, or a secret the services or the workflow read
    that `gh secret list --env <environment>` lacks. With `runner` `self-hosted`, also a runner carrying
-   `runner_label` in `gh api repos/{owner}/{repo}/actions/runners` and, where `gh repo view --json
-   visibility` is `PUBLIC`, `approval_policy` `all_external_contributors` in
-   `gh api repos/{owner}/{repo}/actions/permissions/fork-pr-contributor-approval`; both reads need a
-   repository admin, and one that fails counts as missing. With `/mattpocock-skills:wizard`, author:
+   `runner_label` in `gh api repos/{owner}/{repo}/actions/runners` and, where
+   `gh repo view --json visibility` is `PUBLIC`, `approval_policy` `all_external_contributors` in
+   `gh api repos/{owner}/{repo}/actions/permissions/fork-pr-contributor-approval`; a read that fails
+   counts as missing. With `/mattpocock-skills:wizard`, author:
    - `<WIZARD>/environment-<environment>-machine.sh` — creates each missing credential file, writes its
      path under its key into `.infra.local.env`, and sets up what **runtime** needs to reach the hosts;
-     with `runner` `self-hosted`, on a public repository it first sets that policy with `gh api -X PUT`,
-     before the runner exists so no fork's workflow can ever reach the machine, then registers a runner
-     carrying `runner_label` as a service, from GitHub's runner documentation, its token passed straight
-     from `gh api -X POST repos/{owner}/{repo}/actions/runners/registration-token` into the runner's
-     configuration command;
+     with `runner` `self-hosted`, on a public repository it first runs
+     `gh api -X PUT repos/{owner}/{repo}/actions/permissions/fork-pr-contributor-approval` to set
+     `approval_policy` to `all_external_contributors`, so the policy is in force before a runner
+     takes a job; then, where no runner carries `runner_label`, it registers one as a service, from
+     GitHub's runner documentation, its token passed straight from
+     `gh api -X POST repos/{owner}/{repo}/actions/runners/registration-token` into the runner's
+     configuration command; these calls need a repository admin, who runs this script;
    - `<WIZARD>/environment-<environment>-repository.sh` — sets every secret value as a secret of GitHub
      environment `<environment>`, the DNS records no credential covers, and, without
      `<GITHUB_CREDENTIAL>`, the environment, its rulesets and its variables; run by a repository admin.
