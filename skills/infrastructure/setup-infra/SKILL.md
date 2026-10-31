@@ -71,8 +71,9 @@ INFRA_CREDENTIAL_GRAFANA_<ENVIRONMENT>=<path>
 INFRA_TEST_ACCOUNTS_ENV=<path>
 ```
 
-`<ENVIRONMENT>` is the policy's environment name, upper-cased. `GITHUB` and `DNS` are optional;
-`infra-report` and `infra-diagnose` read `GRAFANA`. Each key's file holds one form:
+`<ENVIRONMENT>` is the policy's environment name, upper-cased. `DNS` is the zone's provider
+credential; it and `GITHUB` are optional, and `infra-report` and `infra-diagnose` read `GRAFANA`.
+Each key's file holds one form:
 
 - `INFRA_CREDENTIAL_GITHUB` — one fine-grained token for the repository, alone in the file, with
   Administration write (rulesets and branch rules, creating or updating an environment, the runner
