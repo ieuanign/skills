@@ -366,7 +366,8 @@ repository breaks, with the change it needs). The one place a tool is chosen: wr
 
 One named target the **delivery policy** lists — staging, production, and so on — with its
 **runtime**, its provider, what deploys it, where its deployment job runs, its health check, its
-monitoring, its **remediation** allowlist and its scale bounds. A GitHub environment is the platform's record of one, not the term.
+monitoring, its **remediation** allowlist and its scale bounds. A GitHub environment is the
+platform's record of one, not the term.
 
 ## Runtime
 
