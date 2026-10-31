@@ -6,6 +6,8 @@ entry's `runtime` names supplies every part marked **runtime**. Read `acts/envir
 well when any of `previews.enabled`, `release.soft_release.enabled`, `release.tag.enabled`,
 `release.e2e_tests.enabled` or a `services.<name>.mobile_app` is `true`.
 
+**Credential files** are as `<this-skill-dir>/terms.md` defines them; read it with this act.
+
 ## Inputs
 
 Each is the caller's `<key>=<path>` argument, else the `<key>=` line of `<CHECKOUT>/.infra.local.env`,
@@ -102,13 +104,11 @@ names only; code takes each credential from its tool's own environment variable 
    counts as missing. With `/mattpocock-skills:wizard`, author:
    - `<WIZARD>/environment-<environment>-machine.sh` — creates each missing credential file, writes its
      path under its key into `.infra.local.env`, and sets up what **runtime** needs to reach the hosts;
-     with `runner` `self-hosted`, on a public repository it first runs
-     `gh api -X PUT repos/{owner}/{repo}/actions/permissions/fork-pr-contributor-approval` to set
-     `approval_policy` to `all_external_contributors`, so the policy is in force before a runner
-     takes a job; then, where no runner carries `runner_label`, it registers one as a service, from
-     GitHub's runner documentation, its token passed straight from
-     `gh api -X POST repos/{owner}/{repo}/actions/runners/registration-token` into the runner's
-     configuration command; these calls need a repository admin, who runs this script;
+     with `runner` `self-hosted`, on a public repository it first sets that `approval_policy` with
+     `gh api -X PUT`, so the policy is in force before a runner takes a job; then, where no runner
+     carries `runner_label`, it registers one as a service, from GitHub's runner documentation, its
+     token passed straight from `gh api -X POST repos/{owner}/{repo}/actions/runners/registration-token`
+     into the runner's configuration command; these calls need a repository admin, who runs this script;
    - `<WIZARD>/environment-<environment>-repository.sh` — sets every secret value as a secret of GitHub
      environment `<environment>`, the DNS records no credential covers, and, without
      `<GITHUB_CREDENTIAL>`, the environment, its rulesets and its variables; run by a repository admin.
