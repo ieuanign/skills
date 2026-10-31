@@ -38,7 +38,12 @@ INFRA_CREDENTIAL_PROVIDER_<ENVIRONMENT>=<path>
 INFRA_CREDENTIAL_GRAFANA_<ENVIRONMENT>=<path>
 ```
 
-`<ENVIRONMENT>` is the policy's environment name, upper-cased. Hand the path to the tool in the form it reads a credential from a file — `curl`'s config or header-from-file form, the provider CLI's own flag or variable — looked up with `--help`. A credential is never opened, printed or quoted, in the report or the return. An absent one makes its figures `not available: no credential for <key>`.
+`<ENVIRONMENT>` is the policy's environment name, upper-cased. Each key's file holds one form:
+
+- `INFRA_CREDENTIAL_PROVIDER_<ENVIRONMENT>` — what the provider's tool reads. Where it takes a variable or flag (a token, a `DOCKER_HOST` endpoint): the value alone, one line, no key or quotes, set from the file in the tool's own command — the provider CLI's own flag or variable, looked up with `--help`. Where it reads a file of its own (a key file, a kubeconfig): that file.
+- `INFRA_CREDENTIAL_GRAFANA_<ENVIRONMENT>` — a `curl` config file holding the one line `header = "Authorization: Bearer <token>"`, handed over as `curl --config <path>`.
+
+A credential is never opened, printed or quoted, in the report or the return. An absent one makes its figures `not available: no credential for <key>`.
 
 ## Read
 
