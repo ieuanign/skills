@@ -13,15 +13,15 @@ is a detached checkout, so `<BRANCH>` is unused.
 
 1. **The merge.** `gh pr view <pr> --json state,mergeCommit,body`; `git fetch origin`. A state other
    than `MERGED`, or a merge commit `<oid>` for which `git merge-base --is-ancestor <oid> origin/<TRUNK>`
-   fails: return fail naming `<pr>`, with nothing run. `<n>` is the line count of
-   `gh api --paginate repos/{owner}/{repo}/pulls/<pr>/commits --jq '.[] | select((.parents | length) == 1) | .sha'`
-   — a rebase merge lands exactly the single-parent commits. Done when `<oid>` is on `origin/<TRUNK>`
-   and `<n>` is in hand.
+   fails: return fail naming `<pr>`, with nothing run. `<subjects>` are the lines of
+   `gh api --paginate repos/{owner}/{repo}/pulls/<pr>/commits --jq '.[] | select((.parents | length) == 1) | .commit.message | split("\n\n")[0] | gsub("\n"; " ")'`,
+   each as `git log --format=%s` prints it, `<n>` their count — a rebase merge lands exactly the
+   single-parent commits. Done when `<oid>` is on `origin/<TRUNK>` and `<subjects>` are in hand.
 2. **The pipeline.** `gh run list --commit <oid> --json databaseId,workflowName,status,conclusion,url,createdAt`.
    Met when at least one run is listed and, per `workflowName`, the newest run by `createdAt` concluded
-   `success`; a run a later one of its workflow superseded is not judged. A newest run still in progress
-   is waited on with `gh run watch <databaseId>`. Done when every newest run has a conclusion and the
-   condition is met or unmet, each failing run's workflow and link in hand.
+   `success`. A newest run still in progress is waited on with `gh run watch <databaseId>`. Done when
+   every newest run has a conclusion and the condition is met or unmet, each failing run's workflow and
+   link in hand.
 3. **The environments.** Per entry of the policy's `environments`, after step 2's runs finished, an HTTP
    GET of its `health_check_url`. Met when every one answers with a 2xx status. Done when each
    environment's status is in hand.
@@ -30,10 +30,10 @@ is a detached checkout, so `<BRANCH>` is unused.
    2. `<WORKTREE>` left by an earlier run: return its path and stop. Otherwise `git worktree prune`;
       `git worktree add --detach <WORKTREE> origin/<TRUNK>`; in it, `git revert --no-edit` what `<pr>`
       landed: `-m 1 <oid>` when `git rev-list --parents -n 1 <oid>` lists two parents; with
-      `<MERGE_METHOD>` `rebase`, `<oid>~<n>..<oid>`, `<oid>` being only the last commit landed — that
-      range's `git log --format=%s` not the pull request's commit subjects is unmet, naming the
-      mismatch; `<oid>` otherwise. A conflict: `git -C <WORKTREE> revert --abort`, unmet. Done when the
-      revert commits or conflicts.
+      `<MERGE_METHOD>` `rebase`, `<oid>~<n>..<oid>`, `<oid>` being only the last commit landed, once
+      `git log --reverse --format=%s <oid>~<n>..<oid>` prints `<subjects>` line for line — a mismatch
+      is unmet, naming it; any other merge method, `<oid>`. A conflict:
+      `git -C <WORKTREE> revert --abort`, unmet. Done when the revert commits or conflicts.
    3. Per target whose code the revert changes, one of its credentials absent is unmet, naming its
       key. Otherwise, in `<WORKTREE>`, save `<IAC_TOOL>`'s plan and render it
       machine-readable. A plan that destroys data is unmet, naming each data-holding resource's address
