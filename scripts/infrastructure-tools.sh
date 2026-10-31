@@ -236,6 +236,14 @@ expect "changed-paths: a file matching a given glob lists every service" 0 "$(pr
 
 new_repo
 deployed="$(git rev-parse HEAD)"
+commit_file monitoring/grafana/alerts.yaml 'changed'
+stub_deployments "[{\"id\": 7, \"sha\": \"$deployed\"}]"
+stub_statuses 7 '[{"state": "success"}]'
+expect "changed-paths: a nested file under a ** glob lists every service" 0 "$(printf 'api\nweb')" \
+  "$changed_paths" staging 'compose.yaml' 'monitoring/**'
+
+new_repo
+deployed="$(git rev-parse HEAD)"
 commit_file docs/notes.md 'changed'
 stub_deployments "[{\"id\": 7, \"sha\": \"$deployed\"}]"
 stub_statuses 7 '[{"state": "success"}]'
