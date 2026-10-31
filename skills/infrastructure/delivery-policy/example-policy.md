@@ -57,6 +57,12 @@ environments:
     deployed_by:
       value: "trunk-push"
       mark: suggested
+    runner:
+      value: "self-hosted"
+      mark: client
+    runner_label:
+      value: "staging"
+      mark: client
     health_check_url:
       value: "https://staging.example.com/health"
       mark: client
@@ -85,6 +91,9 @@ environments:
       value: "named-commit"
       mark: required
       change: "Replace the production deploy on every trunk push with a deploy of a named commit."
+    runner:
+      value: "github-hosted"
+      mark: suggested
     health_check_url:
       value: "https://example.com/health"
       mark: client
@@ -186,6 +195,8 @@ mark: `client` (the owner's own, or observed and kept), `suggested` (the suggest
 - staging, runtime (`environments.staging.runtime`): "compose" — client.
 - staging, provider (`environments.staging.provider`): "example-cloud" — client.
 - staging, deployed by (`environments.staging.deployed_by`): "trunk-push" — suggested.
+- staging, runner (`environments.staging.runner`): "self-hosted" — client.
+- staging, runner label (`environments.staging.runner_label`): "staging" — client.
 - staging, health check (`environments.staging.health_check_url`): "https://staging.example.com/health" — client.
 - staging, monitoring (`environments.staging.monitoring`): "added" — suggested.
 - staging, remediation (`environments.staging.remediation.enabled`): false — suggested.
@@ -195,6 +206,7 @@ mark: `client` (the owner's own, or observed and kept), `suggested` (the suggest
 - production, provider (`environments.production.provider`): "example-cloud" — client.
 - production, deployed by (`environments.production.deployed_by`): "named-commit" — required. Change
   needed: replace the production deploy on every trunk push with a deploy of a named commit.
+- production, runner (`environments.production.runner`): "github-hosted" — suggested.
 - production, health check (`environments.production.health_check_url`): "https://example.com/health" — client.
 - production, monitoring (`environments.production.monitoring`): "added" — suggested.
 - production, remediation (`environments.production.remediation.enabled`): false — suggested.

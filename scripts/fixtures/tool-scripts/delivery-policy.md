@@ -56,6 +56,9 @@ environments:
     deployed_by:
       value: "trunk-push"
       mark: suggested
+    runner:
+      value: "github-hosted"
+      mark: suggested
     health_check_url:
       value: "https://staging.example.invalid/health"
       mark: client
@@ -82,6 +85,9 @@ environments:
       mark: client
     deployed_by:
       value: "named-commit"
+      mark: suggested
+    runner:
+      value: "github-hosted"
       mark: suggested
     health_check_url:
       value: "https://example.invalid/health"

@@ -72,6 +72,15 @@
             "$ref": "#/$defs/rule",
             "properties": { "value": { "enum": ["trunk-push", "named-commit"] } }
           },
+          "runner": {
+            "description": "Where the environment's deployment job runs; the pull request check stays on GitHub's runners.",
+            "$ref": "#/$defs/rule",
+            "properties": { "value": { "enum": ["github-hosted", "self-hosted"] } }
+          },
+          "runner_label": {
+            "description": "The label the self-hosted runner registers with.",
+            "$ref": "#/$defs/text_rule"
+          },
           "health_check_url": { "$ref": "#/$defs/text_rule" },
           "monitoring": {
             "$ref": "#/$defs/rule",
@@ -110,8 +119,13 @@
             "additionalProperties": false
           }
         },
-        "required": ["runtime", "provider", "deployed_by", "health_check_url", "monitoring", "remediation", "scale"],
-        "additionalProperties": false
+        "required": ["runtime", "provider", "deployed_by", "runner", "health_check_url", "monitoring", "remediation", "scale"],
+        "additionalProperties": false,
+        "if": {
+          "properties": { "runner": { "properties": { "value": { "const": "self-hosted" } } } },
+          "required": ["runner"]
+        },
+        "then": { "required": ["runner_label"] }
       }
     },
     "release": {
