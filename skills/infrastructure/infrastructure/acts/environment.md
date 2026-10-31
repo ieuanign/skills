@@ -45,8 +45,9 @@ names only; code takes each credential from its tool's own environment variable 
     trigger;
   - `runs-on` from the entry's `runner`: GitHub's hosted runner for `github-hosted`,
     `[self-hosted, <runner_label>]` for `self-hosted`;
-  - services: the `service` input when given, otherwise the lines `<TOOLS>/changed-paths.sh <environment>`
-    prints, run with full history; none printed ends the job green;
+  - services: the `service` input when given, otherwise the lines `<TOOLS>/changed-paths.sh <environment>
+    <glob>…` prints, the globs **runtime**'s deploy step names, run with full history; none printed ends
+    the job green;
   - one GitHub Deployment per run, at the deployed commit, environment `<environment>`, payload
     `{"services": [<each deployed service>]}`; its status is `success` once the entry's
     `health_check_url` answers after the deploy step (**runtime**), `failure` otherwise.
@@ -59,7 +60,7 @@ names only; code takes each credential from its tool's own environment variable 
 - **Test accounts**, staging only — the repository's seed data creates each account, reading its
   password from the seed step's environment.
 - **Host patching** — security updates install unattended (**runtime**); reboots are a person's.
-- **Tool scripts** — `<TOOLS>/rollback.sh`, `restart.sh`, `scale.sh`, `prune.sh` and
+- **Tool scripts** — `<TOOLS>/changed-paths.sh`, `rollback.sh`, `restart.sh`, `scale.sh`, `prune.sh` and
   `restore-test.sh`, copies of `<this-skill-dir>/tools/` byte for byte, committed `100755`.
 
 ## Steps
