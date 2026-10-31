@@ -71,10 +71,23 @@ INFRA_CREDENTIAL_GRAFANA_<ENVIRONMENT>=<path>
 INFRA_TEST_ACCOUNTS_ENV=<path>
 ```
 
-`<ENVIRONMENT>` is the policy's environment name, upper-cased. `GITHUB` is the GitHub admin credential
-and `DNS` the zone's provider credential, both optional; `GRAFANA` is the environment's Grafana viewer
-token, which `infra-report` and `infra-diagnose` read. Where no environment in the policy needs a
-credential, skip this step.
+`<ENVIRONMENT>` is the policy's environment name, upper-cased. `DNS` is the zone's provider
+credential; it and `GITHUB` are optional, and `infra-report` and `infra-diagnose` read `GRAFANA`.
+Each key's file holds one form:
+
+- `INFRA_CREDENTIAL_GITHUB` — one fine-grained token for the repository, alone in the file, with
+  Administration write (rulesets and branch rules, creating or updating an environment, the runner
+  registration token, the fork approval policy) and Environments write (an environment's secrets and
+  variables, which the repository's Secrets and Variables permissions do not reach); nothing broader.
+- `INFRA_CREDENTIAL_PROVIDER_<ENVIRONMENT>` and `INFRA_CREDENTIAL_DNS_<ENVIRONMENT>` — what the
+  provider's tool reads. Where it takes a variable or flag (a token, a `DOCKER_HOST` endpoint): the
+  value alone, one line, no key or quotes, set from the file in the tool's own command. Where it reads a
+  file of its own (a key file, a kubeconfig): that file.
+- `INFRA_CREDENTIAL_GRAFANA_<ENVIRONMENT>` — the environment's Grafana viewer token, as a `curl` config
+  file holding the one line `header = "Authorization: Bearer <token>"`, handed over as
+  `curl --config <path>`.
+
+Where no environment in the policy needs a credential, skip this step.
 
 1. **Ask once** for every path the policy's environments need. Where the file exists, show it and ask
    only what should change.

@@ -21,7 +21,11 @@ The label sits on the Compose service: `labels: { infrastructure.data-store: "tr
 
 Over `ssh` with the key a secret of the GitHub environment holds: the deployed commit's tree — its
 Compose files and every build context they name — copied into the login directory, then
-`docker compose up --detach --build <services>` there, building each image on the host.
+`docker compose up --detach --build <services>` there, building each image on the host. The
+`changed-paths.sh` globs are the Compose files and the monitoring stack's files. When `changed-paths.sh`
+prints every service, the deploy names none, so `docker compose up --detach --build` brings the whole
+project up and recreates what changed, staging's stack included; otherwise only the services named are
+built and brought up.
 
 ## Monitoring
 

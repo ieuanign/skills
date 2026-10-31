@@ -6,6 +6,9 @@ entry's `runtime` names supplies every part marked **runtime**. Read `acts/envir
 well when any of `previews.enabled`, `release.soft_release.enabled`, `release.tag.enabled`,
 `release.e2e_tests.enabled` or a `services.<name>.mobile_app` is `true`.
 
+**Credential files**, **Resume** and **the undo section** are as `<this-skill-dir>/terms.md` defines
+them; read it with this act.
+
 ## Inputs
 
 Each is the caller's `<key>=<path>` argument, else the `<key>=` line of `<CHECKOUT>/.infra.local.env`,
@@ -42,27 +45,29 @@ names only; code takes each credential from its tool's own environment variable 
     trigger;
   - `runs-on` from the entry's `runner`: GitHub's hosted runner for `github-hosted`,
     `[self-hosted, <runner_label>]` for `self-hosted`;
-  - services: the `service` input when given, otherwise the lines `<TOOLS>/changed-paths.sh <environment>`
-    prints, run with full history; none printed ends the job green;
+  - services: the `service` input when given, otherwise the lines `<TOOLS>/changed-paths.sh <environment>
+    <glob>…` prints, the globs **runtime**'s deploy step names, run with full history; none printed ends
+    the job green;
   - one GitHub Deployment per run, at the deployed commit, environment `<environment>`, payload
     `{"services": [<each deployed service>]}`; its status is `success` once the entry's
     `health_check_url` answers after the deploy step (**runtime**), `failure` otherwise.
 - **Monitoring**, when the entry's `monitoring` is `added` — `tools.monitoring` beside the services
   (**runtime**); alert rules routed to the contact points; retention, dashboards and alert rules as code;
-  production's stack on capacity of its own (**runtime**).
+  production's stack on capacity of its own (**runtime**). A contact point's numeric id (a Telegram chat
+  id) is a quoted literal in the provisioning: an expanded variable is typed by its content and refused
+  as a number.
 - **Backups**, production only — every data store dumped nightly to the backup bucket, and per store a
   restore-test unit `<store>-restore-test` (**runtime**) that restores the latest dump into a database it
   creates, then removes that database.
 - **Test accounts**, staging only — the repository's seed data creates each account, reading its
   password from the seed step's environment.
 - **Host patching** — security updates install unattended (**runtime**); reboots are a person's.
-- **Tool scripts** — `<TOOLS>/rollback.sh`, `restart.sh`, `scale.sh`, `prune.sh` and
+- **Tool scripts** — `<TOOLS>/changed-paths.sh`, `rollback.sh`, `restart.sh`, `scale.sh`, `prune.sh` and
   `restore-test.sh`, copies of `<this-skill-dir>/tools/` byte for byte, committed `100755`.
 
 ## Steps
 
-1. **Resume.** `gh pr list --state open --limit 1000 --json url,headRefName --jq '.[] | select(.headRefName | startswith("<BRANCH_PREFIX>")) | .url'`.
-   Done when none is open, or its link is returned as the result with nothing else written.
+1. **Resume.** Done when none is open, or its link is returned.
 2. **Preconditions.** The entry is absent, or its `runtime` is `paas`, which this mode does not build:
    return a refusal naming it. Contact points are needed and
    none are named: return a refusal naming them. Done when neither refusal applies and the runtime act,
@@ -100,13 +105,12 @@ names only; code takes each credential from its tool's own environment variable 
    `gh repo view --json visibility` is `PUBLIC`, `approval_policy` `all_external_contributors` in
    `gh api repos/{owner}/{repo}/actions/permissions/fork-pr-contributor-approval`; a read that fails
    counts as missing. With `/mattpocock-skills:wizard`, author:
-   - `<WIZARD>/environment-<environment>-machine.sh` — creates each missing credential file, writes its
-     path under its key into `.infra.local.env`, and sets up what **runtime** needs to reach the hosts;
-     with `runner` `self-hosted`, on a public repository it first runs
-     `gh api -X PUT repos/{owner}/{repo}/actions/permissions/fork-pr-contributor-approval` to set
-     `approval_policy` to `all_external_contributors`, so the policy is in force before a runner
-     takes a job; then, where no runner carries `runner_label`, it registers one as a service, from
-     GitHub's runner documentation, its token passed straight from
+   - `<WIZARD>/environment-<environment>-machine.sh` — creates each missing credential file in its
+     **Credential files** form, writes its path under its key into `.infra.local.env`, and sets up what
+     **runtime** needs to reach the hosts; with `runner` `self-hosted`, on a public repository it first
+     sets that `approval_policy` with `gh api -X PUT`, so the policy is in force before a runner takes
+     a job; then, where no runner carries `runner_label`, it registers one as a service, from GitHub's
+     runner documentation, its token passed straight from
      `gh api -X POST repos/{owner}/{repo}/actions/runners/registration-token` into the runner's
      configuration command; these calls need a repository admin, who runs this script;
    - `<WIZARD>/environment-<environment>-repository.sh` — sets every secret value as a secret of GitHub
@@ -115,8 +119,9 @@ names only; code takes each credential from its tool's own environment variable 
 
    Commit both `100755` on `<BRANCH>`. Done when both are committed, or nothing is missing.
 7. **Push and open.** `git -C <WORKTREE> push -u origin <BRANCH>`, once. Then `gh pr create --base <TRUNK>
-   --head <BRANCH> --title "<title>" --body-file -`, the body naming each changed deliverable and that
-   it takes effect once applied from `<TRUNK>` after the merge. Done when its link is in hand.
+   --head <BRANCH> --title "<title>" --body-file -`, the body naming each changed deliverable, that
+   it takes effect once applied from `<TRUNK>` after the merge, and last the undo section.
+   Done when its link is in hand.
 8. **The issue**, after step 6 only. `gh issue create --title "<title>" --body-file -`, the body naming
    the pull request, each script with the command that runs it and who runs it, and that this mode is
    run again once the issue is closed. Done when the issue's link is in hand.

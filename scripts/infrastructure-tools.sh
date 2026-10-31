@@ -227,6 +227,38 @@ stub_statuses 7 '[{"state": "success"}]'
 expect "changed-paths: a non-ASCII path lists its service" 0 "web" "$changed_paths" staging
 
 new_repo
+deployed="$(git rev-parse HEAD)"
+commit_file compose.yaml 'changed'
+stub_deployments "[{\"id\": 7, \"sha\": \"$deployed\"}]"
+stub_statuses 7 '[{"state": "success"}]'
+expect "changed-paths: a file matching a given glob lists every service" 0 "$(printf 'api\nweb')" \
+  "$changed_paths" staging 'compose.yaml' 'monitoring/**'
+
+new_repo
+deployed="$(git rev-parse HEAD)"
+commit_file monitoring/grafana/alerts.yaml 'changed'
+stub_deployments "[{\"id\": 7, \"sha\": \"$deployed\"}]"
+stub_statuses 7 '[{"state": "success"}]'
+expect "changed-paths: a nested file under a ** glob lists every service" 0 "$(printf 'api\nweb')" \
+  "$changed_paths" staging 'compose.yaml' 'monitoring/**'
+
+new_repo
+deployed="$(git rev-parse HEAD)"
+commit_file docs/notes.md 'changed'
+stub_deployments "[{\"id\": 7, \"sha\": \"$deployed\"}]"
+stub_statuses 7 '[{"state": "success"}]'
+expect "changed-paths: a change outside every glob lists nothing" 0 "" \
+  "$changed_paths" staging 'compose.yaml' 'monitoring/**'
+
+new_repo
+deployed="$(git rev-parse HEAD)"
+commit_file services/api/main.txt 'changed'
+stub_deployments "[{\"id\": 7, \"sha\": \"$deployed\"}]"
+stub_statuses 7 '[{"state": "success"}]'
+expect "changed-paths: a service change beside unmatched globs lists that service" 0 "api" \
+  "$changed_paths" staging 'compose.yaml' 'monitoring/**'
+
+new_repo
 expect "changed-paths: a missing environment exits 2 with usage" 2 - "$changed_paths"
 if ! grep -q '^usage: ' "$work/stderr"; then
   fail "changed-paths: a missing environment prints usage" "stderr: $(cat "$work/stderr")"

@@ -40,7 +40,7 @@ The only process you start against infrastructure is `<tools path>/<action>.sh`,
 
 ## Credentials
 
-Paths only, never contents. The viewer token's path is the caller's argument, else the output of `grep -m1 '^INFRA_CREDENTIAL_GRAFANA_<ENVIRONMENT>=' .infra.local.env | cut -d= -f2-` at the repository root, `<ENVIRONMENT>` the policy's name upper-cased. Hand the path to `curl` in its header-from-file or config-file form, looked up with `curl --help`; test it with `test -s` alone. It is never opened, printed, or quoted on an issue or in the return. A tool script's own tools find their credential files through the variable each tool reads.
+Paths only, never contents. The viewer token's path is the caller's argument, else the output of `grep -m1 '^INFRA_CREDENTIAL_GRAFANA_<ENVIRONMENT>=' .infra.local.env | cut -d= -f2-` at the repository root, `<ENVIRONMENT>` the policy's name upper-cased. The file is a `curl` config file holding the one line `header = "Authorization: Bearer <token>"`, handed over as `curl --config <path>`; test it with `test -s` alone. It is never opened, printed, or quoted on an issue or in the return. A tool script's own tools find their credential files through the variable each tool reads.
 
 ## Read
 

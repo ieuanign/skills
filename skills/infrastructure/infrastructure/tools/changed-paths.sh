@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# infrastructure tool changed-paths.sh, version 1
+# infrastructure tool changed-paths.sh, version 2
 set -euo pipefail
 
-# Prints one service name per line: each service with a file changed under its paths since
-# <environment>'s last successful Deployment, or every service when it has none.
+# One service per line: each with a file changed under its paths since <environment>'s last
+# successful Deployment; every service when it has none or a changed file matches a <glob>.
 
 POLICY="docs/delivery-policy.md"
 
 usage() {
-  echo "usage: changed-paths.sh <environment>" >&2
+  echo "usage: changed-paths.sh <environment> [<glob>...]" >&2
   exit 2
 }
 lookup_failed() {
@@ -16,8 +16,10 @@ lookup_failed() {
   exit 1
 }
 
-[ "$#" -eq 1 ] && [ -n "$1" ] || usage
+[ "$#" -ge 1 ] && [ -n "$1" ] || usage
 environment="$1"
+shift
+every_service_globs=("$@")
 
 # Hand-rolled over the policy's block-YAML front matter: yq is absent on maintainer machines, and
 # node or python3 would need a dependency for a YAML parser. Prints `<dotted.path>[\t<value>]`.
@@ -63,10 +65,12 @@ while read -r id sha; do
   fi
 done <<<"$deployments"
 
-if [ -z "$deployed" ]; then
+every_service() {
   cut -f1 <<<"$service_globs" | awk '!seen[$0]++'
   exit 0
-fi
+}
+
+[ -n "$deployed" ] || every_service
 
 # Checked up front: the process substitution below cannot report the diff's own failure.
 git rev-parse --verify --quiet "$deployed^{commit}" >/dev/null ||
@@ -76,6 +80,14 @@ changed=()
 while IFS= read -r -d '' file; do
   changed+=("$file")
 done < <(git -c core.quotePath=false diff --name-only -z --no-renames "$deployed" HEAD)
+
+for glob in ${every_service_globs[@]+"${every_service_globs[@]}"}; do
+  for file in ${changed[@]+"${changed[@]}"}; do
+    if [[ $file == $glob ]]; then
+      every_service
+    fi
+  done
+done
 
 while IFS='	' read -r service glob; do
   for file in ${changed[@]+"${changed[@]}"}; do
