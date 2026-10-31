@@ -53,7 +53,9 @@ names only; code takes each credential from its tool's own environment variable 
     `health_check_url` answers after the deploy step (**runtime**), `failure` otherwise.
 - **Monitoring**, when the entry's `monitoring` is `added` — `tools.monitoring` beside the services
   (**runtime**); alert rules routed to the contact points; retention, dashboards and alert rules as code;
-  production's stack on capacity of its own (**runtime**).
+  production's stack on capacity of its own (**runtime**). A contact point's numeric id (a Telegram chat
+  id) is a quoted literal in the provisioning, never an expanded variable, which is typed by its content
+  and refused as a number.
 - **Backups**, production only — every data store dumped nightly to the backup bucket, and per store a
   restore-test unit `<store>-restore-test` (**runtime**) that restores the latest dump into a database it
   creates, then removes that database.
