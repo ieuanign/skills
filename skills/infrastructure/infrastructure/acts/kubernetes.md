@@ -26,7 +26,8 @@ the kubeconfig a secret of the GitHub environment holds: its image built from th
 pushed to GitHub's container registry, tagged with the commit; then `helm upgrade --install <service>
 <chart> --kube-context <environment> --namespace <environment>` with that tag set. The infrastructure
 code puts the registry's pull secret in namespace `<environment>`. The pipeline is the only deployer:
-the cluster runs no GitOps controller.
+the cluster runs no GitOps controller. The `changed-paths.sh` globs are the charts and the
+monitoring charts; every service listed, the monitoring charts are upgraded too.
 
 ## Monitoring
 
