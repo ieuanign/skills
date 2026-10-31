@@ -2,6 +2,8 @@
 
 One pull request delivers all three; no environment is built.
 
+**Credential files** are as `<this-skill-dir>/terms.md` defines them; read it with this act.
+
 ## The deliverables
 
 A deliverable whose file on `origin/<TRUNK>` already meets its contract is **kept**, byte for byte.
@@ -41,8 +43,8 @@ Any other is **changed**: written anew to meet its contract.
    repository's own commit convention, read from `git log`. Done when `git -C <WORKTREE> status --porcelain`
    prints nothing.
 5. **The person's part**, when the branch rules fall to it. With `/mattpocock-skills:wizard`, author:
-   - `<WIZARD>/first-run-machine.sh` — creates the GitHub admin credential file and writes its path as
-     `INFRA_CREDENTIAL_GITHUB=<path>` into `.infra.local.env`;
+   - `<WIZARD>/first-run-machine.sh` — creates the GitHub admin credential file in its **Credential
+     files** form and writes its path as `INFRA_CREDENTIAL_GITHUB=<path>` into `.infra.local.env`;
    - `<WIZARD>/first-run-repository.sh` — sets the branch rules above, run by a repository admin.
 
    Commit both `100755` on `<BRANCH>`. Done when both are committed, or the branch rules are code or

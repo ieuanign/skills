@@ -24,3 +24,18 @@ The open issue titled exactly `Infrastructure reports`:
 the exact title. None: `gh issue create --title 'Infrastructure reports' --body-file -` with a one-line
 body saying what it collects, then `gh issue pin <n>`. A failed `gh issue pin` still lets the act post
 its comment.
+
+## Credential files
+
+The form each key's file holds; the person's part creates it so, and every reader hands it over unopened.
+
+- `INFRA_CREDENTIAL_GITHUB` — one fine-grained token for the repository, alone in the file, with
+  Administration write (rulesets and branch rules, creating or updating an environment, the runner
+  registration token, the fork approval policy) and Environments write (an environment's secrets and
+  variables, which the repository's Secrets and Variables permissions do not reach); nothing broader.
+- `INFRA_CREDENTIAL_PROVIDER_<ENVIRONMENT>` and `INFRA_CREDENTIAL_DNS_<ENVIRONMENT>` — what the
+  provider's tool reads. Where it takes a variable or flag (a token, a `DOCKER_HOST` endpoint): the
+  value alone, one line, no key or quotes, set from the file in the tool's own command. Where it reads a
+  file of its own (a key file, a kubeconfig): that file.
+- `INFRA_CREDENTIAL_GRAFANA_<ENVIRONMENT>` — a `curl` config file holding the one line
+  `header = "Authorization: Bearer <token>"`, handed over as `curl --config <path>`.
