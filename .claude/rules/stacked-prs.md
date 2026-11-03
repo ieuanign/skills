@@ -18,6 +18,27 @@ For the same reason: **`gh stack sync`** to bring a chain up to date with the de
 **`gh stack merge`** to merge one. Merging the bottom of a chain by hand leaves everything above it
 based on a branch that is gone.
 
+## A pull request a rebase empties
+
+When a fix lands a pull request's only change in the one below it, `gh stack rebase` drops that pull
+request's commits as already applied, and it is left with none. Do this, in this order:
+
+1. **Close it unmerged**, with a comment naming the pull request its change now sits in:
+   `gh pr close <number> --comment "<why, and where the change went>"`.
+2. **Base the one above it on the one below it**: `gh pr edit <above> --base <below's branch>` —
+   onto the trunk when the emptied one was the bottom. When it was the top, there is nothing to
+   re-base.
+3. **`gh stack rebase`**.
+4. **`gh stack push`**.
+
+Those are its only writes to GitHub: one close, one base change, one push. Nothing is merged,
+re-opened or deleted.
+
+Not merged, and not left open to be pushed: a head with nothing beyond its base is what lets GitHub
+mark a pull request merged, so the close and the base change come before the rebase and the push. Not
+closed without re-basing the one above: that one would be left based on a closed pull request's
+branch. Not `gh stack modify`: it is an interactive interface, which an agent cannot drive.
+
 ## What this does not cover
 
 **A branch that is not part of a stack rebases normally.** This rule is about chains; a single branch
