@@ -14,6 +14,8 @@ on the default branch, recorded on GitHub with the `gh-stack` extension.
 `gh stack sync`, and merged with `gh stack merge`** — never `git rebase` followed by a force-push. A
 branch that is not part of a stack rebases normally.
 
-A pull request a rebase empties is closed unmerged, the one above it based on the one below, then
-`gh stack rebase` and `gh stack push`.
-What a plain rebase or a merge by hand does to a chain: `.claude/reference/stacked-prs.md`.
+**A pull request a rebase empties is closed unmerged**, with a comment naming where its change went,
+the one above it based on the one below, then `gh stack rebase` and `gh stack push`.
+
+What a plain rebase, a merge by hand or an emptied pull request does to a chain:
+`.claude/reference/stacked-prs.md`.

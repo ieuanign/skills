@@ -25,24 +25,20 @@ based on a branch that is gone.
 
 ## A pull request a rebase empties
 
-When a fix lands a pull request's only change in the one below it, `gh stack rebase` drops that pull
-request's commits as already applied, and it is left with none. Do this, in this order:
+When a fix moves a pull request's only change into the one below it, `gh stack rebase` drops its
+commits as already applied and leaves it **emptied**. In this order:
 
 1. **Close it unmerged**, with a comment naming the pull request its change now sits in:
-   `gh pr close <number> --comment "<why, and where the change went>"`.
-2. **Base the one above it on the one below it**: `gh pr edit <above> --base <below's branch>` —
-   onto the trunk when the emptied one was the bottom. When it was the top, there is nothing to
-   re-base.
+   `gh pr close <number> --comment "<why, and where the change went>"`. Closing comes first because
+   GitHub marks a pull request merged once its head has nothing beyond its base, which the push
+   would give it.
+2. **Base the one above it on the one below it**, keeping the chain unbroken:
+   `gh pr edit <above> --base <below's branch>` — the trunk when the emptied one was the bottom. When
+   it was the top, there is no one above, so go to step 3.
 3. **`gh stack rebase`**.
 4. **`gh stack push`**.
 
-Those are its only writes to GitHub: one close, one base change, one push. Nothing is merged,
-re-opened or deleted.
-
-Not merged, and not left open to be pushed: a head with nothing beyond its base is what lets GitHub
-mark a pull request merged, so the close and the base change come before the rebase and the push. Not
-closed without re-basing the one above: that one would be left based on a closed pull request's
-branch. Not `gh stack modify`: it is an interactive interface, which an agent cannot drive.
+The close, the base change and the push are the only writes to GitHub.
 
 ## What this does not cover
 
