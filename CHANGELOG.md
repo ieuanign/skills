@@ -1,5 +1,26 @@
 # ieuanign-skills
 
+## 0.36.0
+
+### Minor Changes
+
+- [`ad1cc3f`](https://github.com/ieuanign/skills/commit/ad1cc3f952d2d0188ce659b2ac8c7f3ee2a1cb9e) Thanks [@ieuanign](https://github.com/ieuanign)! - A change that breaks an existing test now carries that test's update, whatever area order the PR separation policy names: the `architecture-engineer` puts the update in the commit that breaks the test and names its files in that commit's breakdown entry, and the `pr-separation.md` template's **Order** section says the order places new tests, not updates to existing ones.
+
+- [`fc7d8f6`](https://github.com/ieuanign/skills/commit/fc7d8f63d50c1e7298a8983130bb4195f882db08) Thanks [@ieuanign](https://github.com/ieuanign)! - qa-review: a title starting `test(e2e): #<n>` is reviewed as a PRD's `test(e2e):` pull request only when issue `#<n>` carries a comment headed `## Test cases`. A ticket's own end-to-end pull request, which carries the same title shape, is now reviewed as a ticket's pull request instead of stopping for want of test cases. A PRD with no `## Test cases` comment still stops the review, writing nothing.
+
+### Patch Changes
+
+- [`85e58c0`](https://github.com/ieuanign/skills/commit/85e58c0fed85472977e5d6179046f45e41823cc9) Thanks [@ieuanign](https://github.com/ieuanign)! - infrastructure, setup-infra, infra-report, infra-diagnose: nine fixes from running the skills unattended on a Compose staging ([#398](https://github.com/ieuanign/skills/issues/398)).
+
+  - Every pull request `infrastructure` opens ends with the `## Undo` section, so `check` can pass an `environment` or `first-run` pull request.
+  - `check` reverts every commit a rebase merge landed, not only the last, and judges each workflow's newest run at the merge commit rather than every run.
+  - `apply` now deploys an environment that has no successful Deployment yet, dispatching `deployment.yml` at the commit it applied and returning the run's conclusion and link.
+  - A change to the Compose files or the monitoring stack alone deploys every service. `changed-paths.sh` is version 2 (`changed-paths.sh <environment> [<glob>…]`) and is now an `environment` deliverable; the next `environment` or `maintain` run refreshes a shipped copy and reports an edited one.
+  - A contact point's numeric id, such as a Telegram chat id, is provisioned as a quoted literal, which Grafana accepts where it refuses an expanded variable.
+  - Each credential key names its file's form. A provider or DNS file holds the value alone, one line — a `KEY=value` line no longer works; rewrite it. The Grafana file is a `curl` config holding `header = "Authorization: Bearer <token>"`.
+  - `INFRA_CREDENTIAL_GITHUB` names the token's permissions: Administration write and Environments write.
+  - A wizard script reads the repository's name before any `cd`, so the runner's registration URL is right.
+
 ## 0.35.0
 
 ### Minor Changes
