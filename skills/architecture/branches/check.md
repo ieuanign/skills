@@ -4,7 +4,7 @@ Report every line of `SKILL.md`'s checklist as pass or fail. Read-only: every fi
 
 1. **Take the inventory**, as `SKILL.md`'s [The inventory](../SKILL.md#the-inventory) lists it, and read the five files of `docs/architecture/`. Done when both are in hand.
 2. **Resolve every marker.** For each `Planned:` link in prose and each `%% Planned:` comment in a diagram: a URL resolves with `gh issue view <link> --json state,labels` as open and labelled `spec`; a relative path, read from the file holding the marker, resolves to a file whose first heading is `# Spec: <name>` and which holds a `PRD:` line. Done when every marker resolves or fails, with its file and line.
-3. **The Architecture lines.** Report each, matching the Architecture against step 1:
+3. **The Architecture lines.** Report each, matching the Architecture against step 1. A line or diagram element whose marker resolved in step 2 is planned: it passes homes, stores, integrations and deployment without matching the code.
    - homes: each part's home exists, and each part of the inventory is some part's home;
    - layers: each part sits under one layer;
    - stores: `data.md` names every store and table group, and nothing else;

@@ -5,7 +5,7 @@ Write the Architecture, or a Spec's marked changes and its issue, from an answer
 1. **Read the set.** `# Architecture questions` or `# Spec questions` names its kind; its header, its questions and its `## Draft` are the whole input. An empty answer box keeps the recommendation. Done when every question has its answer or its kept recommendation.
 2. **Find the knock-outs.** A question is knocked out when its box is empty and a question its `Rests on:` names was answered with something other than its recommendation, or is itself knocked out — repeat until none is added, so the whole chain is asked again at once. Where any is, write nothing and return a follow-up set, in the set's own shape, holding:
    - the same header;
-   - only the knocked-out questions, each with a fresh recommendation resting on the answers given, an empty box, and an `Asked again:` line naming the answer that knocked it out;
+   - only the knocked-out questions, each with a fresh recommendation resting on the answers given, a `Rests on:` naming only questions in this follow-up set, an empty box, and an `Asked again:` line naming the answer that knocked it out;
    - `## Settled`, every other question with its answer, verbatim;
    - the `## Draft`, as it came.
 
