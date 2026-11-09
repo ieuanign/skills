@@ -1,6 +1,6 @@
 # spec
 
-Draft one PRD's changes to the Architecture and return them with the Spec question set. Nothing is written.
+Draft one PRD's changes to the Architecture and return them with the Spec question set. Read-only.
 
 1. **Read the PRD**: `gh issue view <PRD> --json number,title,body,url`. Done when its name (from `# PRD: <name>`, else the title), every requirement id, every "Left for the spec" line and every constraint are in hand.
 2. **Find its Spec.** The one the caller names; else the PRD's sub-issue labelled `spec`, from `gh api repos/{owner}/{repo}/issues/<PRD>/sub_issues`. Read an existing Spec's body: the draft revises it. Done when the Spec is known, or known to be new.
