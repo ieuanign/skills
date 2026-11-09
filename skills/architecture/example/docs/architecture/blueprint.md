@@ -1,6 +1,6 @@
 # Blueprint
 
-Three parts in a line: the catalog site talks only to the lending service, and only the lending service talks to the store.
+The parts sit in a line: the catalog site talks only to the lending service, and only the lending service talks to the store.
 
 ```mermaid
 %% C4 container: one node per part, labelled with its home.
@@ -38,4 +38,4 @@ None — the lending service reaches the store through its own queries; no part 
 
 ## Database
 
-The **store**, home `db/`, is one relational store holding the catalog and every loan, so a loan and its book are always read together.
+The **store**, home `db/`, is a relational store holding the catalog and every loan, so a loan and its book are always read together.

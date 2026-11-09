@@ -1,6 +1,6 @@
 # Data
 
-One relational store, owned by the lending service, in two table groups.
+A relational store, owned by the lending service, holding the catalog and the loans as table groups.
 
 ```mermaid
 %% ER: one entity per table group.

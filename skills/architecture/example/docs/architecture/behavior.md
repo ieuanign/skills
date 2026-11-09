@@ -1,6 +1,6 @@
 # Behavior
 
-Two flows: a member borrows a book, and later returns it. A third, renewing a loan, is planned.
+A member borrows a book, and later returns it. Renewing a loan is planned.
 
 ```mermaid
 %% Sequence: borrowing, and the planned renewal drawn dotted.

@@ -1,6 +1,6 @@
 # Deployment
 
-One environment, local: each part runs as a service of `compose.yaml` on one machine, because one neighbourhood needs no more.
+Local only: each part runs as a service of `compose.yaml` on the same machine, because a neighbourhood library needs no more.
 
 ```mermaid
 %% Deployment: one subgraph per environment, one node per deployable, labelled with its home.
