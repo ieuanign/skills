@@ -1,9 +1,9 @@
 # Behavior
 
-A member borrows a book, and later returns it. Renewing a loan is planned.
+A member borrows a book, and later returns it.
 
 ```mermaid
-%% Sequence: borrowing, and the planned renewal drawn dotted.
+%% Sequence: borrowing a book.
 sequenceDiagram
   participant W as Catalog site
   participant A as Lending service
