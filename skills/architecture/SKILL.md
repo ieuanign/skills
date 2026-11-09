@@ -51,7 +51,7 @@ What the code shows, read the same way by `observe` and `check`:
 - **Parts.** Each top-level directory holding code, each package a workspace manifest lists, and each service a Compose file or other deployment file names.
 - **Stores and table groups.** Each database, cache, queue and object store a service or its configuration names, and the table groups of each schema or migration folder.
 - **Third-party integrations.** Each outside system the code calls: its client libraries in the manifests, its keys and URLs among the environment variable names, its hosts in outbound calls.
-- **Deployables and environments.** Dockerfiles, Compose files, Helm charts and Kubernetes manifests, Terraform or OpenTofu, platform files, the deploy jobs in `.github/workflows/`, and `docs/delivery-policy.md` where there is one, read as a file.
+- **Deployables and environments.** Dockerfiles, Compose files, Helm charts and Kubernetes manifests, Terraform or OpenTofu, platform files, the deploy jobs in `.github/workflows/`, and `docs/delivery-policy.md` where there is one, read as a file. An environment is one these files name; a Compose file naming none runs locally.
 - **Decision records**, at the location the Decision records rule gives.
 
 ## The question sets
