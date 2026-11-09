@@ -1,5 +1,13 @@
 # ieuanign-skills
 
+## 0.37.0
+
+### Minor Changes
+
+- [`f246c4a`](https://github.com/ieuanign/skills/commit/f246c4a4e2fcb4f34dcc5e22d80b00d05355a4dd) Thanks [@ieuanign](https://github.com/ieuanign)! - architecture: a new skill that keeps a project's Architecture in `docs/architecture/` — an index plus blueprint, data, behavior and deployment sections, each saying what and why per layer with a mermaid diagram — and plans each PRD against it as a Spec, an issue under the PRD listing its changes to the Architecture, which `/to-tickets` then cuts into tickets. Observe drafts the Architecture from the code and Spec drafts a PRD's changes against it, each returning one question set and asking nobody; Write turns an answered set into the Architecture or the Spec, adds the agents' pointer in `docs/agents/domain.md` only where missing, and never commits; Check reports every checklist line and drift against the code, writing nothing. Bundles a template and a worked example that passes its own Check. Model-invoked.
+
+- [#412](https://github.com/ieuanign/skills/pull/412) [`1d2f7e6`](https://github.com/ieuanign/skills/commit/1d2f7e63a5ebbf9f3739163bf4c6ab49b6411796) Thanks [@ieuanign](https://github.com/ieuanign)! - setup-ieuanign-skills: the stacked pull requests reference says what to do with a pull request a rebase empties — close it unmerged with a comment naming the pull request its change now sits in, base the one above it on the one below, then `gh stack rebase` and `gh stack push`, each step beside the reason it comes where it does. The rule file carries the instruction, and its pointer names the new case.
+
 ## 0.36.0
 
 ### Minor Changes
