@@ -6,9 +6,9 @@
 %% C4 context or container: the project's parts, the people who use it, the systems it talks to.
 flowchart LR
   classDef planned stroke-dasharray: 5 5
-  user([<Person>]) --> part1[<Part>]
-  part1 --> part2[(<Store>)]
-  part1 --> ext[<Third-party system>]
+  user(["<Person>"]) --> part1["<Part>"]
+  part1 --> part2[("<Store>")]
+  part1 --> ext["<Third-party system>"]
 ```
 
 ## Parts at a glance

@@ -6,9 +6,9 @@ Local only: each part runs as a service of `compose.yaml` on the same machine, b
 %% Deployment: one subgraph per environment, one node per deployable, labelled with its home.
 flowchart LR
   classDef planned stroke-dasharray: 5 5
-  subgraph local [Local]
-    web[Catalog site<br/>web/] --> api[Lending service<br/>api/]
-    api --> db[(Store<br/>db/)]
+  subgraph local ["Local"]
+    web["Catalog site<br/>web/"] --> api["Lending service<br/>api/"]
+    api --> db[("Store<br/>db/")]
   end
 ```
 
