@@ -9,3 +9,5 @@ services:
       - db
   db:
     image: postgres
+    volumes:
+      - ./db/migrations:/docker-entrypoint-initdb.d
