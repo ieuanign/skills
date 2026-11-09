@@ -226,7 +226,7 @@ A non-technical product requirements document, published as an issue under its *
 people do and see, as **requirements** with stable ids. Nothing is built from a PRD directly. Once its
 work has shipped its text stands; a later change is a new PRD naming the ids it replaces or withdraws.
 
-_Avoid_: spec — a spec is technical and comes after the PRD; what the PRD leaves for it is listed,
+_Avoid_: spec — a **Spec** is technical and comes after the PRD; what the PRD leaves for it is listed,
 not answered.
 
 ## Requirement
@@ -246,7 +246,7 @@ of its own.
 ## Epic
 
 The whole a too-big **brief** was narrowed from: the bigger picture, and its **topics**, each marked
-with its brief once filed. To its PRDs what a spec is to its tickets. Closed when every topic is filed
+with its brief once filed. To its PRDs what a **Spec** is to its tickets. Closed when every topic is filed
 or dropped.
 
 ## Home
@@ -254,6 +254,25 @@ or dropped.
 Where one part of a **brief** ends up: a **requirement**, a constraint, a **topic** in the **epic**,
 an "Out of scope" line or a "Left for the spec" line. An interview is finished when every part has one
 and the person confirms the list.
+
+## Architecture
+
+A project's parts, data, behavior and deployment, set down as what each is and why, in
+`docs/architecture/`: one section per view, each in four layers — presentation, application, data
+access, database — and each part anchored to its home, a top-level directory, package or service. A
+change a **Spec** plans stays marked in it until the code that builds it lands.
+
+Its four layers are not `/dev-loop`'s **Layer**, and a part's home is not a brief part's **Home**.
+
+_Avoid_: design doc, system design — each names one plan, not the standing whole.
+
+## Spec
+
+One **PRD**'s changes to the **Architecture**, published as an issue under the PRD: technical, written
+after it, answering what the PRD left for the spec. What `/to-tickets` cuts into tickets, each a
+sub-issue of the Spec.
+
+_Avoid_: technical PRD, design — a Spec changes the Architecture and states no requirement of its own.
 
 ## Design system
 
