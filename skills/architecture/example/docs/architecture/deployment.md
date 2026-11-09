@@ -26,4 +26,4 @@ None — no deployable stands between the lending service and the store.
 
 ## Database
 
-The store, home `db/`, runs as the `db` service from a stock relational-store image in the local environment.
+The store, home `db/`, runs as the `db` service from a stock relational-store image, loading its schema from its home, in the local environment.
