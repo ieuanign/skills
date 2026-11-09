@@ -3,7 +3,7 @@
 Write the Architecture, or a Spec's marked changes and its issue, from an answered question set. Every file is left uncommitted.
 
 1. **Read the set.** `# Architecture questions` or `# Spec questions` names its kind; its header, its questions and its `## Draft` are the whole input. An empty answer box keeps the recommendation. Done when every question has its answer or its kept recommendation.
-2. **Find the knock-outs.** A question is knocked out when its box is empty and a question its `Rests on:` names was answered with something other than its recommendation. Where any is, write nothing and return a follow-up set, in the set's own shape, holding:
+2. **Find the knock-outs.** A question is knocked out when its box is empty and a question its `Rests on:` names was answered with something other than its recommendation, or is itself knocked out — repeat until none is added, so the whole chain is asked again at once. Where any is, write nothing and return a follow-up set, in the set's own shape, holding:
    - the same header;
    - only the knocked-out questions, each with a fresh recommendation resting on the answers given, an empty box, and an `Asked again:` line naming the answer that knocked it out;
    - `## Settled`, every other question with its answer, verbatim;
@@ -13,7 +13,7 @@ Write the Architecture, or a Spec's marked changes and its issue, from an answer
 3. **Apply the answers** to the draft, each at its `Applies to:`. A `why` answer is that part's why in the prose. Done when every draft line a question decides holds its answer or its kept recommendation.
 4. **Decision records.** Each choice passing the three-part test in `SKILL.md`'s Decision records rule gets a record, at the location the set's header names, numbered after the highest there, its link added to the prose and to the index's Decision records. Done when every such choice has its record and both links, or the header says none are kept.
 5. **The Spec issue**, for a Spec set only; an Architecture set goes to step 7.
-   - A `Spec:` URL in the header is the issue, edited in place. Else: `gh label list`, and `gh label create spec` only when `spec` is missing; then create the issue with a placeholder body, so its link exists before any marker:
+   - A `Spec:` URL in the header is the issue, edited in place. Else the PRD's sub-issue labelled `spec`, from `gh api repos/{owner}/{repo}/issues/<PRD>/sub_issues`, is — a rerun after a revise still says `new`. Only where there is none: `gh label list`, and `gh label create spec` only when `spec` is missing; then create the issue with a placeholder body, so its link exists before any marker:
 
      ```bash
      gh issue create --title "Spec: <PRD name>" --label spec --body-file - <<'EOF'
