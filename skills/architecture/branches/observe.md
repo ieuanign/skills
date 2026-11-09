@@ -1,6 +1,6 @@
 # observe
 
-Draft the project's Architecture from its code and return it with the Architecture question set. Nothing is written.
+Draft the project's Architecture from its code and return it with the Architecture question set. Read-only.
 
 1. **Take the inventory**, as `SKILL.md`'s [The inventory](../SKILL.md#the-inventory) lists it. Done when every top-level directory, package, service, store, table group, integration, deployable, environment and decision record is listed with what it does and where it was found.
 2. **Read the docs.** The root `README.md`, `CONTEXT.md` or `CONTEXT-MAP.md`, `docs/` and the decision records, for what each part is for and why it is shaped so. Use the glossary's terms for the parts. Done when every why the docs state is matched to its part.
