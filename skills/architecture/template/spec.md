@@ -20,11 +20,11 @@ PRD: <PRD issue link>
 
 ## Deployment view
 
-<`changed` or `unchanged`. Where changed, each planned change that needs the new deployment.>
+<`changed` exactly when `deployment.md` has a change, listing each planned change that needs the new deployment; else `unchanged`.>
 
 ## Test seams
 
-- <A seam the work is tested at: an existing one where it serves, else the highest new one.>
+- <A seam the work is tested at: an existing one wherever one serves, else a new one at the highest point it can sit. As few as possible, ideally one.>
 
 ## Left out
 
