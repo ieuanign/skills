@@ -24,7 +24,7 @@ Shelfshare calls no third-party system.
 ## Quality goals
 
 - **Availability** — up while the library is open; members can wait for a restart outside those hours.
-- **Expected scale** — one neighbourhood's members and books, so each part runs unreplicated.
+- **Expected scale** — a neighbourhood's members and books, so each part runs unreplicated.
 - **Data retention** — every loan is kept for good, because the library is asked for lending history; see [Loans are closed, never deleted](../adr/0001-loans-are-closed-never-deleted.md).
 
 ## Sections
