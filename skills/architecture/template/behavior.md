@@ -8,7 +8,7 @@ sequenceDiagram
   participant P as <Part>
   participant Q as <Part>
   P->>Q: <request>
-  Q-->>P: <response>
+  Q->>P: <response>
 ```
 
 ```mermaid
