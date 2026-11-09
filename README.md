@@ -1,7 +1,7 @@
 # ieuanign/skills
 
-Ieuan's add-on agent skills for Claude Code: a brief interviewed into a non-technical **PRD**, its
-screens **mocked up** as local HTML from the project's **design system**, an issue-to-PR **dev-loop** over a custom agent roster, one pull request's **comments** turned into
+Ieuan's add-on agent skills for Claude Code: a brief interviewed into a non-technical **PRD**, planned
+against the project's **Architecture** as a **Spec**, its screens **mocked up** as local HTML from the project's **design system**, an issue-to-PR **dev-loop** over a custom agent roster, one pull request's **comments** turned into
 commits, a repository's **infrastructure** built, diagnosed and reported on from its delivery policy,
 and per-repo **setup**.
 
@@ -39,6 +39,7 @@ Then once per repo — independent, either order:
 | [`/dev-loop-cleanup`](./skills/dev-loop-cleanup/SKILL.md) | Lists every candidate this plugin's skills left behind — worktree, local branch, scratch files, from `/dev-loop`, `/mockup` and `/infrastructure` runs — each with a recommendation and its reason, then reaps only the ones you pick, or with `auto` every one it recommends removing |
 | [`/grill-prd`](./skills/grill-prd/SKILL.md) | Interviews a brief in plain words about what people do and see — narrowing a too-big one to a single topic — until every part has a home, then calls `/to-prd` to publish it |
 | [`/to-prd`](./skills/to-prd/SKILL.md) | Writes, revises or checks a non-technical PRD issue with stable `REQ-<prd>.<n>` ids, and files the epic a too-big brief was narrowed from. Stops for no one, so an agent can call it alone |
+| [`/architecture`](./skills/architecture/SKILL.md) | Observes a project's Architecture under `docs/architecture/` from its code — its parts, data, behavior and deployment, each part anchored to its home — plans a PRD against it as a Spec issue under the PRD for `/to-tickets` to cut, writes either from an answered question set, uncommitted, or checks it against the code. Asks no one |
 | [`/design-system`](./skills/design-system/SKILL.md) | Sets up a project's design system as local HTML under `docs/design-system/` — a reference page, the skeleton every mockup and design prototype is built from, and the client's `brand/` — plus the index of design prototypes at `docs/design/index.html`: three directions drawn from a PRD, built from the one chosen, adopted from code, or checked |
 | [`/mockup`](./skills/mockup/SKILL.md) | Drafts the screens a PRD changes as a throwaway mockup under `.scratch/`; once you confirm the design, turns each into a design prototype under `docs/design/` — one interactive page per screen, with a floating panel for every state, size and theme, shared by every PRD that touches it, filed under the app it belongs to — keeps the index's rows current, and opens one pull request for them. Revises from your reasons or a revised PRD, or checks either |
 | [`/test-cases`](./skills/qa/test-cases/SKILL.md) | Writes, revises or checks a PRD's test cases — one plain-words check per requirement, with stable `TC-<issue>.<n>` ids — as one `## Test cases` comment on the PRD's issue |
