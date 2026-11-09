@@ -1,0 +1,11 @@
+services:
+  web:
+    build: ./web
+    depends_on:
+      - api
+  api:
+    build: ./api
+    depends_on:
+      - db
+  db:
+    image: postgres
