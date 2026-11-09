@@ -6,9 +6,9 @@ Shelfshare runs a neighbourhood lending library. Members browse the catalog, bor
 %% C4 container: the project's parts and the people who use it; it talks to no third-party system.
 flowchart LR
   classDef planned stroke-dasharray: 5 5
-  member([Member]) --> web[Catalog site<br/>web/]
-  web --> api[Lending service<br/>api/]
-  api --> db[(Store<br/>db/)]
+  member(["Member"]) --> web["Catalog site<br/>web/"]
+  web --> api["Lending service<br/>api/"]
+  api --> db[("Store<br/>db/")]
 ```
 
 ## Parts at a glance

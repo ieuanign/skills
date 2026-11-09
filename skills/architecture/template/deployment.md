@@ -6,8 +6,8 @@
 %% Deployment: one subgraph per environment, one node per deployable, labelled with its home.
 flowchart LR
   classDef planned stroke-dasharray: 5 5
-  subgraph env1 [<Environment>]
-    d1[<Deployable><br/><home>] --> d2[(<Store><br/><home>)]
+  subgraph env1 ["<Environment>"]
+    d1["<Deployable><br/><home>"] --> d2[("<Store><br/><home>")]
   end
 ```
 

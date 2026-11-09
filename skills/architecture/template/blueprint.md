@@ -6,8 +6,8 @@
 %% C4 container: one node per part, labelled with its home.
 flowchart LR
   classDef planned stroke-dasharray: 5 5
-  web[<Part><br/><home>] --> api[<Part><br/><home>]
-  api --> db[(<Store><br/><home>)]
+  web["<Part><br/><home>"] --> api["<Part><br/><home>"]
+  api --> db[("<Store><br/><home>")]
 ```
 
 ## Presentation
@@ -18,7 +18,7 @@ flowchart LR
 %% C4 component: the inside of a part, where it has more than one component.
 flowchart LR
   classDef planned stroke-dasharray: 5 5
-  a[<Component>] --> b[<Component>]
+  a["<Component>"] --> b["<Component>"]
 ```
 
 ## Application

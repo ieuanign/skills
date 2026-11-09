@@ -25,7 +25,7 @@ Every branch runs unattended: a person's answers reach it only through a [questi
 - **Anchors.** Each part names its home: a top-level directory, a package or a service, such as `web/` or a Compose service — never a file.
 - **What and why only.** The Architecture holds no exact values: the versions, sizes, ports, replica or instance counts and provider SKUs that `docs/delivery-policy.md` and the infrastructure code hold. Where they disagree with the Architecture, the Architecture says what is meant.
 - **Decision records.** A choice passing all three parts of the test — hard to reverse, surprising without context, the result of a real trade-off — gets a record, linked from the prose that states it and from the index. Records go where the consuming repo's `docs/agents/domain.md` says; where that file is absent or names no location, in `docs/adr/`; where it says the repo keeps none, the why stays in the prose, with no record or link.
-- **Diagrams** are fenced `mermaid` blocks.
+- **Diagrams** are fenced `mermaid` blocks, each flowchart label in double quotes, so a home such as `web/` parses.
 - **Planned changes.** A Spec's changes reach the default branch before the code that builds them, so each stays marked until built:
   - In prose, the line ends `Planned: <Spec link>`, the link bare or as a Markdown link.
   - In a diagram, the element carries a `%% Planned: <Spec link>` comment and is drawn dashed: a flowchart node or a state takes the `planned` class; an edge takes its type's dotted form — `-.->` in a flowchart, `-->>` in a sequence, `..` in an ER diagram. A state transition has no dotted form, so its comment alone marks it.

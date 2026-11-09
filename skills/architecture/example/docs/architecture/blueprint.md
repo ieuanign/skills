@@ -6,8 +6,8 @@ The parts sit in a line: the catalog site talks only to the lending service, and
 %% C4 container: one node per part, labelled with its home.
 flowchart LR
   classDef planned stroke-dasharray: 5 5
-  web[Catalog site<br/>web/] --> api[Lending service<br/>api/]
-  api --> db[(Store<br/>db/)]
+  web["Catalog site<br/>web/"] --> api["Lending service<br/>api/"]
+  api --> db[("Store<br/>db/")]
 ```
 
 ## Presentation
@@ -24,10 +24,10 @@ It also renews an open loan on its member's request, refusing a loan already ove
 %% C4 component: the inside of the lending service.
 flowchart LR
   classDef planned stroke-dasharray: 5 5
-  http[HTTP interface] --> catalog[Catalog]
-  http --> lending[Lending]
+  http["HTTP interface"] --> catalog["Catalog"]
+  http --> lending["Lending"]
   %% Planned: ../spec.md
-  http -.-> renewal[Renewal]:::planned
+  http -.-> renewal["Renewal"]:::planned
   %% Planned: ../spec.md
   renewal -.-> lending
 ```
